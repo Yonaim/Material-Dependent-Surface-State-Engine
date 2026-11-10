@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-10-27T13:16:17.578419+09:00",
+  "scope": "CPU render-index regression diagnosis; no app execution or performance result",
+  "before_status": "assertion_failed",
+  "before_exit_code": 1,
+  "after_build": "succeeded",
+  "after_execution": "blocked_before_execution",
+  "after_winerror": 4551,
+  "after_pass_status": "unverified",
+  "changed_inputs": [
+    "Build\\Release\\MDSS_SharedSurfaceGeometryTests.exe",
+    "Tests\\SharedSurfaceGeometryTests.cpp"
+  ],
+  "production_source_changes": [],
+  "archive_files_before": 118,
+  "archive_files_after": 118,
+  "archive_errors": [],
+  "root_cause_basis": "Source: render indices are compact vertex IDs; Samples.x is the simulation texel ID. Old assertion searched raw index 4 after removing texel 4.",
+  "historical_failure_basis": "Before run repeats the same assertion; baseline work on 2026-10-26 also documented it. Exact first failing commit not established.",
+  "app_rendering": "still_unexecuted_no_retry_of_known_blocked_hash",
+  "full_suite": "not_run",
+  "product_fix": "none; test checks updated",
+  "report": "../../../Docs/MDSSP-Agent-Vault/04_Experiments/01_Validation-and-Tests.md"
+}

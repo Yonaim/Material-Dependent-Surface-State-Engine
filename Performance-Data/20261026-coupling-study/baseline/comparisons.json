@@ -1,0 +1,2489 @@
+{
+  "analyzed_at": "2026-10-27T07:54:11.348162+09:00",
+  "status": "diagnostics_complete",
+  "completed_attempts": 26,
+  "remaining_diagnostics": [],
+  "comparisons": [
+    {
+      "a": "smoke-T0-D-U-128",
+      "b": "smoke-T0-D-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "smoke-T0-D-U-128",
+          "max_relative_per_channel": [
+            8.883920101259429e-08,
+            7.679055294344662e-09,
+            1.2055300280037663e-09
+          ]
+        },
+        {
+          "id": "smoke-T0-D-M-128",
+          "max_relative_per_channel": [
+            8.883920101259429e-08,
+            7.679055294344662e-09,
+            1.2055300280037663e-09
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T0-B-U-128",
+      "b": "diagnostic-T0-B-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T0-B-U-128",
+          "max_relative_per_channel": [
+            6.791159572656944e-07,
+            3.375271036839469e-08,
+            5.268935169975248e-08
+          ]
+        },
+        {
+          "id": "diagnostic-T0-B-M-128",
+          "max_relative_per_channel": [
+            6.791159572656944e-07,
+            3.375271036839469e-08,
+            5.268935169975248e-08
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T0-D-U-128",
+      "b": "diagnostic-T0-D-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T0-D-U-128",
+          "max_relative_per_channel": [
+            6.752076424452397e-07,
+            3.0375477953905095e-08,
+            7.969661704723159e-08
+          ]
+        },
+        {
+          "id": "diagnostic-T0-D-M-128",
+          "max_relative_per_channel": [
+            6.752076424452397e-07,
+            3.0375477953905095e-08,
+            7.969661704723159e-08
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T0-E-U-128",
+      "b": "diagnostic-T0-E-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T0-E-U-128",
+          "max_relative_per_channel": [
+            7.570636456670848e-07,
+            1.8351382331023357e-08,
+            8.763584790025674e-08
+          ]
+        },
+        {
+          "id": "diagnostic-T0-E-M-128",
+          "max_relative_per_channel": [
+            7.570636456670848e-07,
+            1.8351382331023357e-08,
+            8.763584790025674e-08
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T1-D-U-128",
+      "b": "diagnostic-T1-D-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T1-D-U-128",
+          "max_relative_per_channel": [
+            6.708356158135396e-07,
+            3.0809379261496554e-08,
+            1.1280003001830496e-07,
+            7.720527772241536e-08
+          ]
+        },
+        {
+          "id": "diagnostic-T1-D-M-128",
+          "max_relative_per_channel": [
+            6.708356158135396e-07,
+            3.0809379261496554e-08,
+            1.1280003001830496e-07,
+            7.720527772241536e-08
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T2-D-U-128",
+      "b": "diagnostic-T2-D-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm",
+        "wetness"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T2-D-U-128",
+          "max_relative_per_channel": [
+            6.919719810906037e-07,
+            2.2577616133114565e-08,
+            8.446351275850445e-08,
+            1.9878829670424883e-09
+          ]
+        },
+        {
+          "id": "diagnostic-T2-D-M-128",
+          "max_relative_per_channel": [
+            6.919719810906037e-07,
+            2.2577616133114565e-08,
+            8.446351275850445e-08,
+            1.9878829670424883e-09
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T3-D-U-128",
+      "b": "diagnostic-T3-D-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm",
+        "wetness"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T3-D-U-128",
+          "max_relative_per_channel": [
+            6.841787474150217e-07,
+            2.4974335262368055e-08,
+            1.145753199957984e-07,
+            4.934337164836856e-08,
+            3.713972251617531e-09
+          ]
+        },
+        {
+          "id": "diagnostic-T3-D-M-128",
+          "max_relative_per_channel": [
+            6.841787474150217e-07,
+            2.4974335262368055e-08,
+            1.145753199957984e-07,
+            4.934337164836856e-08,
+            3.713972251617531e-09
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T3-E-U-128",
+      "b": "diagnostic-T3-E-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm",
+        "wetness"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T3-E-U-128",
+          "max_relative_per_channel": [
+            7.489519877759042e-07,
+            2.458248431305378e-08,
+            1.068675635849561e-07,
+            8.796044757137516e-08,
+            1.2241592067371702e-09
+          ]
+        },
+        {
+          "id": "diagnostic-T3-E-M-128",
+          "max_relative_per_channel": [
+            7.489519877759042e-07,
+            2.458248431305378e-08,
+            1.068675635849561e-07,
+            8.796044757137516e-08,
+            1.2241592067371702e-09
+          ]
+        }
+      ]
+    },
+    {
+      "a": "smoke-T0-D-U-128",
+      "b": "smoke-T0-D-M-separate-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "smoke-T0-D-U-128",
+          "max_relative_per_channel": [
+            8.883920101259429e-08,
+            7.679055294344662e-09,
+            1.2055300280037663e-09
+          ]
+        },
+        {
+          "id": "smoke-T0-D-M-separate-128",
+          "max_relative_per_channel": [
+            8.883920101259429e-08,
+            7.679055294344662e-09,
+            1.2055300280037663e-09
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T0-D-M-128",
+      "b": "separate-T0-D-M-separate-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 2,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 4,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 8,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 14,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T0-D-M-128",
+          "max_relative_per_channel": [
+            6.752076424452397e-07,
+            3.0375477953905095e-08,
+            7.969661704723159e-08
+          ]
+        },
+        {
+          "id": "separate-T0-D-M-separate-128",
+          "max_relative_per_channel": [
+            6.752076424452397e-07,
+            3.0375477953905095e-08,
+            7.969661704723159e-08
+          ]
+        }
+      ]
+    },
+    {
+      "a": "smoke-T0-D-U-128",
+      "b": "ledger-off-T0-D-U-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [],
+      "cumulative_channel_budgets": [
+        {
+          "id": "smoke-T0-D-U-128",
+          "max_relative_per_channel": [
+            8.883920101259429e-08,
+            7.679055294344662e-09,
+            1.2055300280037663e-09
+          ]
+        }
+      ]
+    },
+    {
+      "a": "smoke-T0-D-M-128",
+      "b": "ledger-off-T0-D-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [],
+      "cumulative_channel_budgets": [
+        {
+          "id": "smoke-T0-D-M-128",
+          "max_relative_per_channel": [
+            8.883920101259429e-08,
+            7.679055294344662e-09,
+            1.2055300280037663e-09
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T3-D-U-128",
+      "b": "reverse-T3-D-U-128",
+      "channels": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm",
+        "wetness"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T3-D-U-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        },
+        {
+          "id": "reverse-T3-D-U-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T3-D-M-128",
+      "b": "reverse-T3-D-M-128",
+      "channels": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm",
+        "wetness"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T3-D-M-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        },
+        {
+          "id": "reverse-T3-D-M-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        }
+      ]
+    },
+    {
+      "a": "diagnostic-T3-D-M-128",
+      "b": "order-control-T3-D-M-separate-normal-128",
+      "channels": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm",
+        "wetness"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "diagnostic-T3-D-M-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        },
+        {
+          "id": "order-control-T3-D-M-separate-normal-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        }
+      ]
+    },
+    {
+      "a": "order-control-T3-D-M-separate-normal-128",
+      "b": "order-control-T3-D-M-separate-reverse-128",
+      "channels": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm",
+        "wetness"
+      ],
+      "passed": true,
+      "failures": [],
+      "state_geometry_weights_bit_identical": true,
+      "entire_numeric_series_equal": true,
+      "snapshots": [
+        {
+          "seconds": 0,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "concavity": true
+          },
+          "passed": true
+        },
+        {
+          "seconds": 1,
+          "bit_identical": true,
+          "state_l1_relative": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_density_gate_ratio": 0.0,
+          "position_world_max": 0.0,
+          "normal_max": 0.0,
+          "weights_max": 0.0,
+          "auxiliary_arrays_equal": {
+            "flux": true,
+            "alpha": true,
+            "concavity": true
+          },
+          "passed": true
+        }
+      ],
+      "terminal_relative": {
+        "state_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "downstream_sums": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_decay": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cumulative_crossing": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "extents_relative": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cumulative_channel_budgets": [
+        {
+          "id": "order-control-T3-D-M-separate-normal-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        },
+        {
+          "id": "order-control-T3-D-M-separate-reverse-128",
+          "max_relative_per_channel": [
+            7.502013891139941e-08,
+            7.75689137233508e-09,
+            9.258519945041031e-09,
+            1.0250158252486023e-09,
+            4.7285537721136925e-11
+          ]
+        }
+      ]
+    }
+  ],
+  "failed_comparisons": 0,
+  "cost": [],
+  "timing_controls": [
+    {
+      "id": "timing-smoke-T0-D-U-128",
+      "reference": "smoke-T0-D-U-128",
+      "passed": true,
+      "final_bit_equal_and_reset_verified": true
+    },
+    {
+      "id": "timing-smoke-T0-D-M-128",
+      "reference": "smoke-T0-D-M-128",
+      "passed": true,
+      "final_bit_equal_and_reset_verified": true
+    }
+  ],
+  "decision": {
+    "decided_at": "2026-10-27T07:50:57.777999+09:00",
+    "status": "no_go_for_H3_in_v1_tasks",
+    "basis": "v1 section 8 structural stopping rule",
+    "evidence": {
+      "quality_gate_failures": 0,
+      "same_diagnostic_executable": true,
+      "same_modular_core": true,
+      "symmetric_numeric_recipes": true,
+      "extension": "T1/T2/T3 execute with profile declarations, generic module factory and unchanged coordinator"
+    },
+    "rule_sha256": "d5c7edb96aaa0033aad51e4204d248fb16355b24d5899bccaf5e66fcf2772a34",
+    "deferred_run_ids": [
+      "cost-T0-D-U-128-pair1",
+      "cost-T0-D-M-128-pair1",
+      "cost-T0-D-M-128-pair2",
+      "cost-T0-D-U-128-pair2",
+      "cost-T0-D-U-128-pair3",
+      "cost-T0-D-M-128-pair3",
+      "cost-T0-D-M-128-pair4",
+      "cost-T0-D-U-128-pair4",
+      "cost-T0-D-U-128-pair5",
+      "cost-T0-D-M-128-pair5",
+      "cost-T0-D-U-256-pair1",
+      "cost-T0-D-M-256-pair1",
+      "cost-T0-D-M-256-pair2",
+      "cost-T0-D-U-256-pair2",
+      "cost-T0-D-U-256-pair3",
+      "cost-T0-D-M-256-pair3",
+      "cost-T0-D-M-256-pair4",
+      "cost-T0-D-U-256-pair4",
+      "cost-T0-D-U-256-pair5",
+      "cost-T0-D-M-256-pair5",
+      "cost-T3-D-U-128-pair1",
+      "cost-T3-D-M-128-pair1",
+      "cost-T3-D-M-128-pair2",
+      "cost-T3-D-U-128-pair2",
+      "cost-T3-D-U-128-pair3",
+      "cost-T3-D-M-128-pair3",
+      "cost-T3-D-M-128-pair4",
+      "cost-T3-D-U-128-pair4",
+      "cost-T3-D-U-128-pair5",
+      "cost-T3-D-M-128-pair5",
+      "cost-T3-D-U-256-pair1",
+      "cost-T3-D-M-256-pair1",
+      "cost-T3-D-M-256-pair2",
+      "cost-T3-D-U-256-pair2",
+      "cost-T3-D-U-256-pair3",
+      "cost-T3-D-M-256-pair3",
+      "cost-T3-D-M-256-pair4",
+      "cost-T3-D-U-256-pair4",
+      "cost-T3-D-U-256-pair5",
+      "cost-T3-D-M-256-pair5",
+      "cost-reference-T0-D-U-256",
+      "cost-reference-T0-D-M-256",
+      "cost-reference-T3-D-U-256",
+      "cost-reference-T3-D-M-256"
+    ],
+    "cost_status": "not_run_predefined_structural_stop",
+    "scope": "No demonstrated architectural extension-burden advantage in these tasks; not universal equivalence, independent numerical validation, human-productivity or novelty proof"
+  },
+  "deferred_run_ids": [
+    "cost-T0-D-U-128-pair1",
+    "cost-T0-D-M-128-pair1",
+    "cost-T0-D-M-128-pair2",
+    "cost-T0-D-U-128-pair2",
+    "cost-T0-D-U-128-pair3",
+    "cost-T0-D-M-128-pair3",
+    "cost-T0-D-M-128-pair4",
+    "cost-T0-D-U-128-pair4",
+    "cost-T0-D-U-128-pair5",
+    "cost-T0-D-M-128-pair5",
+    "cost-T0-D-U-256-pair1",
+    "cost-T0-D-M-256-pair1",
+    "cost-T0-D-M-256-pair2",
+    "cost-T0-D-U-256-pair2",
+    "cost-T0-D-U-256-pair3",
+    "cost-T0-D-M-256-pair3",
+    "cost-T0-D-M-256-pair4",
+    "cost-T0-D-U-256-pair4",
+    "cost-T0-D-U-256-pair5",
+    "cost-T0-D-M-256-pair5",
+    "cost-T3-D-U-128-pair1",
+    "cost-T3-D-M-128-pair1",
+    "cost-T3-D-M-128-pair2",
+    "cost-T3-D-U-128-pair2",
+    "cost-T3-D-U-128-pair3",
+    "cost-T3-D-M-128-pair3",
+    "cost-T3-D-M-128-pair4",
+    "cost-T3-D-U-128-pair4",
+    "cost-T3-D-U-128-pair5",
+    "cost-T3-D-M-128-pair5",
+    "cost-T3-D-U-256-pair1",
+    "cost-T3-D-M-256-pair1",
+    "cost-T3-D-M-256-pair2",
+    "cost-T3-D-U-256-pair2",
+    "cost-T3-D-U-256-pair3",
+    "cost-T3-D-M-256-pair3",
+    "cost-T3-D-M-256-pair4",
+    "cost-T3-D-U-256-pair4",
+    "cost-T3-D-U-256-pair5",
+    "cost-T3-D-M-256-pair5",
+    "cost-reference-T0-D-U-256",
+    "cost-reference-T0-D-M-256",
+    "cost-reference-T3-D-U-256",
+    "cost-reference-T3-D-M-256"
+  ],
+  "limitation": "Same numerical services/provider code, independent command coordinator; not independent physics validation or a user productivity study"
+}

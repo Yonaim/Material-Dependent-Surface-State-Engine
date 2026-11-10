@@ -1,0 +1,14 @@
+{
+  "created_at": "2026-10-27T14:09:19.893361+09:00",
+  "changed_source_files": [
+    "Source\\SurfaceState\\GPU\\Resources\\SurfaceGPUResourceManager.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.h"
+  ],
+  "expected": [
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.h",
+    "Source\\SurfaceState\\GPU\\Resources\\SurfaceGPUResourceManager.cpp"
+  ],
+  "matches_expected": true
+}

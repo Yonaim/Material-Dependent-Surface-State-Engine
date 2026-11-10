@@ -1,0 +1,29 @@
+{
+  "created_at": "2026-10-27T09:16:48.812311+09:00",
+  "source_archive": "Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\inputs\\2b8f5a38edd5",
+  "analysis_archive": "Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\final-analysis\\335fb63986e5",
+  "files": {
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\comparisons.json": "363b943681fab1cc58dfb48d2c3c16773b93d5670d320253ded0e25ccacef4ab",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\legacy-control.json": "002e2e85325fef0561a49003c1dcc586b622b022feba64a08010aeb95bd2771a",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\manifest.json": "186b13c14685c4b083bde2aea01aeff0d068bed072b2dd7823f46eecd6da1ed4",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\plan.json": "893dd034d3e301745fa82829579188eb0128ea2b5396f09ae705b89d4f242093",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\postprocess-control-plan.json": "1b47422be3be89afd738016e02fce109b52b3a1173b061d840733751265997c0",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\postprocess-control.json": "b42427c30c38a53c59be68a3e1c22a6509e2cb2e833a418cfea290a521a9b361",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\provenance-coverage.json": "57577e328f0d0180a032178560926710a1196c4cbad63b55e1f22de4278c0d16",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\reconstruction.json": "efd5a4fac2e0db5d9828c5ab4d69871dac815d3e54771226998704cdf0f4308d",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\shader-capture-replay-plan.json": "337569e9b03ff9f382c033668c71553638d850a05a022ae2e4914b408c7489e2",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\shader-capture-replay.json": "5f5fcd1dd6903a049cf76c6f88bcd8f62d7423a93470bd36f1313b3ad1b69d55",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\study-audit.json": "e3c954f6b7c840b39337c7cfe54d814fc0062f0780a1da9472601e1d237edb0f",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\figures\\reconstruction.png": "be716f2fbd50aa7ff4508a7a5ace8ec29eec7cdd57df29152855eebb2c16505a",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\figures\\sensitivities.png": "b27e3f4fd731f2b15f9f9f5bddebdae13a67b562f923e62613216be644c35715",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\figures\\transport.png": "f66acc4bd3869931d91be5c9ba269a325f00cd7a9ef2cce84be3a8233b1f2b7b",
+    "Performance-Data\\20261027-meso-study\\study.json": "2d0115d41a6a812859e44df88761fad03fa785a4c57bfa1591cb1bfed51102f2",
+    "Performance-Data\\README.md": "ce5f0c982f3204f9ede0d2cd6ec2949e2dd597d59ab6c733b8d1256490d53d5d",
+    "Docs\\MDSSP-Agent-Vault\\03_Development\\01_Current-Work.md": "587e95818d08774bf389a5c6576da73c249a060830de474943ebe7d660a6d6ed",
+    "Docs\\MDSSP-Agent-Vault\\03_Development\\03_System-Contribution-Protocol.md": "9957921ae852adb23cc86e4991f94b0ccb2102ceb3f3e9d72ae2fa729855aab3",
+    "Docs\\MDSSP-Agent-Vault\\03_Development\\05_Prior-Model-Differentiation.md": "15d36954eca734f0aa48d054a54ef434c0997d3d40be2e92cdd3c46a9eb61e2a",
+    "Docs\\MDSSP-Agent-Vault\\04_Experiments\\01_Validation-and-Tests.md": "237d7f9c1da1818ec0bd4985ca997f6a588587b007d9e56736e7bb5046515d13",
+    "Docs\\MDSSP-Agent-Vault\\04_Experiments\\02_Performance-Measurements.md": "1c38f8c097e309e323748ef2f2ce6fe939c3ece3461c440827b5da612659785d",
+    "Performance-Data\\20261027-meso-study\\PERF-043-meso\\environment.json": "170e98eb36a44c54c7ca708c4b9effdf18b89228ce63dd6c9c0e0fb46d0b51ed"
+  }
+}

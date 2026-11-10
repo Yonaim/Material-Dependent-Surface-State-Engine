@@ -1,0 +1,40 @@
+{
+  "created_at": "2026-10-26T20:38:49.283367+09:00",
+  "question": "State-driven geometry causal ablation",
+  "status": "completed_scoped_subset",
+  "experiments": [
+    "PERF-041-coupling",
+    "baseline"
+  ],
+  "report": "Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md",
+  "analyzed_at": "2026-10-27T05:44:48.073438+09:00",
+  "selected_conditions": 20,
+  "completed_attempts": 31,
+  "audited_steps": 25740,
+  "failed_attempts": 1,
+  "interrupted_attempts": 1,
+  "scope_amendment": "PERF-041-coupling/execution-amendment.json",
+  "audit": "PERF-041-coupling/study-audit.json",
+  "archive": "PERF-041-coupling/raw/inputs/1792dc4f3512/archive.json",
+  "conclusion": "H1 supported on plate; H2 limited by Bunny mapping and small Mud extension effect; H3 modular superiority and H4 novelty not evaluated",
+  "remaining": [
+    "Bunny topology/resolution fidelity",
+    "Fair modular-baseline comparison",
+    "Prior-framework differentiation",
+    "Appearance/authoring/application-performance evaluation"
+  ],
+  "baseline": {
+    "status": "completed_structural_stop",
+    "started_at": "2026-10-27T06:51:17.831319+09:00",
+    "experiment_id": "PERF-042",
+    "folder": "baseline",
+    "specification": "Scripts/Research/Plans/modular-baseline-v1.json",
+    "completed_at": "2026-10-27T07:51:29.311548+09:00",
+    "completed_attempts": 26,
+    "audited_steps": 13260,
+    "decision": "No structural extension-burden advantage demonstrated in v1 tasks; repeated cost study not run",
+    "execution_started_at": "2026-10-27T06:51:17.831319+09:00",
+    "execution_finished_at": "2026-10-27T07:50:53.636337+09:00",
+    "analyzed_at": "2026-10-27T07:56:11.884545+09:00"
+  }
+}

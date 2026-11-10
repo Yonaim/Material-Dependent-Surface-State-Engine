@@ -1,0 +1,95 @@
+{
+  "a": "gpu-brick-128-D",
+  "b": "gpu-brick-passthrough-128-D",
+  "all_bit_equal": true,
+  "arrays": [
+    {
+      "file": "state-0.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "geometry-0.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "weights-0.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "concavity-0.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "state-1.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "geometry-1.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "weights-1.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "concavity-1.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "flux-1.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "alpha-1.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "state-2.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "geometry-2.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "weights-2.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "concavity-2.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "flux-2.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "alpha-2.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "state-4.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "geometry-4.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "weights-4.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "concavity-4.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "flux-4.f32",
+      "bit_equal": true
+    },
+    {
+      "file": "alpha-4.f32",
+      "bit_equal": true
+    }
+  ]
+}

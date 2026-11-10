@@ -1,0 +1,2353 @@
+{
+  "spec_id": "modular-baseline-v1",
+  "spec_sha256": "97df4563e0decd0a7b51ab525406b592c61d0f6531cd742c6a28b7f74040277c",
+  "created_at": "2026-10-27T06:51:17.410188+09:00",
+  "status": "requests_frozen_before_baseline_execution",
+  "conditions": [
+    {
+      "id": "smoke-T0-D-U-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "stage": "smoke"
+    },
+    {
+      "id": "smoke-T0-D-M-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "stage": "smoke"
+    },
+    {
+      "id": "smoke-T0-D-M-separate-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M-separate",
+      "sparse_solver": false,
+      "stage": "smoke"
+    },
+    {
+      "id": "diagnostic-T0-B-U-128",
+      "case": "plate",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T0-B-M-128",
+      "case": "plate",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T0-D-U-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T0-D-M-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T0-E-U-128",
+      "case": "plate",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T0-E-M-128",
+      "case": "plate",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T1-D-U-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T1",
+      "implementation": "U",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T1-D-M-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T1",
+      "implementation": "M",
+      "sparse_solver": false,
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T2-D-U-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T2",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T2-D-M-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T2",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T3-D-U-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T3-D-M-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T3-E-U-128",
+      "case": "mud",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "diagnostic"
+    },
+    {
+      "id": "diagnostic-T3-E-M-128",
+      "case": "mud",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "diagnostic"
+    },
+    {
+      "id": "separate-T0-D-M-separate-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M-separate",
+      "sparse_solver": false,
+      "stage": "separate"
+    },
+    {
+      "id": "ledger-off-T0-D-U-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "stage": "ledger-off"
+    },
+    {
+      "id": "reverse-T3-D-U-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "reverse_modules": true,
+      "stage": "reverse"
+    },
+    {
+      "id": "ledger-off-T0-D-M-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "stage": "ledger-off"
+    },
+    {
+      "id": "reverse-T3-D-M-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "reverse_modules": true,
+      "stage": "reverse"
+    },
+    {
+      "id": "cost-T0-D-U-128-pair1",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-128-pair1",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-128-pair2",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-128-pair2",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-128-pair3",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-128-pair3",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-128-pair4",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-128-pair4",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-128-pair5",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-128-pair5",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-256-pair1",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-256-pair1",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-256-pair2",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-256-pair2",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-256-pair3",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-256-pair3",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-256-pair4",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-256-pair4",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-U-256-pair5",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T0-D-M-256-pair5",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-128-pair1",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-128-pair1",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-128-pair2",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-128-pair2",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-128-pair3",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-128-pair3",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-128-pair4",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-128-pair4",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-128-pair5",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-128-pair5",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-256-pair1",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-256-pair1",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 1,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-256-pair2",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-256-pair2",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 2,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-256-pair3",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-256-pair3",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 3,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-256-pair4",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-256-pair4",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 4,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-U-256-pair5",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "U",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    },
+    {
+      "id": "cost-T3-D-M-256-pair5",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "timing_only": true,
+      "pair": 5,
+      "stage": "cost"
+    }
+  ],
+  "shared_code": "Transport provider bodies, numeric helpers, reaction/geometry services and resource ABI; independent modular command coordinator",
+  "scope": "H3 on identical discrete model; not prior-framework reproduction or human productivity",
+  "reporting": "Failures retained; no tolerance relaxation; no task-specific solver branches added for T1-T3"
+}

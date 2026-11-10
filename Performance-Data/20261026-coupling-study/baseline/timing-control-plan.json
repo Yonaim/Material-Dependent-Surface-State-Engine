@@ -1,0 +1,52 @@
+{
+  "created_at": "2026-10-27T07:09:17.999741+09:00",
+  "purpose": "Validate warmup reset and timing-only final-State equivalence; these one-second controls are not repeated performance evidence",
+  "conditions": [
+    {
+      "id": "timing-smoke-T0-D-U-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "U",
+      "sparse_solver": false,
+      "stage": "timing-smoke",
+      "timing_only": true
+    },
+    {
+      "id": "timing-smoke-T0-D-M-128",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true,
+      "task": "T0",
+      "implementation": "M",
+      "sparse_solver": false,
+      "stage": "timing-smoke",
+      "timing_only": true
+    }
+  ]
+}

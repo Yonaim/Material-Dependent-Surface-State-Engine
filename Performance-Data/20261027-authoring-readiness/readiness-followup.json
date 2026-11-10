@@ -1,0 +1,52 @@
+{
+  "created_at": "2026-10-27T11:04:14.714432+09:00",
+  "status": "capability_probe_passed_rendering_blocked_comparative_human_study_not_ready",
+  "historical_record": "Initial readiness.json and attempted render manifest are preserved unchanged",
+  "profile_cases_passed": 5,
+  "prepared_single_system_tasks": 3,
+  "reference_render_conditions_planned": 6,
+  "reference_render_launch_attempts": 1,
+  "reference_render_completed": 0,
+  "reference_render_unattempted": 5,
+  "render_block": {
+    "winerror": 4551,
+    "executable_sha256": "bf3bf397a156caae18f370ae98c36fe53c645f0435b47cce7681386bfc97748f",
+    "policy": "Windows Application Control",
+    "before_execution": true,
+    "blocked_hash_recorded": true,
+    "workaround_attempted": false
+  },
+  "rendered_images": 0,
+  "state_arrays": 0,
+  "frame_sample_files": 0,
+  "human_sessions": 0,
+  "human_completion_times": null,
+  "human_quality_results": null,
+  "pilot_visual_quality_gate": "not_validated",
+  "comparative_no_go": "Same authoring declaration workflow and headless M; no identifiable model intervention or matched complete workflow",
+  "source_archive_audit": [
+    {
+      "archive": "profile_probe",
+      "files": 59,
+      "missing": [],
+      "mismatch": []
+    },
+    {
+      "archive": "render_attempt",
+      "files": 427,
+      "missing": [],
+      "mismatch": []
+    }
+  ],
+  "audit_errors": [],
+  "editor_layout_restored": true,
+  "unexecuted": [
+    "Human pilot",
+    "Comparative authoring study",
+    "Rendered acceptance",
+    "Scene restart persistence",
+    "Rendered scene reaction/material ledger",
+    "GPU performance comparison"
+  ],
+  "source_test_limit": "SharedSurfaceGeometry invalid-texel render triangle expectation failure remains unresolved"
+}

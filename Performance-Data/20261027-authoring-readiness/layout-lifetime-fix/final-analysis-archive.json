@@ -1,0 +1,21 @@
+{
+  "created_at": "2026-10-27T14:10:35.905399+09:00",
+  "scope": "Post-execution interpretation, separate from pre-run inputs",
+  "archive": "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\raw\\final-analysis",
+  "sha256": {
+    "Scripts\\Research\\finalize_layout_lifetime_fix.py": "62bd9c1e363a251a165fda7147bc4c0241b18919c8c39b900b1f3adaa60af3f6",
+    "Scripts\\Research\\layout_lifetime_validation.py": "f9b5fc576845916248b735ae219db36b86a129f9e363e0dcc1364586a1b232a9",
+    "Scripts\\Research\\analyze_layout_lifetime_fix.py": "d4981bc4a19209df55702b6fb9e299d8a88826b6b365c3660e7eee42358da93e",
+    "Scripts\\Research\\analyze_authoring_retry.py": "9335887a86a482a0c8d4c14c75af5c8588f4cccabc9d60c454336678eb5bdde3",
+    "Docs\\MDSSP-Agent-Vault\\03_Development\\06_Authoring-Study-Protocol.md": "de1423162bd819d0e799c461ec8571c87ec23025038c203f37d2763fd8c9dde5",
+    "CMakeLists.txt": "ba576824a04142ac367d0d1aa6ce7f18c0c86ea8108f04c4b7862aab9e0834f8",
+    "Tests\\SceneResourceTests.cpp": "d1d928057f814cbdd82e31c9c5696c5d595d003d4256ccc71c3adf04dbf9a517",
+    "Docs\\MDSSP-Agent-Vault\\04_Experiments\\01_Validation-and-Tests.md": "03e243414f8631b921c080438d62beaa2205b63a8218fb18ae8e046ad4545ed4",
+    "Docs\\MDSSP-Agent-Vault\\02_Architecture\\02_Contracts\\04_GPU-Layout.md": "d015159bd96a11e322223bb04cad8dc6fd8cc0a1772ce2fa83dc33c961993182",
+    "Docs\\MDSSP-Agent-Vault\\03_Development\\01_Current-Work.md": "7844b12502c7ffad2ac1bdc8982a17e5a8626904886cf00c36b7fad672fe906c",
+    "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\summary.json": "a9f34e4660efbdcd167dce5ea0f2d6d0d4459e4d6c2263df3604f8b3bdf6f3e8",
+    "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\before-after-state.json": "a1f327ef164e2abc39f9750489f7b8c9947dfd4d253c0f836aadfab27246a9d5",
+    "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\source-change-audit.json": "4bda3fdd752294f27ba7dbeeb8488cae7322f94f47b0beb131986fa95d47b48b",
+    "Performance-Data\\20261027-authoring-readiness\\readiness-current.json": "d0d4eeb970eb633cd8cb8f1bd774cdface6e26d0f69700736c298bd77d8d7e5e"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "created_at": "2026-10-27T13:22:54.464686+09:00",
+  "reason": "SceneLoader rejects absolute mesh/animation paths; relative paths to same assets required",
+  "prior_pack_preserved": true,
+  "paths": [
+    {
+      "scene": "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P1\\start\\Task.Scene",
+      "paths_relative_and_exist": true
+    },
+    {
+      "scene": "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P2\\start\\Task.Scene",
+      "paths_relative_and_exist": true
+    },
+    {
+      "scene": "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P3\\start\\Task.Scene",
+      "paths_relative_and_exist": true
+    }
+  ],
+  "sha256": {
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\README.md": "3bb89b666c953afce016e4a0ec5d611503961efea91a1953df520dc819da7bbf",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P1\\brief.md": "a93a1e51072faef96235f1e0589ba005fb7810580aaa25f44d02ac527bcbee70",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P2\\brief.md": "26279e27c1fd5f962fee7cf29ce414b12c34d432d0173ee9550ee238ff603257",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P3\\brief.md": "b15a28fde2b78aa5f1d15ba1d24bb375f591cbcb6fd1b49e86fc3256205315d3",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\reference\\absorbedwetness.SRProfile": "8a2f121678cd628128e4ea0943ffb84ecb9fcc73ab4f1d0312d23100509fe79f",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\reference\\base.SRProfile": "3276b906a5c011beea56748f78e0cae9370a6458f20339d931cdaedca39d190e",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\reference\\residue.SRProfile": "affa7cf20046d0ed159c6052d8ece6fcaa0040e169c70f68d2a4f633e94c1416",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\reference\\threshold.SRProfile": "50a3ed728dc5bf472a65c1d51efbab1e30a3284942ad8bef5e29533f7e470663",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\reference\\wetness.SRProfile": "ba27fd78978bf3c8323b5bec5f5fcccd6270f96f879304d5317f1d4c8342e31d",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P1\\start\\Editable.SRProfile": "3276b906a5c011beea56748f78e0cae9370a6458f20339d931cdaedca39d190e",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P1\\start\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P1\\start\\Task.Scene": "4e9b8c10106108aa6268cc5b5c6cdaeb12fc2181ae89324dccc1a54055298857",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P2\\start\\Editable.SRProfile": "3276b906a5c011beea56748f78e0cae9370a6458f20339d931cdaedca39d190e",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P2\\start\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P2\\start\\Task.Scene": "4e9b8c10106108aa6268cc5b5c6cdaeb12fc2181ae89324dccc1a54055298857",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P3\\start\\Editable.SRProfile": "3276b906a5c011beea56748f78e0cae9370a6458f20339d931cdaedca39d190e",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P3\\start\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\task-pack-v2\\P3\\start\\Task.Scene": "6ef6bcf819a9fd594990ed04ed849349f79d1fa6d9ae82606623d39a658303c4"
+  },
+  "human_sessions": 0
+}

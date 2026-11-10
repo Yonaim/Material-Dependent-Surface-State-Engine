@@ -1,0 +1,26 @@
+{
+  "created_at": "2026-10-27T14:10:35.799493+09:00",
+  "status": "correctness_fix_validated",
+  "before_targeted_test": "failed_first_storage_switch",
+  "after_targeted_test": "passed_12_switches",
+  "after_targeted_vulkan_errors": 0,
+  "surface_gpu_resource": "passed",
+  "rendered_conditions": 6,
+  "accepted_state_steps": 2172,
+  "rendered_vulkan_error_lines": 0,
+  "capture_audit_errors": [],
+  "archive_errors": [],
+  "before_after_state_arrays": 18,
+  "all_state_arrays_bit_equal": true,
+  "descriptor_write_body_unchanged": true,
+  "source_changes": [
+    "Source\\SurfaceState\\GPU\\Resources\\SurfaceGPUResourceManager.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.h"
+  ],
+  "shader_changes": [],
+  "whole_repository_suite": "not_run",
+  "human_sessions": 0,
+  "performance_comparison": "not_performed",
+  "research_interpretation": "Ordinary Vulkan resource lifetime correctness repair; no algorithmic contribution or productivity evidence"
+}

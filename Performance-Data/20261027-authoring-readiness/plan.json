@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-27T09:52:48.457809+09:00",
+  "status": "capability_probe_prepared_before_execution",
+  "scope": "Authoring readiness and a single-system task pack; not a comparative human study or performance experiment",
+  "source_commit": "880af1ebcffe601f0bac27413cad94055ce92812",
+  "tasks": [
+    {
+      "id": "P1",
+      "title": "조정값 저장과 재로드",
+      "brief": "같은 장면의 차가운 판·가열 판·냉각 판을 유지하며 융해 시작 조건을 조정한다. 저장한 파일만으로 앱 재시작 후 같은 설정이 복원돼야 한다. 화면만 바꾸거나 runtime override만 남긴 제출은 완료가 아니다.",
+      "scene": "Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\P1\\start\\Task.Scene",
+      "start_profile": "Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\P1\\start\\Editable.SRProfile",
+      "quality_gate_status": "not_validated_by_independent_rendered_evaluation",
+      "limitation": "Exact target clip/threshold window must be independently chosen before timed collection; current fixture demonstrates persistence workflow only."
+    },
+    {
+      "id": "P2",
+      "title": "흐른 물의 흔적 추가",
+      "brief": "새로 입력되거나 이웃에서 들어온 물 중 일부가 반사성 물막과 다른 젖은 자국으로 남게 한다. 정지해 있던 물 전체를 매 Step 다시 전환하지 않고, Waterfilm과 잔류량의 수지를 유지한다. 재시작해도 규칙과 외관 연결이 남아야 한다.",
+      "scene": "Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\P2\\start\\Task.Scene",
+      "start_profile": "Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\P2\\start\\Editable.SRProfile",
+      "quality_gate_status": "not_validated_by_independent_rendered_evaluation",
+      "limitation": "Require functional inflow contract, visible residue and restart persistence; time-to-quality gate pending independent render inspection."
+    },
+    {
+      "id": "P3",
+      "title": "조합과 변환 재사용",
+      "brief": "P2의 규칙을 재사용해 같은 판의 기울기가 다른 배치에 적용한다. 특수 Shader나 반응 분기를 추가했다면 모두 기록한다. 원래 장면도 다시 확인한다. 이 과제는 새 Mesh 일반화 시험이 아니다.",
+      "scene": "Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\P3\\start\\Task.Scene",
+      "start_profile": "Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\P3\\start\\Editable.SRProfile",
+      "quality_gate_status": "not_validated_by_independent_rendered_evaluation",
+      "limitation": "Reuse plus transform regression only; scene and tasks known to implementer, not held-out or blind."
+    }
+  ],
+  "probe_cases": [
+    {
+      "id": "base",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\base.SRProfile",
+      "state": "waterfilm",
+      "expected_builtin_absorbed_wetness_binding": false
+    },
+    {
+      "id": "wetness",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\wetness.SRProfile",
+      "state": "wetness",
+      "expected_builtin_absorbed_wetness_binding": false
+    },
+    {
+      "id": "absorbedwetness",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\absorbedwetness.SRProfile",
+      "state": "absorbedwetness",
+      "expected_builtin_absorbed_wetness_binding": true
+    },
+    {
+      "id": "residue",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\residue.SRProfile",
+      "state": "residue",
+      "expected_builtin_absorbed_wetness_binding": false
+    },
+    {
+      "id": "threshold",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\threshold.SRProfile",
+      "state": "waterfilm",
+      "expected_builtin_absorbed_wetness_binding": false
+    }
+  ],
+  "comparative_go_conditions": [
+    "Distinct model/authoring intervention defined",
+    "Both backends usable through matched complete workflows",
+    "Independent visible outcome/functional gates validated",
+    "Real participants and actual event logs available"
+  ],
+  "no_go": "Same declarations and same services under U/M selector alone are not an identifiable authoring intervention; no human productivity inference",
+  "prior_knowledge": "PERF-041/042/043 and task outcomes known; no blind or held-out claims"
+}

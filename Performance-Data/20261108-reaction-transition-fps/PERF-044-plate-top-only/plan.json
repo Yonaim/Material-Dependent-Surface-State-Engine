@@ -1,0 +1,30 @@
+{
+  "experiment_id": "PERF-044-plate-top-only",
+  "question": "Does top-only simulation reduce the ReactionTransitionComparison frame time while retaining the control, legacy Transition, and v5 Reaction demonstration?",
+  "single_change": "Split each MarbleCube plate into a simulated top face and render-only side faces; keep scene resolution, profiles, animation, contacts, camera and rendering options fixed.",
+  "hypothesis": "Reducing simulated surfaces from six to one per plate should reduce Pass 2 GPU time and frame GPU time.",
+  "status": "completed",
+  "conditions": {
+    "configuration": "Debug",
+    "scene": "Assets/Scenes/ReactionTransitionComparison.Scene",
+    "resolution": 128,
+    "render_mesh_resolution": 128,
+    "swapchain": [1280, 720],
+    "warmup_frames": 180,
+    "measure_frames": 60,
+    "repetitions_per_phase": 3,
+    "dt_seconds": 0.016666666666666666,
+    "settings": {
+      "capture_image": false,
+      "presentation_mode": true,
+      "replay_demo": true,
+      "render_mesh_resolution": 128,
+      "sparse_solver": true,
+      "active_channel_mask": true,
+      "per_workgroup_channel_mask": true
+    }
+  },
+  "metrics": ["frame_gpu_elapsed_ms", "simulation_gpu_elapsed_ms", "pass2_gpu_ms", "render_gpu_ms", "fence_wait_cpu_ms"],
+  "correctness": "Compare control, Transition, and Reaction state totals; inspect same-camera Lit captures; require zero nonfinite, negative, arithmetic-failure, and reaction-budget-exhausted texels. Compare the common top-surface texels at the same step when available.",
+  "raw_folder": "raw/"
+}

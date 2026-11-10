@@ -1,0 +1,319 @@
+{
+  "audited_at": "2026-10-27T07:54:11.752962+09:00",
+  "attempt_status_counts": {
+    "completed": 26
+  },
+  "completed_attempts": 26,
+  "main_steps": 13260,
+  "diagnostic_steps": 13140,
+  "audit_failures": 0,
+  "comparison_gate_failures": 0,
+  "deferred_run_ids": [
+    "cost-T0-D-U-128-pair1",
+    "cost-T0-D-M-128-pair1",
+    "cost-T0-D-M-128-pair2",
+    "cost-T0-D-U-128-pair2",
+    "cost-T0-D-U-128-pair3",
+    "cost-T0-D-M-128-pair3",
+    "cost-T0-D-M-128-pair4",
+    "cost-T0-D-U-128-pair4",
+    "cost-T0-D-U-128-pair5",
+    "cost-T0-D-M-128-pair5",
+    "cost-T0-D-U-256-pair1",
+    "cost-T0-D-M-256-pair1",
+    "cost-T0-D-M-256-pair2",
+    "cost-T0-D-U-256-pair2",
+    "cost-T0-D-U-256-pair3",
+    "cost-T0-D-M-256-pair3",
+    "cost-T0-D-M-256-pair4",
+    "cost-T0-D-U-256-pair4",
+    "cost-T0-D-U-256-pair5",
+    "cost-T0-D-M-256-pair5",
+    "cost-T3-D-U-128-pair1",
+    "cost-T3-D-M-128-pair1",
+    "cost-T3-D-M-128-pair2",
+    "cost-T3-D-U-128-pair2",
+    "cost-T3-D-U-128-pair3",
+    "cost-T3-D-M-128-pair3",
+    "cost-T3-D-M-128-pair4",
+    "cost-T3-D-U-128-pair4",
+    "cost-T3-D-U-128-pair5",
+    "cost-T3-D-M-128-pair5",
+    "cost-T3-D-U-256-pair1",
+    "cost-T3-D-M-256-pair1",
+    "cost-T3-D-M-256-pair2",
+    "cost-T3-D-U-256-pair2",
+    "cost-T3-D-U-256-pair3",
+    "cost-T3-D-M-256-pair3",
+    "cost-T3-D-M-256-pair4",
+    "cost-T3-D-U-256-pair4",
+    "cost-T3-D-U-256-pair5",
+    "cost-T3-D-M-256-pair5",
+    "cost-reference-T0-D-U-256",
+    "cost-reference-T0-D-M-256",
+    "cost-reference-T3-D-U-256",
+    "cost-reference-T3-D-M-256"
+  ],
+  "records": [
+    {
+      "id": "smoke-T0-D-U-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\680aba03793e"
+    },
+    {
+      "id": "smoke-T0-D-M-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\680aba03793e"
+    },
+    {
+      "id": "smoke-T0-D-M-separate-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\680aba03793e"
+    },
+    {
+      "id": "diagnostic-T0-B-U-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "ce531abb1ae4ebe4547bdddefa93a1c8901d7b2ee5e7024339126ddd03124828",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T0-B-M-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "ce531abb1ae4ebe4547bdddefa93a1c8901d7b2ee5e7024339126ddd03124828",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T0-D-U-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "3ecabda68ec326ebd00860bc62359a4146b9255457f17cbbe4fd514e4ae28db7",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T0-D-M-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "3ecabda68ec326ebd00860bc62359a4146b9255457f17cbbe4fd514e4ae28db7",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T0-E-U-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "0832bb89cefe34554c4472cee586a1bfc9867a7a067e7b322a7653104738561c",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T0-E-M-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "0832bb89cefe34554c4472cee586a1bfc9867a7a067e7b322a7653104738561c",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T1-D-U-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "570199f6ed41584a12a4a1618909ce23f9fe600c29570c3ce05507ba0729bd84",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T1-D-M-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "570199f6ed41584a12a4a1618909ce23f9fe600c29570c3ce05507ba0729bd84",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T2-D-U-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "dd1c2ae2251e84b6a69ddf8ed49c9533ebb925fb0798fa0e1af9a8ca9d5782bf",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T2-D-M-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "dd1c2ae2251e84b6a69ddf8ed49c9533ebb925fb0798fa0e1af9a8ca9d5782bf",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T3-D-U-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "c8d0d38034fe42bbf05ceb0a1c2b4408b532a84f03bda15ef3ec7d1ac198c801",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T3-D-M-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "c8d0d38034fe42bbf05ceb0a1c2b4408b532a84f03bda15ef3ec7d1ac198c801",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T3-E-U-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "883ccaec9cac17161633b8635147699bb26dc52f42235e8084d252b0428dcf0c",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "diagnostic-T3-E-M-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "883ccaec9cac17161633b8635147699bb26dc52f42235e8084d252b0428dcf0c",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\7b1bb308e121"
+    },
+    {
+      "id": "separate-T0-D-M-separate-128",
+      "attempt": 1,
+      "steps": 840,
+      "diagnostic_steps": 840,
+      "final_sha256": "3ecabda68ec326ebd00860bc62359a4146b9255457f17cbbe4fd514e4ae28db7",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "ledger-off-T0-D-U-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "ledger-off-T0-D-M-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "reverse-T3-D-U-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "efa84909e3a5e3e72a9ccc1028591f7731382eeea170cc44d205c82c7fcfc797",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "reverse-T3-D-M-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "efa84909e3a5e3e72a9ccc1028591f7731382eeea170cc44d205c82c7fcfc797",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "order-control-T3-D-M-separate-normal-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "efa84909e3a5e3e72a9ccc1028591f7731382eeea170cc44d205c82c7fcfc797",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "order-control-T3-D-M-separate-reverse-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 60,
+      "final_sha256": "efa84909e3a5e3e72a9ccc1028591f7731382eeea170cc44d205c82c7fcfc797",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "timing-smoke-T0-D-U-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 0,
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    },
+    {
+      "id": "timing-smoke-T0-D-M-128",
+      "attempt": 1,
+      "steps": 60,
+      "diagnostic_steps": 0,
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "failures": [],
+      "archive": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\inputs\\ca2e43834f3d"
+    }
+  ],
+  "unsupported": [
+    {
+      "id": "smoke-T0-D-U-128",
+      "item": "per-step timing export absent in first smoke binary"
+    },
+    {
+      "id": "smoke-T0-D-M-128",
+      "item": "per-step timing export absent in first smoke binary"
+    },
+    {
+      "id": "smoke-T0-D-M-separate-128",
+      "item": "per-step timing export absent in first smoke binary"
+    }
+  ],
+  "reference_snapshot_changes": [
+    {
+      "path": "Scripts/Research/CouplingStudy.cpp",
+      "intended_research_adapter_change": true
+    }
+  ],
+  "limitations": [
+    "No independent numerical implementation: common numerical providers and services are shared",
+    "No human productivity/appearance or prior-framework novelty result",
+    "Cost stages may be explicitly unexecuted under the structural stop; support controls are not repeated performance evidence",
+    "Driver pipeline/program memory and setup/compile CPU time are not included in tracked buffer-byte/record-time fields"
+  ]
+}

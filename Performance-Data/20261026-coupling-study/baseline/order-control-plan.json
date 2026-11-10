@@ -1,0 +1,118 @@
+{
+  "created_at": "2026-10-27T07:04:15.749627+09:00",
+  "reason": "U registry canonicalizes IDs; fused M uses a complete batch. Add actual separate-dispatch order reversal so the control tests execution order rather than only metadata ordering.",
+  "decision_timing": "Before any T3 or order-control outcome",
+  "unchanged": "v1 model, inputs, tolerances and primary matrix unchanged",
+  "conditions": [
+    {
+      "id": "order-control-T3-D-M-separate-normal-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M-separate",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "order-control",
+      "reverse_modules": false
+    },
+    {
+      "id": "order-control-T3-D-M-separate-reverse-128",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 20,
+      "ledger": true,
+      "full_geometry": true,
+      "task": "T3",
+      "implementation": "M-separate",
+      "sparse_solver": false,
+      "add_states": {
+        "wetness": {
+          "stateCapacity": 1,
+          "inputFactor": 1,
+          "saturationSpreadFactor": 0,
+          "gravityFlowFactor": 0,
+          "decayRate": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0,
+          "accumulationFactor": 0,
+          "cavityFillFactor": 0,
+          "thicknessPerAmount": 0.025
+        }
+      },
+      "append_reactions": [
+        {
+          "id": "surface_absorption",
+          "mode": "inflowFraction",
+          "inflowState": "waterfilm",
+          "inflowSources": [
+            "positiveInput",
+            "incoming"
+          ],
+          "fraction": 0.1,
+          "consumes": {
+            "waterfilm": 1
+          },
+          "produces": {
+            "wetness": 1
+          }
+        }
+      ],
+      "stage": "order-control",
+      "reverse_modules": true
+    }
+  ]
+}

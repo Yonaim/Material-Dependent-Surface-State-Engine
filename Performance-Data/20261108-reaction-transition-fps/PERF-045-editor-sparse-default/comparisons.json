@@ -1,0 +1,180 @@
+{
+  "experiment_id": "PERF-045-editor-sparse-default",
+  "status": "completed",
+  "aggregation": "Nearest-rank p95 and median of measured frames 180..239 within each run; representative value is median of three run values.",
+  "metrics": {
+    "frame_gpu_elapsed_ms": {
+      "baseline_median_ms": 19.215620040893555,
+      "sparse_median_ms": 8.573140144348145,
+      "reduction_percent": 55.38452505772236,
+      "baseline_p95_ms": 21.877220153808594,
+      "sparse_p95_ms": 9.425640106201172,
+      "baseline_run_median_range_ms": [
+        18.7253999710083,
+        19.7781400680542
+      ],
+      "sparse_run_median_range_ms": [
+        8.492025375366211,
+        9.810395240783691
+      ]
+    },
+    "simulation_gpu_elapsed_ms": {
+      "baseline_median_ms": 17.340120315551758,
+      "sparse_median_ms": 6.7524800300598145,
+      "reduction_percent": 61.05863219412758,
+      "baseline_p95_ms": 19.5362606048584,
+      "sparse_p95_ms": 7.532919883728027,
+      "baseline_run_median_range_ms": [
+        16.732460021972656,
+        17.800284385681152
+      ],
+      "sparse_run_median_range_ms": [
+        6.675810098648071,
+        7.7635650634765625
+      ]
+    },
+    "solver_gpu_ms": {
+      "baseline_median_ms": 17.33735942840576,
+      "sparse_median_ms": 6.749959707260132,
+      "reduction_percent": 61.06696792476421,
+      "baseline_p95_ms": 19.533140182495117,
+      "sparse_p95_ms": 7.530600547790527,
+      "baseline_run_median_range_ms": [
+        16.728818893432617,
+        17.797144889831543
+      ],
+      "sparse_run_median_range_ms": [
+        6.67290997505188,
+        7.7604451179504395
+      ]
+    },
+    "pass1_gpu_ms": {
+      "baseline_median_ms": 1.490119993686676,
+      "sparse_median_ms": 1.0828999876976013,
+      "reduction_percent": 27.328000947197538,
+      "baseline_p95_ms": 1.7193599939346313,
+      "sparse_p95_ms": 1.2703200578689575,
+      "baseline_run_median_range_ms": [
+        1.4361600279808044,
+        1.4998400211334229
+      ],
+      "sparse_run_median_range_ms": [
+        1.035580039024353,
+        1.354640007019043
+      ]
+    },
+    "pass2_gpu_ms": {
+      "baseline_median_ms": 15.248600006103516,
+      "sparse_median_ms": 5.3846399784088135,
+      "reduction_percent": 64.6876436115216,
+      "baseline_p95_ms": 16.06768035888672,
+      "sparse_p95_ms": 5.994480133056641,
+      "baseline_run_median_range_ms": [
+        14.715360164642334,
+        15.66346025466919
+      ],
+      "sparse_run_median_range_ms": [
+        5.358000040054321,
+        6.009739875793457
+      ]
+    },
+    "render_gpu_ms": {
+      "baseline_median_ms": 1.9244998693466187,
+      "sparse_median_ms": 1.8201799988746643,
+      "reduction_percent": 5.420622372261926,
+      "baseline_p95_ms": 2.340240001678467,
+      "sparse_p95_ms": 2.203399896621704,
+      "baseline_run_median_range_ms": [
+        1.8966798782348633,
+        1.9632400274276733
+      ],
+      "sparse_run_median_range_ms": [
+        1.7417399883270264,
+        1.9865400195121765
+      ]
+    },
+    "command_record_cpu_ms": {
+      "baseline_median_ms": 3.086899995803833,
+      "sparse_median_ms": 2.7039999961853027,
+      "reduction_percent": 12.404029937446113,
+      "baseline_p95_ms": 3.9498000144958496,
+      "sparse_p95_ms": 3.688999891281128,
+      "baseline_run_median_range_ms": [
+        3.0446999073028564,
+        3.152300000190735
+      ],
+      "sparse_run_median_range_ms": [
+        2.603500008583069,
+        3.5289499759674072
+      ]
+    },
+    "fence_wait_cpu_ms": {
+      "baseline_median_ms": 12.570050239562988,
+      "sparse_median_ms": 2.8517500162124634,
+      "reduction_percent": 77.31313748264216,
+      "baseline_p95_ms": 14.152899742126465,
+      "sparse_p95_ms": 3.662600040435791,
+      "baseline_run_median_range_ms": [
+        12.042099952697754,
+        12.858200073242188
+      ],
+      "sparse_run_median_range_ms": [
+        2.1162999868392944,
+        2.853950023651123
+      ]
+    },
+    "cpu_frame_ms": {
+      "baseline_median_ms": 19.61545,
+      "sparse_median_ms": 8.804300000000001,
+      "reduction_percent": 55.11548294839016,
+      "baseline_p95_ms": 22.0357,
+      "sparse_p95_ms": 10.9316,
+      "baseline_run_median_range_ms": [
+        19.1042,
+        20.120600000000003
+      ],
+      "sparse_run_median_range_ms": [
+        8.73085,
+        10.044599999999999
+      ]
+    }
+  },
+  "settings_change": {
+    "sparse_solver": [
+      false,
+      true
+    ]
+  },
+  "correctness": {
+    "same_step": 242,
+    "state_byte_equal": [
+      {
+        "run": 1,
+        "instances": {
+          "0": true,
+          "2": true,
+          "4": true
+        }
+      },
+      {
+        "run": 2,
+        "instances": {
+          "0": true,
+          "2": true,
+          "4": true
+        }
+      },
+      {
+        "run": 3,
+        "instances": {
+          "0": true,
+          "2": true,
+          "4": true
+        }
+      }
+    ],
+    "all_negative_and_nonfinite_counts_zero": true
+  },
+  "decision": "Adopt sparse scheduling for the default comparison scene at startup.",
+  "limits": "Benchmark mode renders editor UI with one fixed solver step per frame; it does not reproduce wall-clock catch-up steps or every user layout. One Debug Vulkan GPU measured."
+}

@@ -1,0 +1,868 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-27T08:59:49.423707+09:00",
+  "source_commit": "880af1ebcffe601f0bac27413cad94055ce92812",
+  "status": "frozen_before_first_study_execution",
+  "question": "Do normal reconstruction/scale choices materially affect subsequent shared-geometry transport, and does a standard least-squares solve suffice?",
+  "conditions": [
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 64,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-analytic-64",
+      "stage": "cpu",
+      "meso": {
+        "mode": "analytic",
+        "amplitude": 0.015
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 64,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-png-64",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\analytic-normal.png",
+        "flip_y": true
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 64,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-brick-64",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-analytic-128",
+      "stage": "cpu",
+      "meso": {
+        "mode": "analytic",
+        "amplitude": 0.015
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-png-128",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\analytic-normal.png",
+        "flip_y": true
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-brick-128",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-analytic-256",
+      "stage": "cpu",
+      "meso": {
+        "mode": "analytic",
+        "amplitude": 0.015
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-png-256",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\analytic-normal.png",
+        "flip_y": true
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-brick-256",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-brick-128-x0.5",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true,
+        "strength": 0.5
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-brick-128-x2",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true,
+        "strength": 2.0
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "cpu-flat8-128",
+      "stage": "cpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\flat-normal.png",
+        "flip_y": true
+      },
+      "geometry_only": true
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-flat-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "flat"
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-analytic-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "analytic",
+        "amplitude": 0.015
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-analytic-ls-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "analytic",
+        "amplitude": 0.015
+      },
+      "reference": "cpu-analytic-128"
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-png-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\analytic-normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-png-ls-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\analytic-normal.png",
+        "flip_y": true
+      },
+      "reference": "cpu-png-128"
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-ls-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      },
+      "reference": "cpu-brick-128"
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-analytic-truth-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "analytic",
+        "amplitude": 0.015
+      },
+      "truth_reference": "cpu-analytic-128"
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-128-x0.5-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true,
+        "strength": 0.5
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-128-x2-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true,
+        "strength": 2.0
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-png-128-E",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\analytic-normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-128-E",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 120,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-128-120-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 64,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-64-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-256-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-ls-256-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      },
+      "reference": "cpu-brick-256"
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\cavity-profile.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-cavity-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\cavity-profile.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-cavity-128-E",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      }
+    },
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\cavity-profile.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-cavity-ls-128-D",
+      "stage": "gpu",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true
+      },
+      "reference": "cpu-brick-128"
+    },
+    {
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "legacy-smoke-D",
+      "stage": "control",
+      "meso": {
+        "mode": "flat"
+      }
+    }
+  ],
+  "reconstruction": "same production graph and sampled normals; float64 Laplacian direct solve of endpoint-averaged slope constraints; pin first vertex then component zero mean",
+  "known_height": "h=.015*cos(4*pi*x)*cos(4*pi*y), analytic float normals and 512 RGBA8 normal texture; renderer flip_y=true",
+  "outputs": "height/edge/objective errors, State L1 divided by supplied material, temporal/spatial and frozen-G contrasts, budget/finite checks; GPU times descriptive only",
+  "gate": {
+    "nonfinite": 0,
+    "negative": 0,
+    "reaction_errors": 0,
+    "frozen_changes": 0,
+    "relative_material_budget": 1e-05,
+    "reference_linear_residual": 1e-08,
+    "reciprocal_graph_required": true
+  },
+  "effect_interpretation": "Compare reconstruction effect to observed dt/grid sensitivity; no statistical significance or physical ground truth for real asset",
+  "stop": "Stop on execution/numeric-gate failure. No parameter tuning, new reconstruction algorithm, or automatic solver adoption. Standard reference resolving error is an implementation limitation, not novelty.",
+  "scope": "Single +Z square, one real normal asset, no seam/rechart/general mesh claim; 4-second transient; fixed model coefficients and analytic injection; no rendered quality/productivity/performance superiority"
+}

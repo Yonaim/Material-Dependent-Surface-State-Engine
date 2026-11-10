@@ -1,0 +1,8 @@
+{
+  "recorded_at": "2026-10-27T18:30:13.051313+09:00",
+  "stage": "First compatibility analysis",
+  "status": "analysis_failed_before_any_task_score",
+  "reason": "Analyzer decoded production three-plane vec4 SoA parameters as logical 48-byte AoS; capacity positivity assertion caught it",
+  "resolution": "Correct reader to production ProfileResources.cpp layout; preserve existing GPU run unchanged",
+  "application_failure": false
+}

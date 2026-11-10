@@ -1,0 +1,33 @@
+{
+  "4742196e448ef04e9cdd56006f4c7b6567a4f8899cadf6be91508f2d347ba89c": {
+    "checked_at": "2026-10-25T05:32:04.019894+09:00",
+    "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\bin\\Release\\MDSS.exe",
+    "sha256": "4742196e448ef04e9cdd56006f4c7b6567a4f8899cadf6be91508f2d347ba89c",
+    "stage": "S05",
+    "status": "blocked_before_execution",
+    "winerror": 4551,
+    "log": "Build/optimization-S05-smoke.log",
+    "action": "Do not rebuild, rename, repackage or replace this executable as a workaround. Existing independent S01-S04 benchmark arms continue."
+  },
+  "cd20f29a58e055c83a0c5f8884d222b95e5bc1b0a095ee719706808055700307": {
+    "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\Release\\MDSS_SurfaceGPUResourceTests.exe",
+    "winerror": 4551,
+    "status": "blocked_before_execution"
+  },
+  "bf3bf397a156caae18f370ae98c36fe53c645f0435b47cce7681386bfc97748f": {
+    "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\bin\\Release\\MDSS.exe",
+    "winerror": 4551,
+    "status": "blocked_before_execution",
+    "recorded_at": "2026-10-27T11:04:14.713432+09:00",
+    "action": "Do not relaunch, rebuild, rename or repackage as a workaround",
+    "evidence": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\render-validation\\manifest.json"
+  },
+  "31270a4f4c7a2af6de920d2f9ce686f1a6f13006eea934a9a5ac9c63a0a592b1": {
+    "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\Release\\MDSS_SharedSurfaceGeometryTests.exe",
+    "winerror": 4551,
+    "status": "blocked_before_execution",
+    "recorded_at": "2026-10-27T13:15:37.028081+09:00",
+    "action": "Do not relaunch, rebuild, rename or repackage as a workaround",
+    "evidence": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\geometry-validation\\after.json"
+  }
+}

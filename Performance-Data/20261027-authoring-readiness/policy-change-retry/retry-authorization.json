@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-10-27T13:18:44.806806+09:00",
+  "source": "Direct user message in current chat",
+  "instruction": "스마트앱컨트롤 이제 해제했으니까 다시 시도해봐",
+  "scope": "Retry existing shared-geometry test and six reference rendered validations",
+  "settings_changed_by_agent": false,
+  "previous_evidence_preserved": true,
+  "executable_sha256": [
+    "31270a4f4c7a2af6de920d2f9ce686f1a6f13006eea934a9a5ac9c63a0a592b1",
+    "bf3bf397a156caae18f370ae98c36fe53c645f0435b47cce7681386bfc97748f"
+  ]
+}

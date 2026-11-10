@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-10-27T07:08:05.287322+09:00",
+  "basis": "Frozen v1 specification section 8 explicitly permits reassessment before large cost collection if ordinary modular decomposition suffices",
+  "known_completed_ids": [
+    "smoke-T0-D-U-128",
+    "smoke-T0-D-M-128",
+    "smoke-T0-D-M-separate-128",
+    "diagnostic-T0-B-U-128",
+    "diagnostic-T0-B-M-128",
+    "diagnostic-T0-D-U-128",
+    "diagnostic-T0-D-M-128",
+    "diagnostic-T0-E-U-128"
+  ],
+  "prerequisites": [
+    "All fourteen main trajectories and separate/ledger/order controls completed",
+    "All fixed numerical gates passed",
+    "Single fixed executable and modular core across T0-T3 diagnostic runs",
+    "Identical numeric profiles/inputs between U and M",
+    "Generic module factory executes T1/T2/T3 via declarations without per-task core changes"
+  ],
+  "action": "No-Go for H3 structural extension-burden advantage in these tasks; do not collect 256 cost references or forty cost runs",
+  "preserve": "Keep original plans and classify these conditions as not run due to structural stopping; do not report performance superiority",
+  "rationale": "Timing alone or dispatch/barrier differences cannot establish the system-model contribution sought here. A general modular construction is already the stated null hypothesis.",
+  "limitations": "Written after T0 comparison outcomes, before any performance outcome. This is an operational stopping rule of the existing design, not a claim of blind preregistration."
+}

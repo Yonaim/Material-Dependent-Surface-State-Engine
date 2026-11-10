@@ -1,0 +1,158 @@
+{
+  "id": "candidate-01-retry",
+  "created_at": "2026-10-27T18:30:56.693123+09:00",
+  "status": "prepared_before_execution",
+  "candidate_number": 1,
+  "execution_amendment": "Empty camera tracks rejected by actual loader; replace with constant-position track. Same profile, target, camera and event input. Original failed run preserved.",
+  "scope": "First AI-assisted candidate for AUTH-GOAL-01 v1",
+  "prior_knowledge": "Earlier six-second results and published internal studies known; no blind or independent quality claim",
+  "hypothesis": "Increase transport and absorb 20% of positive/incoming water, with explicit water decay .10; persistent half-capacity wetness may expose a trace after water reduces. Untested, not a predicted result.",
+  "input_folder": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01-retry\\input",
+  "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01-retry\\capture.jsonl",
+  "final_requested_serial": 960,
+  "actual_final_serial_includes_two_drain_frames": true,
+  "required_checkpoints": [
+    0,
+    60,
+    120,
+    240,
+    360,
+    480,
+    600,
+    720,
+    840,
+    960
+  ],
+  "freeze_plan": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\goal-v1\\plan.json",
+  "performance_comparison": false,
+  "human_sessions": 0,
+  "profile": {
+    "type": "SurfaceResponseProfile",
+    "version": 5,
+    "name": "Ice Reaction Lab",
+    "states": {
+      "ice": {
+        "stateCapacity": 4,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0,
+        "gravityFlowFactor": 0,
+        "decayRate": 0,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 1,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.035
+      },
+      "waterfilm": {
+        "stateCapacity": 2,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0.3,
+        "gravityFlowFactor": 0.05,
+        "decayRate": 0.1,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 0.18,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.035
+      },
+      "heat": {
+        "stateCapacity": 2,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0.15,
+        "gravityFlowFactor": 0,
+        "decayRate": 0.015,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 0,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.025
+      },
+      "absorbedwetness": {
+        "stateCapacity": 0.5,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0,
+        "gravityFlowFactor": 0,
+        "decayRate": 0,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 0,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.025
+      }
+    },
+    "reactions": [
+      {
+        "id": "ice_melting",
+        "consumes": {
+          "ice": 1,
+          "heat": 0.45
+        },
+        "produces": {
+          "waterfilm": 1
+        },
+        "rate": {
+          "model": "stateProportional",
+          "state": "ice",
+          "coefficient": 0.5
+        },
+        "modifiers": [
+          {
+            "state": "heat",
+            "function": "rampAbove",
+            "threshold": 0.25,
+            "scale": 1
+          }
+        ]
+      },
+      {
+        "id": "water_cooling",
+        "consumes": {
+          "heat": 1
+        },
+        "produces": {},
+        "rate": {
+          "model": "stateProportional",
+          "state": "heat",
+          "coefficient": 0.5
+        },
+        "modifiers": [
+          {
+            "state": "waterfilm",
+            "function": "linear",
+            "scale": 1
+          }
+        ]
+      },
+      {
+        "id": "surface_absorption",
+        "mode": "inflowFraction",
+        "inflowState": "waterfilm",
+        "inflowSources": [
+          "positiveInput",
+          "incoming"
+        ],
+        "fraction": 0.2,
+        "consumes": {
+          "waterfilm": 1
+        },
+        "produces": {
+          "absorbedwetness": 1
+        }
+      }
+    ]
+  },
+  "source_input_sha256": {
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01\\input\\Editable.SRProfile": "7e7c8ead852f92f07910970fa53ac90c106de060028d604f99a866e412d22187",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01\\input\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01\\input\\settings.json": "b5f3067dfecadf4570e47175e502636e5991d11a37b13a212184c0b2deeb5a3e",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01\\input\\Task.DemoAnim": "4b82843939f847888f9219cfc07d9668fb9873ded4fb2aa39e63ccecb21b4818",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01\\input\\Task.Scene": "232a72f3b76d53056647d527be30212e02c13af1acb5e45c311123e7f4e93373"
+  },
+  "input_sha256": {
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01-retry\\input\\Editable.SRProfile": "7e7c8ead852f92f07910970fa53ac90c106de060028d604f99a866e412d22187",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01-retry\\input\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01-retry\\input\\settings.json": "b5f3067dfecadf4570e47175e502636e5991d11a37b13a212184c0b2deeb5a3e",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01-retry\\input\\Task.DemoAnim": "993121619ed712037f4c9095184aad2c464c2cc10636b017abadf41c45327c45",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\candidate-01-retry\\input\\Task.Scene": "232a72f3b76d53056647d527be30212e02c13af1acb5e45c311123e7f4e93373"
+  }
+}

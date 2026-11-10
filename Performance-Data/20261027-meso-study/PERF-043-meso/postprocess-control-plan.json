@@ -1,0 +1,64 @@
+{
+  "created_at": "2026-10-27T09:04:02.122963+09:00",
+  "reason": "Validate that reusing the unchanged production post-height fitting with an identical height does not itself perturb geometry or transport.",
+  "timing": "Added after CPU reconstruction outcomes, while original GPU matrix was running and before numerical transport comparisons were analysed; original 32 conditions unchanged.",
+  "expectation": "Bit equality for state/geometry/weights/concavity/flux/alpha at stored steps against gpu-brick-128-D. No tuning or new phenomenon.",
+  "known_completed_ids": [
+    "cpu-analytic-64",
+    "cpu-png-64",
+    "cpu-brick-64",
+    "cpu-analytic-128",
+    "cpu-png-128",
+    "cpu-brick-128",
+    "cpu-analytic-256",
+    "cpu-png-256",
+    "cpu-brick-256",
+    "cpu-brick-128-x0.5",
+    "cpu-brick-128-x2",
+    "cpu-flat8-128",
+    "legacy-smoke-D",
+    "gpu-flat-128-D",
+    "gpu-analytic-128-D",
+    "gpu-analytic-ls-128-D",
+    "gpu-png-128-D",
+    "gpu-png-ls-128-D",
+    "gpu-brick-128-D",
+    "gpu-brick-ls-128-D",
+    "gpu-analytic-truth-128-D",
+    "gpu-brick-128-x0.5-D",
+    "gpu-brick-128-x2-D",
+    "gpu-png-128-E",
+    "gpu-brick-128-E",
+    "gpu-brick-128-120-D",
+    "gpu-brick-64-D"
+  ],
+  "conditions": [
+    {
+      "case": "meso",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 4,
+      "mesh": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\fixtures\\quad.obj",
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true,
+      "sparse_solver": false,
+      "implementation": "U",
+      "id": "gpu-brick-passthrough-128-D",
+      "stage": "control",
+      "meso": {
+        "mode": "normal_map",
+        "path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Assets\\Meshes\\BrickCube\\BrickCube_512Normal.png",
+        "flip_y": true,
+        "height_file": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\cpu-brick-128-attempt1\\meso-production-height.f32"
+      }
+    }
+  ]
+}

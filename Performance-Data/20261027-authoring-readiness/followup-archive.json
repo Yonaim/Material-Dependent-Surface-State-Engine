@@ -1,0 +1,14 @@
+{
+  "created_at": "2026-10-27T11:04:14.732239+09:00",
+  "scope": "Post-execution interpretation and runner error-status fix, not original pre-run inputs",
+  "archive": "Performance-Data\\20261027-authoring-readiness\\raw\\followup",
+  "sha256": {
+    "Scripts\\Research\\authoring_render_validation.py": "71e8d0aacb1d47dbd43d5ddca3cb77b7ca0471d8f9b4fb661d4fe1e2f272db6d",
+    "Scripts\\Research\\finalize_authoring_readiness.py": "187ee7ae5132cbe71f83ba4fb2dd124a1560bb8c23e9af8f8e2046b736c79243",
+    "Docs\\MDSSP-Agent-Vault\\03_Development\\06_Authoring-Study-Protocol.md": "34c55f5d7d871a6ae67ce952fa6c6064e0a83103138af3f443c854c1a8d6e6c0",
+    "Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\README.md": "d21370515966dbf0d0cd78228b76b658c7cf36c76efc35bea7833c2a2aee3c4c",
+    "Performance-Data\\20261027-authoring-readiness\\readiness-followup.json": "63f71658a78c778b02b1ed817725e02084a9b5ac5080db97c832dfff9fe72eb1",
+    "Performance-Data\\20261027-authoring-readiness\\study.json": "c797d71c368ea7da7e707d72333bf2e856edbfb7e5db8763e9e0057a4657d5f6",
+    "Performance-Data\\20261027-authoring-readiness\\session-template.json": "2c3303f801d29fe96f3a68d9fe22cdf5f9350a63be61c754d0abff85cf971783"
+  }
+}

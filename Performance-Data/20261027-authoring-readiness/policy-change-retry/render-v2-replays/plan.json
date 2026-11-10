@@ -1,0 +1,44 @@
+{
+  "created_at": "2026-10-27T13:33:31.763313+09:00",
+  "scope": "Rendered feasibility of reference submissions, not human task completion or productivity",
+  "known_results": "Five profile/binding probes and prior PERF studies known; no blind claim",
+  "runs": [
+    {
+      "id": "absorbedwetness",
+      "task": "P2",
+      "reference_profile": "absorbedwetness",
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2-replays\\raw\\absorbedwetness\\input\\Task.Scene",
+      "settings": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2-replays\\raw\\absorbedwetness\\input\\settings.json",
+      "warmup_frames": 359,
+      "measurement_frames": 1,
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2-replays\\raw\\absorbedwetness\\capture.jsonl"
+    }
+  ],
+  "fixed_dt_seconds": 0.016666666666666666,
+  "screenshot_frame_index": 359,
+  "state_capture_scope": "After two timestamp-drain frames, not exactly the screenshot step",
+  "comparisons": [
+    "base vs threshold: persisted profile variation",
+    "wetness vs absorbedwetness: builtin appearance binding, with named-state comparison",
+    "absorbedwetness vs repeat: fresh-process repeatability",
+    "reuse20: same profile, rotated same mesh, no held-out claim"
+  ],
+  "gates": [
+    "Exit zero and no error log",
+    "One frame sample and valid PPM",
+    "Nonnegative finite final state, no reported reaction budget/arithmetic failures",
+    "Record actual settings and simulation serials; do not infer numerical budget from final-state sums"
+  ],
+  "quality_gate": "Independent artist target and judged quality remain undefined; visual feasibility only",
+  "retry_of": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\render-validation\\plan.json",
+  "original_plan_sha256": "0e4e120a93a2cad614f53e15526b37f69f681323fa94a864b9a025cde2184418",
+  "retry_authorization": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\retry-authorization.json",
+  "protocol_change": "Retry only capture-gate failures in a fresh process; same numeric settings, inputs and executable. Earlier outputs retained.",
+  "triggering_audit": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\initial-capture-gates.json"
+}

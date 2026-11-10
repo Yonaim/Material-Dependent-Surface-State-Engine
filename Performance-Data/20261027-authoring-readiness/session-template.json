@@ -1,0 +1,19 @@
+{
+  "status": "unexecuted_template",
+  "participant_id": null,
+  "backend": null,
+  "task_id": null,
+  "started_at": null,
+  "finished_at": null,
+  "active_seconds": null,
+  "wall_seconds": null,
+  "time_limit_seconds": null,
+  "completion": null,
+  "quality_gate": null,
+  "ai_policy": null,
+  "ai_assistance_used": null,
+  "prior_experience": null,
+  "interventions": [],
+  "artifacts": [],
+  "notes": []
+}

@@ -1,0 +1,922 @@
+{
+  "experiment_id": "PERF-045-editor-sparse-default",
+  "status": "completed",
+  "head": "9fb712fb352e3faf7074acb68fc21c6aefa485d0",
+  "code_note": "Working tree includes uncommitted comparison scene and default startup changes. Both phases use the same Debug executable and asset inputs.",
+  "executable": "Build/bin/Debug/MDSS.exe",
+  "executable_sha256": "041851818644bc7f835ce29b04d449842111ba4303e097aabd0ec755ecb3bd83",
+  "environment": {
+    "os": "Windows",
+    "gpu": "AMD Radeon RX 6700 XT",
+    "vulkan_api": "1.4.315",
+    "configuration": "Debug",
+    "vulkan_validation": "enabled",
+    "time_zone": "Asia/Seoul"
+  },
+  "input_sha256": {
+    "Assets/Animations/ReactionTransitionComparison.DemoAnim": "a7facd8b64635bca56c9a0027c7e036c98bb0c5677947151140a2787b94556a8",
+    "Assets/Meshes/MarbleCube/MarbleCube.mtl": "44a3eeba1457b6329f3aa43d63094e04bc8c4d050362d2e269698fb43e60aa21",
+    "Assets/Meshes/MarbleCube/MarbleCubeAlbedo.png": "589eaa53e069abf15ef066a7d871048a513cc7f16e6d5d634083bc76fa918cfb",
+    "Assets/Meshes/MarbleCube/ReactionTransitionPlateSides.obj": "263997ae335acb4e405a1226670e4c683c12cd35c62853c5a0eb1ca47a7c0a7c",
+    "Assets/Meshes/MarbleCube/ReactionTransitionPlateTop.obj": "7ab960b0eb3c20b6c954e11db21d571bcff6d6d2da0b3ab4b672a3af617f4056",
+    "Assets/Meshes/ReactionLab/Lab.mtl": "5695ce95a88e8c082b0a46f24a8846faa8ccde36624f852a60b100bad2f79da3",
+    "Assets/Meshes/ReactionLab/ReactionTransitionLabels.obj": "2d49f8f637b7006907fb3f18f41c03456f9310f0ae8ff74f4173b9041df187be",
+    "Assets/Meshes/ReactionLab/Stage.obj": "d5aaaae7be280648e38da0412b60e9d8c81befc64cf0e176678a664576c0ec33",
+    "Assets/Scenes/ReactionTransitionComparison.Scene": "4a367586c7bd6fc180e8379e1fdcc97cfa0b2656bbf3585ed7a5912d50fa55c4",
+    "Assets/SurfaceProfileMaps/ReactionTransitionConsume.SurfaceProfileMap": "d9e5bbde016ec71bec8a4895a3a8a66bb4dba02f0efbd63169ba9dc1bffe0344",
+    "Assets/SurfaceProfileMaps/ReactionTransitionControl.SurfaceProfileMap": "5cc0bc987b08059246e581107dbc2f32c119bdf1cc074899942eda5879770fee",
+    "Assets/SurfaceProfileMaps/ReactionTransitionLegacy.SurfaceProfileMap": "f2d72b7b0f105241172a6bca9fb8a536be540c814d0d5bec7646485d6d26ed11",
+    "Assets/SurfaceProfiles/ReactionTransitionConsume.SRProfile": "594564ed5bc1d6331b84a21f301730d3b89992a2a39c9e57852b62e1ef61c5fd",
+    "Assets/SurfaceProfiles/ReactionTransitionControl.SRProfile": "c74b641850d356a8a8d1c60ad4fa79a9535341ed99a7c1a53928d447d6a38e09",
+    "Assets/SurfaceProfiles/ReactionTransitionLegacy.SRProfile": "b456f011abd88cf252de72a72ee6835be8fae858d328ccaad659ba6cdf32ba52",
+    "Config/EditorLayout.ini": "018e90d7e5722e162e24bc022b2dbcfb7c226e0a9b11c07d859c6b81c28f2c9d",
+    "Config/Engine.ini": "27524aada1e28d320efe9921836c1f70a0f9c24495184ec7ef39363257f332e2"
+  },
+  "plan": "plan.json",
+  "phases": {
+    "baseline": {
+      "runs": [
+        {
+          "run": 1,
+          "status": "completed",
+          "completed_at": "2026-11-08T05:23:22.990781+09:00",
+          "frame_count": 60,
+          "simulation_step_serial": 242,
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 19.215620040893555,
+              "p95_ms": 20.896520614624023
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 17.340120315551758,
+              "p95_ms": 18.79863929748535
+            },
+            "solver_gpu_ms": {
+              "median_ms": 17.33735942840576,
+              "p95_ms": 18.7951602935791
+            },
+            "pass1_gpu_ms": {
+              "median_ms": 1.4361600279808044,
+              "p95_ms": 1.641800045967102
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 15.248600006103516,
+              "p95_ms": 16.06768035888672
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.8966798782348633,
+              "p95_ms": 2.167140007019043
+            },
+            "command_record_cpu_ms": {
+              "median_ms": 3.0446999073028564,
+              "p95_ms": 3.5708999633789062
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 12.570050239562988,
+              "p95_ms": 14.081600189208984
+            },
+            "cpu_frame_ms": {
+              "median_ms": 19.61545,
+              "p95_ms": 21.6473
+            }
+          },
+          "settings": {
+            "active_channel_mask": true,
+            "base_draw": true,
+            "coalesced_raw_flux": true,
+            "fp16_raw_flux": true,
+            "fp16_weights": false,
+            "frame_index": 180,
+            "geometry_feedback": true,
+            "overlay_mesh_resolution": 128,
+            "overlay_sides_draw": true,
+            "overlay_tile_culling": true,
+            "overlay_tile_size": 16,
+            "overlay_top_draw": true,
+            "per_workgroup_channel_mask": false,
+            "precompute_coverage": true,
+            "raw_flux_cache": true,
+            "render_state_texture": true,
+            "schema_version": 1,
+            "separable_coverage": true,
+            "shared_coverage_smoothing": false,
+            "shared_height_smoothing": false,
+            "shared_state_texture_smoothing": false,
+            "sparse_geometry": true,
+            "sparse_height": true,
+            "sparse_height_smoothing": true,
+            "sparse_solver": false,
+            "surface_mesh_resolution": 128,
+            "swapchain_extent": [
+              1280,
+              720
+            ],
+            "viewports": [
+              {
+                "camera_position": [
+                  0.800000011920929,
+                  -6.900000095367432,
+                  5.900000095367432
+                ],
+                "camera_target": [
+                  0.0,
+                  0.0,
+                  0.11999999731779099
+                ],
+                "fov_degrees": 40.0,
+                "normalized_rect": [
+                  0.3257812559604645,
+                  0.06666667014360428,
+                  0.36640626192092896,
+                  0.793055534362793
+                ],
+                "view_mode": 0
+              }
+            ]
+          },
+          "validation": {
+            "instances": [
+              {
+                "instance": 0,
+                "state_sums": [
+                  0.0,
+                  93969.55209207535,
+                  143492.815117836,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "9963316172915719771"
+              },
+              {
+                "instance": 2,
+                "state_sums": [
+                  88581.76333618164,
+                  93969.55097651482,
+                  143492.81090784073,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "16464437187521367625"
+              },
+              {
+                "instance": 4,
+                "state_sums": [
+                  0.0,
+                  65175.99865579605,
+                  61225.52052652836,
+                  82266.22652821832
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "17714210745981223975"
+              }
+            ]
+          },
+          "outputs": {
+            "frames": "raw/baseline/run-1.jsonl",
+            "cpu": "raw/baseline/run-1.jsonl.cpu.json",
+            "settings": "raw/baseline/run-1.jsonl.settings.json",
+            "validation": "raw/baseline/run-1.jsonl.validation.json",
+            "log": "raw/baseline/run-1.log"
+          }
+        },
+        {
+          "run": 2,
+          "status": "completed",
+          "completed_at": "2026-11-08T05:23:30.177389+09:00",
+          "frame_count": 60,
+          "simulation_step_serial": 242,
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 18.7253999710083,
+              "p95_ms": 21.877220153808594
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 16.732460021972656,
+              "p95_ms": 19.5362606048584
+            },
+            "solver_gpu_ms": {
+              "median_ms": 16.728818893432617,
+              "p95_ms": 19.533140182495117
+            },
+            "pass1_gpu_ms": {
+              "median_ms": 1.4998400211334229,
+              "p95_ms": 1.8209600448608398
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 14.715360164642334,
+              "p95_ms": 15.889280319213867
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.9244998693466187,
+              "p95_ms": 2.340240001678467
+            },
+            "command_record_cpu_ms": {
+              "median_ms": 3.086899995803833,
+              "p95_ms": 4.058300018310547
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 12.042099952697754,
+              "p95_ms": 14.152899742126465
+            },
+            "cpu_frame_ms": {
+              "median_ms": 19.1042,
+              "p95_ms": 22.0357
+            }
+          },
+          "settings": {
+            "active_channel_mask": true,
+            "base_draw": true,
+            "coalesced_raw_flux": true,
+            "fp16_raw_flux": true,
+            "fp16_weights": false,
+            "frame_index": 180,
+            "geometry_feedback": true,
+            "overlay_mesh_resolution": 128,
+            "overlay_sides_draw": true,
+            "overlay_tile_culling": true,
+            "overlay_tile_size": 16,
+            "overlay_top_draw": true,
+            "per_workgroup_channel_mask": false,
+            "precompute_coverage": true,
+            "raw_flux_cache": true,
+            "render_state_texture": true,
+            "schema_version": 1,
+            "separable_coverage": true,
+            "shared_coverage_smoothing": false,
+            "shared_height_smoothing": false,
+            "shared_state_texture_smoothing": false,
+            "sparse_geometry": true,
+            "sparse_height": true,
+            "sparse_height_smoothing": true,
+            "sparse_solver": false,
+            "surface_mesh_resolution": 128,
+            "swapchain_extent": [
+              1280,
+              720
+            ],
+            "viewports": [
+              {
+                "camera_position": [
+                  0.800000011920929,
+                  -6.900000095367432,
+                  5.900000095367432
+                ],
+                "camera_target": [
+                  0.0,
+                  0.0,
+                  0.11999999731779099
+                ],
+                "fov_degrees": 40.0,
+                "normalized_rect": [
+                  0.3257812559604645,
+                  0.06666667014360428,
+                  0.36640626192092896,
+                  0.793055534362793
+                ],
+                "view_mode": 0
+              }
+            ]
+          },
+          "validation": {
+            "instances": [
+              {
+                "instance": 0,
+                "state_sums": [
+                  0.0,
+                  93969.55209207535,
+                  143492.815117836,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "9963316172915719771"
+              },
+              {
+                "instance": 2,
+                "state_sums": [
+                  88581.76333618164,
+                  93969.55097651482,
+                  143492.81090784073,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "16464437187521367625"
+              },
+              {
+                "instance": 4,
+                "state_sums": [
+                  0.0,
+                  65175.99865579605,
+                  61225.52052652836,
+                  82266.22652821832
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "17714210745981223975"
+              }
+            ]
+          },
+          "outputs": {
+            "frames": "raw/baseline/run-2.jsonl",
+            "cpu": "raw/baseline/run-2.jsonl.cpu.json",
+            "settings": "raw/baseline/run-2.jsonl.settings.json",
+            "validation": "raw/baseline/run-2.jsonl.validation.json",
+            "log": "raw/baseline/run-2.log"
+          }
+        },
+        {
+          "run": 3,
+          "status": "completed",
+          "completed_at": "2026-11-08T05:23:37.674628+09:00",
+          "frame_count": 60,
+          "simulation_step_serial": 242,
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 19.7781400680542,
+              "p95_ms": 22.504480361938477
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 17.800284385681152,
+              "p95_ms": 20.18515968322754
+            },
+            "solver_gpu_ms": {
+              "median_ms": 17.797144889831543,
+              "p95_ms": 20.18256187438965
+            },
+            "pass1_gpu_ms": {
+              "median_ms": 1.490119993686676,
+              "p95_ms": 1.7193599939346313
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 15.66346025466919,
+              "p95_ms": 17.67923927307129
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.9632400274276733,
+              "p95_ms": 2.574159860610962
+            },
+            "command_record_cpu_ms": {
+              "median_ms": 3.152300000190735,
+              "p95_ms": 3.9498000144958496
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 12.858200073242188,
+              "p95_ms": 15.697400093078613
+            },
+            "cpu_frame_ms": {
+              "median_ms": 20.120600000000003,
+              "p95_ms": 23.7432
+            }
+          },
+          "settings": {
+            "active_channel_mask": true,
+            "base_draw": true,
+            "coalesced_raw_flux": true,
+            "fp16_raw_flux": true,
+            "fp16_weights": false,
+            "frame_index": 180,
+            "geometry_feedback": true,
+            "overlay_mesh_resolution": 128,
+            "overlay_sides_draw": true,
+            "overlay_tile_culling": true,
+            "overlay_tile_size": 16,
+            "overlay_top_draw": true,
+            "per_workgroup_channel_mask": false,
+            "precompute_coverage": true,
+            "raw_flux_cache": true,
+            "render_state_texture": true,
+            "schema_version": 1,
+            "separable_coverage": true,
+            "shared_coverage_smoothing": false,
+            "shared_height_smoothing": false,
+            "shared_state_texture_smoothing": false,
+            "sparse_geometry": true,
+            "sparse_height": true,
+            "sparse_height_smoothing": true,
+            "sparse_solver": false,
+            "surface_mesh_resolution": 128,
+            "swapchain_extent": [
+              1280,
+              720
+            ],
+            "viewports": [
+              {
+                "camera_position": [
+                  0.800000011920929,
+                  -6.900000095367432,
+                  5.900000095367432
+                ],
+                "camera_target": [
+                  0.0,
+                  0.0,
+                  0.11999999731779099
+                ],
+                "fov_degrees": 40.0,
+                "normalized_rect": [
+                  0.3257812559604645,
+                  0.06666667014360428,
+                  0.36640626192092896,
+                  0.793055534362793
+                ],
+                "view_mode": 0
+              }
+            ]
+          },
+          "validation": {
+            "instances": [
+              {
+                "instance": 0,
+                "state_sums": [
+                  0.0,
+                  93969.55209207535,
+                  143492.815117836,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "9963316172915719771"
+              },
+              {
+                "instance": 2,
+                "state_sums": [
+                  88581.76333618164,
+                  93969.55097651482,
+                  143492.81090784073,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "16464437187521367625"
+              },
+              {
+                "instance": 4,
+                "state_sums": [
+                  0.0,
+                  65175.99865579605,
+                  61225.52052652836,
+                  82266.22652821832
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "17714210745981223975"
+              }
+            ]
+          },
+          "outputs": {
+            "frames": "raw/baseline/run-3.jsonl",
+            "cpu": "raw/baseline/run-3.jsonl.cpu.json",
+            "settings": "raw/baseline/run-3.jsonl.settings.json",
+            "validation": "raw/baseline/run-3.jsonl.validation.json",
+            "log": "raw/baseline/run-3.log"
+          }
+        }
+      ]
+    },
+    "sparse": {
+      "runs": [
+        {
+          "run": 1,
+          "status": "completed",
+          "completed_at": "2026-11-08T05:23:57.856920+09:00",
+          "frame_count": 60,
+          "simulation_step_serial": 242,
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 9.810395240783691,
+              "p95_ms": 11.252209663391113
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 7.7635650634765625,
+              "p95_ms": 8.586079597473145
+            },
+            "solver_gpu_ms": {
+              "median_ms": 7.7604451179504395,
+              "p95_ms": 8.583239555358887
+            },
+            "pass1_gpu_ms": {
+              "median_ms": 1.354640007019043,
+              "p95_ms": 1.609279990196228
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 6.009739875793457,
+              "p95_ms": 6.738120079040527
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.9865400195121765,
+              "p95_ms": 2.753079891204834
+            },
+            "command_record_cpu_ms": {
+              "median_ms": 3.5289499759674072,
+              "p95_ms": 4.412799835205078
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 2.1162999868392944,
+              "p95_ms": 3.662600040435791
+            },
+            "cpu_frame_ms": {
+              "median_ms": 10.044599999999999,
+              "p95_ms": 12.2349
+            }
+          },
+          "settings": {
+            "active_channel_mask": true,
+            "base_draw": true,
+            "coalesced_raw_flux": true,
+            "fp16_raw_flux": true,
+            "fp16_weights": false,
+            "frame_index": 180,
+            "geometry_feedback": true,
+            "overlay_mesh_resolution": 128,
+            "overlay_sides_draw": true,
+            "overlay_tile_culling": true,
+            "overlay_tile_size": 16,
+            "overlay_top_draw": true,
+            "per_workgroup_channel_mask": false,
+            "precompute_coverage": true,
+            "raw_flux_cache": true,
+            "render_state_texture": true,
+            "schema_version": 1,
+            "separable_coverage": true,
+            "shared_coverage_smoothing": false,
+            "shared_height_smoothing": false,
+            "shared_state_texture_smoothing": false,
+            "sparse_geometry": true,
+            "sparse_height": true,
+            "sparse_height_smoothing": true,
+            "sparse_solver": true,
+            "surface_mesh_resolution": 128,
+            "swapchain_extent": [
+              1280,
+              720
+            ],
+            "viewports": [
+              {
+                "camera_position": [
+                  0.800000011920929,
+                  -6.900000095367432,
+                  5.900000095367432
+                ],
+                "camera_target": [
+                  0.0,
+                  0.0,
+                  0.11999999731779099
+                ],
+                "fov_degrees": 40.0,
+                "normalized_rect": [
+                  0.3257812559604645,
+                  0.06666667014360428,
+                  0.36640626192092896,
+                  0.793055534362793
+                ],
+                "view_mode": 0
+              }
+            ]
+          },
+          "validation": {
+            "instances": [
+              {
+                "instance": 0,
+                "state_sums": [
+                  0.0,
+                  93969.55209207535,
+                  143492.815117836,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "9963316172915719771"
+              },
+              {
+                "instance": 2,
+                "state_sums": [
+                  88581.76333618164,
+                  93969.55097651482,
+                  143492.81090784073,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "16464437187521367625"
+              },
+              {
+                "instance": 4,
+                "state_sums": [
+                  0.0,
+                  65175.99865579605,
+                  61225.52052652836,
+                  82266.22652821832
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "17714210745981223975"
+              }
+            ]
+          },
+          "outputs": {
+            "frames": "raw/sparse/run-1.jsonl",
+            "cpu": "raw/sparse/run-1.jsonl.cpu.json",
+            "settings": "raw/sparse/run-1.jsonl.settings.json",
+            "validation": "raw/sparse/run-1.jsonl.validation.json",
+            "log": "raw/sparse/run-1.log"
+          }
+        },
+        {
+          "run": 2,
+          "status": "completed",
+          "completed_at": "2026-11-08T05:24:02.568249+09:00",
+          "frame_count": 60,
+          "simulation_step_serial": 242,
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 8.573140144348145,
+              "p95_ms": 9.02184009552002
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 6.7524800300598145,
+              "p95_ms": 7.26524019241333
+            },
+            "solver_gpu_ms": {
+              "median_ms": 6.749959707260132,
+              "p95_ms": 7.262360095977783
+            },
+            "pass1_gpu_ms": {
+              "median_ms": 1.0828999876976013,
+              "p95_ms": 1.2316399812698364
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 5.3846399784088135,
+              "p95_ms": 5.7067999839782715
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.8201799988746643,
+              "p95_ms": 2.0409200191497803
+            },
+            "command_record_cpu_ms": {
+              "median_ms": 2.7039999961853027,
+              "p95_ms": 3.207200050354004
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 2.8517500162124634,
+              "p95_ms": 4.127299785614014
+            },
+            "cpu_frame_ms": {
+              "median_ms": 8.804300000000001,
+              "p95_ms": 10.0157
+            }
+          },
+          "settings": {
+            "active_channel_mask": true,
+            "base_draw": true,
+            "coalesced_raw_flux": true,
+            "fp16_raw_flux": true,
+            "fp16_weights": false,
+            "frame_index": 180,
+            "geometry_feedback": true,
+            "overlay_mesh_resolution": 128,
+            "overlay_sides_draw": true,
+            "overlay_tile_culling": true,
+            "overlay_tile_size": 16,
+            "overlay_top_draw": true,
+            "per_workgroup_channel_mask": false,
+            "precompute_coverage": true,
+            "raw_flux_cache": true,
+            "render_state_texture": true,
+            "schema_version": 1,
+            "separable_coverage": true,
+            "shared_coverage_smoothing": false,
+            "shared_height_smoothing": false,
+            "shared_state_texture_smoothing": false,
+            "sparse_geometry": true,
+            "sparse_height": true,
+            "sparse_height_smoothing": true,
+            "sparse_solver": true,
+            "surface_mesh_resolution": 128,
+            "swapchain_extent": [
+              1280,
+              720
+            ],
+            "viewports": [
+              {
+                "camera_position": [
+                  0.800000011920929,
+                  -6.900000095367432,
+                  5.900000095367432
+                ],
+                "camera_target": [
+                  0.0,
+                  0.0,
+                  0.11999999731779099
+                ],
+                "fov_degrees": 40.0,
+                "normalized_rect": [
+                  0.3257812559604645,
+                  0.06666667014360428,
+                  0.36640626192092896,
+                  0.793055534362793
+                ],
+                "view_mode": 0
+              }
+            ]
+          },
+          "validation": {
+            "instances": [
+              {
+                "instance": 0,
+                "state_sums": [
+                  0.0,
+                  93969.55209207535,
+                  143492.815117836,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "9963316172915719771"
+              },
+              {
+                "instance": 2,
+                "state_sums": [
+                  88581.76333618164,
+                  93969.55097651482,
+                  143492.81090784073,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "16464437187521367625"
+              },
+              {
+                "instance": 4,
+                "state_sums": [
+                  0.0,
+                  65175.99865579605,
+                  61225.52052652836,
+                  82266.22652821832
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "17714210745981223975"
+              }
+            ]
+          },
+          "outputs": {
+            "frames": "raw/sparse/run-2.jsonl",
+            "cpu": "raw/sparse/run-2.jsonl.cpu.json",
+            "settings": "raw/sparse/run-2.jsonl.settings.json",
+            "validation": "raw/sparse/run-2.jsonl.validation.json",
+            "log": "raw/sparse/run-2.log"
+          }
+        },
+        {
+          "run": 3,
+          "status": "completed",
+          "completed_at": "2026-11-08T05:24:07.210068+09:00",
+          "frame_count": 60,
+          "simulation_step_serial": 242,
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 8.492025375366211,
+              "p95_ms": 9.425640106201172
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 6.675810098648071,
+              "p95_ms": 7.532919883728027
+            },
+            "solver_gpu_ms": {
+              "median_ms": 6.67290997505188,
+              "p95_ms": 7.530600547790527
+            },
+            "pass1_gpu_ms": {
+              "median_ms": 1.035580039024353,
+              "p95_ms": 1.2703200578689575
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 5.358000040054321,
+              "p95_ms": 5.994480133056641
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.7417399883270264,
+              "p95_ms": 2.203399896621704
+            },
+            "command_record_cpu_ms": {
+              "median_ms": 2.603500008583069,
+              "p95_ms": 3.688999891281128
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 2.853950023651123,
+              "p95_ms": 3.5920000076293945
+            },
+            "cpu_frame_ms": {
+              "median_ms": 8.73085,
+              "p95_ms": 10.9316
+            }
+          },
+          "settings": {
+            "active_channel_mask": true,
+            "base_draw": true,
+            "coalesced_raw_flux": true,
+            "fp16_raw_flux": true,
+            "fp16_weights": false,
+            "frame_index": 180,
+            "geometry_feedback": true,
+            "overlay_mesh_resolution": 128,
+            "overlay_sides_draw": true,
+            "overlay_tile_culling": true,
+            "overlay_tile_size": 16,
+            "overlay_top_draw": true,
+            "per_workgroup_channel_mask": false,
+            "precompute_coverage": true,
+            "raw_flux_cache": true,
+            "render_state_texture": true,
+            "schema_version": 1,
+            "separable_coverage": true,
+            "shared_coverage_smoothing": false,
+            "shared_height_smoothing": false,
+            "shared_state_texture_smoothing": false,
+            "sparse_geometry": true,
+            "sparse_height": true,
+            "sparse_height_smoothing": true,
+            "sparse_solver": true,
+            "surface_mesh_resolution": 128,
+            "swapchain_extent": [
+              1280,
+              720
+            ],
+            "viewports": [
+              {
+                "camera_position": [
+                  0.800000011920929,
+                  -6.900000095367432,
+                  5.900000095367432
+                ],
+                "camera_target": [
+                  0.0,
+                  0.0,
+                  0.11999999731779099
+                ],
+                "fov_degrees": 40.0,
+                "normalized_rect": [
+                  0.3257812559604645,
+                  0.06666667014360428,
+                  0.36640626192092896,
+                  0.793055534362793
+                ],
+                "view_mode": 0
+              }
+            ]
+          },
+          "validation": {
+            "instances": [
+              {
+                "instance": 0,
+                "state_sums": [
+                  0.0,
+                  93969.55209207535,
+                  143492.815117836,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "9963316172915719771"
+              },
+              {
+                "instance": 2,
+                "state_sums": [
+                  88581.76333618164,
+                  93969.55097651482,
+                  143492.81090784073,
+                  0.0
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "16464437187521367625"
+              },
+              {
+                "instance": 4,
+                "state_sums": [
+                  0.0,
+                  65175.99865579605,
+                  61225.52052652836,
+                  82266.22652821832
+                ],
+                "negative": 0,
+                "nonfinite": 0,
+                "state_fnv1a64": "17714210745981223975"
+              }
+            ]
+          },
+          "outputs": {
+            "frames": "raw/sparse/run-3.jsonl",
+            "cpu": "raw/sparse/run-3.jsonl.cpu.json",
+            "settings": "raw/sparse/run-3.jsonl.settings.json",
+            "validation": "raw/sparse/run-3.jsonl.validation.json",
+            "log": "raw/sparse/run-3.log"
+          }
+        }
+      ]
+    }
+  }
+}

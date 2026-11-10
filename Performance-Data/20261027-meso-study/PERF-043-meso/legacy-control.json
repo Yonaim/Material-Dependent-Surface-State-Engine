@@ -1,0 +1,57 @@
+{
+  "reference": "Performance-Data\\20261026-coupling-study\\baseline\\raw\\smoke-T0-D-U-128-attempt1",
+  "candidate": "Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\legacy-smoke-D-attempt1",
+  "records": [
+    {
+      "file": "state-0.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "state-1.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "geometry-0.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "geometry-1.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "weights-0.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "weights-1.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "concavity-0.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "concavity-1.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "flux-1.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    },
+    {
+      "file": "alpha-1.f32",
+      "bit_equal": true,
+      "max_abs": 0.0
+    }
+  ],
+  "all_bit_equal": true
+}

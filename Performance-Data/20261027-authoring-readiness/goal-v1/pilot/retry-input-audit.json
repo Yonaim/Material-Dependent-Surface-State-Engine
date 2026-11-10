@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-10-27T18:34:00.016095+09:00",
+  "profile_bitwise_equal": true,
+  "contact_events_equal": true,
+  "fixed_camera_equals_scene": true,
+  "same_candidate_number": 1,
+  "goals_unchanged": true,
+  "original_failure_preserved": true
+}
