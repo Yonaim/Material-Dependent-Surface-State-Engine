@@ -6,6 +6,14 @@
 |---|---|---|---|---|
 | `YYYY-MM-DD` | `{{TASK_AND_CODE_PATHS}}` | `{{READ_DOCS}}` | `{{UPDATED_DOCS_OR_NO_IMPACT_REASON}}` | `{{COMMAND_AND_RESULT_OR_NOT_RUN}}` |
 
+## 2026-11-16 — Clear Python and IntelliSense Problems
+
+- **Read:** Agent Vault instructions and Document Map; Python conventions, Source Map, Validation & Tests, Verification & Review, and existing VS Code/CMake configuration.
+- **Changed:** Added root `pyrightconfig.json` paths for the repository's generated Python runtime packages while excluding `Build/**` generated/dependency sources. Corrected type narrowing and result annotations across the affected performance/research scripts, including optional image/replay results, JSON manifests and plans, SciPy outputs, Matplotlib axes/paths, and plotting handles. Added `.vscode/c_cpp_properties.json` using `${env:VULKAN_SDK}/Include` and the repository's C++20/MSVC settings so the installed Vulkan SDK header is found by IntelliSense.
+- **Docs:** No contracts, flows, or runtime behavior changed; this is editor analysis configuration and static typing cleanup.
+- **Validation:** `npx --yes pyright --project pyrightconfig.json Scripts` reported 0 errors, 0 warnings. Python AST parsing and `pyrightconfig.json` parsing passed. VS Code Problems showed “No problems have been detected in the workspace” after the IntelliSense configuration refreshed. Research scripts and C++ builds/tests were not run.
+
+
 ## 2026-11-11 — VS Code Explorer 잡음 파일 숨김
 - **읽은 문서:** Agent-Vault AGENTS·Document Map·Code Style·Document Workflow·Local Numbering, 기존 `.vscode/settings.json` 및 `.gitignore`.
 - **설정:** `.vscode/settings.json`의 `files.exclude`에 Python 캐시·컴파일 산출물·Build 전체·Cache·ThirdParty·로컬 Universal-Agent-Vault를 추가. 프로젝트 소스·문서는 계속 표시한다.

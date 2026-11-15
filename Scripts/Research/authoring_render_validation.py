@@ -10,6 +10,7 @@ Render isolated reference fixtures; this is not a timed human authoring study.
 # 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import copy, os, pathlib, shutil, subprocess, sys
+from typing import Any
 from authoring_study import ROOT, STUDY, PACK, read, write, stamp, digest
 
 EXE = ROOT / 'Build/bin/Release/MDSS.exe'
@@ -25,7 +26,7 @@ OUT = STUDY / 'render-validation'
 # 저작 조건별 앱 실행과 이미지·State 캡처 검증을 조율한다.
 
 
-def prepare():
+def prepare() -> dict[str, Any]:
     if (OUT / 'plan.json').exists():
         return read(OUT / 'plan.json')
     blocked = ROOT / 'Build/OptimizationLab/blocked-executables.json'
@@ -134,7 +135,7 @@ def run():
         shutil.copy2('\\\\?\\' + str((ROOT / name).resolve()), '\\\\?\\' + str(target.resolve()))
         if digest(target) != expected:
             raise RuntimeError('Input archive mismatch')
-    manifest = dict(
+    manifest: dict[str, Any] = dict(
         started_at=stamp(),
         executable_sha256=digest(EXE),
         source_hashes=hashes,
@@ -161,7 +162,9 @@ def run():
                 '--benchmark-output',
                 str(output),
             ]
-            record = dict(id=item['id'], started_at=stamp(), command=command, status='running')
+            record: dict[str, Any] = dict(
+                id=item['id'], started_at=stamp(), command=command, status='running'
+            )
             try:
                 with output.with_suffix('.log').open('w', encoding='utf-8') as log:
                     result = subprocess.run(

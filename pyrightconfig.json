@@ -1,0 +1,12 @@
+{
+    "extraPaths": [
+        "Build/PerformanceLab/PythonPackages",
+        "Build/ResearchPython"
+    ],
+    "exclude": [
+        "Build/**"
+    ],
+    "ignore": [
+        "Build/**"
+    ]
+}

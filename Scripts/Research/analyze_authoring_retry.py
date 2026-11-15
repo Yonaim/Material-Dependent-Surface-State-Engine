@@ -146,7 +146,11 @@ def main():
         name = run['id']
         path = pathlib.Path(run['output'])
         run_manifest = (
-            replay_manifest if selection and name in selection['replayed_conditions'] else manifest
+            replay_manifest
+            if replay_manifest is not None
+            and selection is not None
+            and name in selection['replayed_conditions']
+            else manifest
         )
         status = next(x for x in run_manifest['runs'] if x['id'] == name)
         log = path.with_suffix('.log').read_text(encoding='utf-8')

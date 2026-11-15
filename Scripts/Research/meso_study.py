@@ -10,6 +10,7 @@ Frozen meso reconstruction/transport sensitivity study; no product algorithm cha
 # 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse, datetime as dt, hashlib, json, pathlib, shutil, subprocess, sys, time
+from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'Build/ResearchPython'))
@@ -40,7 +41,7 @@ def write(p, x):
     p.write_text(json.dumps(x, indent=2, ensure_ascii=False, allow_nan=False), encoding='utf-8')
 
 
-def read(p):
+def read(p: pathlib.Path) -> Any:
     return json.loads(p.read_text(encoding='utf-8'))
 
 
@@ -53,7 +54,7 @@ def arr(d, n, cols=1):
     return x.reshape(-1, cols) if cols > 1 else x
 
 
-def prepare():
+def prepare() -> dict[str, Any]:
     if (EXP / 'plan.json').exists():
         return read(EXP / 'plan.json')
     inputs = RAW / 'fixtures'
@@ -251,7 +252,7 @@ def archive():
 def run(stage, ids):
     plan = prepare()
     mp = EXP / 'manifest.json'
-    manifest = read(mp) if mp.exists() else dict(runs=[])
+    manifest: dict[str, Any] = read(mp) if mp.exists() else dict(runs=[])
     supplemental = EXP / 'postprocess-control-plan.json'
     if supplemental.exists():
         plan['conditions'] += read(supplemental)['conditions']
@@ -271,7 +272,7 @@ def run(stage, ids):
         request['output'] = str(out)
         reference = c.get('reference') or c.get('truth_reference')
         if reference:
-            r = next(
+            reference_run = next(
                 (
                     r
                     for r in reversed(manifest['runs'])
@@ -279,13 +280,13 @@ def run(stage, ids):
                 ),
                 None,
             )
-            if not r:
+            if not reference_run:
                 raise RuntimeError('Missing CPU reference ' + reference)
-            folder = ROOT / r['output']
+            folder = ROOT / reference_run['output']
             name = 'reference-truth.f32' if 'truth_reference' in c else 'reference-ls.f32'
             request['meso']['height_file'] = str(folder / name)
         write(out / 'request.json', request)
-        r = dict(
+        r: dict[str, Any] = dict(
             id=c['id'],
             attempt=len(previous) + 1,
             status='running',
@@ -325,7 +326,7 @@ def run(stage, ids):
             print((out / 'run.log').read_text(encoding='utf-8', errors='replace')[-2500:])
             return 1
         if stage == 'gpu' or c['stage'] == 'gpu':
-            s = r['summary']
+            s: dict[str, Any] = r['summary']
             bad = any(
                 s[k]
                 for k in [
@@ -383,7 +384,7 @@ def reconstruct():
         L = (B.T @ B).tocsc()
         rhs = B.T @ b
         ref = np.zeros(len(h))
-        ref[1:] = spsolve(L[1:, 1:], rhs[1:])
+        ref[1:] = np.asarray(spsolve(L[1:, 1:], rhs[1:]), dtype=np.float64)
         ref -= ref.mean()
         residual = float(np.linalg.norm((L @ ref - rhs)[1:]) / max(np.linalg.norm(rhs[1:]), 1e-30))
         if residual > 1e-8 or not np.isfinite(ref).all():

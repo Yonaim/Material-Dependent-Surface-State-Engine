@@ -22,7 +22,8 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
-import trimesh
+# trimesh is supplied by this script's documented `uv run --with trimesh` command.
+import trimesh  # pyright: ignore[reportMissingImports]
 from PIL import Image
 from scipy.ndimage import distance_transform_edt
 
@@ -239,8 +240,11 @@ def bake_display_albedo(
     if not covered.any():
         raise RuntimeError(f"Display map bake covered no texels in {gltf}")
     nearest = distance_transform_edt(~covered, return_distances=False, return_indices=True)
-    factors = factors[tuple(nearest)]
-    ao[~covered] = ao[tuple(nearest)][~covered]
+    if nearest is None:
+        raise RuntimeError(f"Could not find nearest covered texels in {gltf}")
+    nearest_y, nearest_x = np.asarray(nearest, dtype=np.intp)
+    factors = factors[nearest_y, nearest_x]
+    ao[~covered] = ao[nearest_y, nearest_x][~covered]
     linear = np.where(base <= 0.04045, base / 12.92, ((base + 0.055) / 1.055) ** 2.4)
     linear *= np.clip(factors * ao, 0.0, 1.0)[..., None]
     encoded = np.where(linear <= 0.0031308, linear * 12.92, 1.055 * linear ** (1.0 / 2.4) - 0.055)

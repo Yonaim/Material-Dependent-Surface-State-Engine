@@ -4,6 +4,7 @@ Retry unchanged binaries after the user's explicit report of a policy change.
 """
 
 import copy, os, pathlib, shutil, subprocess, sys
+from typing import Any
 from authoring_study import ROOT, STUDY, read, write, digest, stamp
 import authoring_render_validation as render
 
@@ -46,7 +47,7 @@ def main():
         shutil.copy2('\\\\?\\' + str((ROOT / name).resolve()), '\\\\?\\' + str(dest.resolve()))
         if digest(dest) != expected:
             raise RuntimeError('Retry archive mismatch')
-    record = dict(
+    record: dict[str, Any] = dict(
         started_at=stamp(),
         command=[str(test)],
         executable_sha256=digest(test),

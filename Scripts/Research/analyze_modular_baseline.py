@@ -12,6 +12,7 @@ Apply frozen v1 equality gates. No novelty/productivity claim is inferred from i
 import json
 import pathlib
 import sys
+from typing import Any
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "Build/ResearchPython"))
 import numpy as np
@@ -301,11 +302,14 @@ for task in ["T0", "T3"]:
         }
         if not all(groups.values()):
             continue
-        row = dict(task=task, resolution=resolution, implementations={})
+        implementations: dict[str, list[dict[str, Any]]] = {}
+        row: dict[str, Any] = dict(
+            task=task, resolution=resolution, implementations=implementations
+        )
         for imp, rs in groups.items():
             diag = f"diagnostic-{task}-D-{imp}-128"
             ref = base(diag) / "final.f32" if resolution == 128 and diag in runs else None
-            xs = []
+            xs: list[dict[str, Any]] = []
             for r in rs:
                 file = ROOT / r["output"] / "final.f32"
                 s = r["summary"]
@@ -327,9 +331,9 @@ for task in ["T0", "T3"]:
                         warmup_reset=s.get("warmup_reset_verified", False),
                     )
                 )
-            row["implementations"][imp] = xs
-        u = np.median([x["gpu_median_ms"] for x in row["implementations"]["U"]])
-        m = np.median([x["gpu_median_ms"] for x in row["implementations"]["M"]])
+            implementations[imp] = xs
+        u = np.median([x["gpu_median_ms"] for x in implementations["U"]])
+        m = np.median([x["gpu_median_ms"] for x in implementations["M"]])
         row["M_over_U_gpu_median_ratio"] = float(m / u)
         cost.append(row)
 

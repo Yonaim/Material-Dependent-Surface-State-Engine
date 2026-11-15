@@ -66,7 +66,7 @@ def compare(a, b, label, restriction=False):
         coarse = int(round(np.sqrt(len(x))))
         fine = int(round(np.sqrt(len(y))))
         f = fine // coarse
-        k = x.shape[1]
+        k = len(summary(a)['channels'])
         if fine % coarse:
             raise RuntimeError('Nonintegral restriction')
         y = y.reshape(coarse, f, coarse, f, k).sum(axis=(1, 3)).reshape(-1, k)
@@ -384,7 +384,7 @@ fig.suptitle(
     'Reconstruction comparison | one flat quad, 128 x 128\nReal brick input has no known physical height',
     fontsize=14,
 )
-fig.savefig(figures / 'reconstruction.png')
+fig.savefig(str(figures / 'reconstruction.png'))
 plt.close(fig)
 
 fig, axes = plt.subplots(2, 3, figsize=(13, 7.7), layout='constrained')
@@ -416,7 +416,7 @@ fig.suptitle(
     'Downstream state after 4 seconds | same profile, fields, graph and GPU solver\nOnly reconstructed meso height and its derived geometry differ',
     fontsize=13,
 )
-fig.savefig(figures / 'transport.png')
+fig.savefig(str(figures / 'transport.png'))
 plt.close(fig)
 
 # Single-shape comparisons are distinct interventions, not a pooled accuracy/performance ranking.
@@ -443,7 +443,7 @@ ax.set_title('Observed sensitivities at 4 s | differences are not all numerical 
 for i, v in enumerate(values):
     ax.text(v, i, f' {v:.4g}%', va='center')
 ax.set_xlim(0, max(values) * 1.18)
-fig.savefig(figures / 'sensitivities.png')
+fig.savefig(str(figures / 'sensitivities.png'))
 plt.close(fig)
 
 # endregion

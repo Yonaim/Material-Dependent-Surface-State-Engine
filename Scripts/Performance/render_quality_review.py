@@ -31,7 +31,10 @@ def capture(base, group, scene, resolution, variant):
     )
     item = collect(base, run)
     assert item['validation']['simulation_step_serial'] == 662
-    return image_pixels(base, item), item['validation']['instances'], run['id']
+    pixels = image_pixels(base, item)
+    if pixels is None:
+        raise FileNotFoundError(f"Missing BGRA capture for run {run['id']}")
+    return pixels, item['validation']['instances'], run['id']
 
 
 records = []

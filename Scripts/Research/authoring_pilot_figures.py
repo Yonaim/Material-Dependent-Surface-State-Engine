@@ -70,7 +70,7 @@ def main():
     axs[1].legend(fontsize=8)
     fig.suptitle('Candidate 01: task predicates, not physical validation or comparative quality')
     fig.tight_layout()
-    fig.savefig(folder / 'candidate-01-metrics.png', dpi=150)
+    fig.savefig(str(folder / 'candidate-01-metrics.png'), dpi=150)
     plt.close(fig)
     m = np.load(prefix.parent / 'masks.npz')
     idx = audit['target_instance']
@@ -78,6 +78,7 @@ def main():
         -1, 4
     )
     fig, axs = plt.subplots(1, 3, figsize=(10, 3.4))
+    scat = None
     for ax, channel, title in zip(axs, [ice, water, wet], ['Ice', 'Waterfilm', 'Absorbed wetness']):
         scat = ax.scatter(
             pos[top, 0], pos[top, 1], c=cov[960][top, channel], s=2, vmin=0, vmax=1, cmap='viridis'
@@ -88,11 +89,12 @@ def main():
                 pos[mask, 0], pos[mask, 1], s=4, facecolors='none', edgecolors='red', linewidths=0.4
             )
         ax.set(aspect='equal', title=title, xlabel='Mesh-local x', ylabel='Mesh-local y')
-    fig.colorbar(scat, ax=axs.ravel().tolist(), fraction=0.02, label='Clamped State / Capacity')
+    if scat is not None:
+        fig.colorbar(scat, ax=axs.ravel().tolist(), fraction=0.02, label='Clamped State / Capacity')
     fig.suptitle(
         '16s numerical maps; red = common 12/14/16s qualifying trace. Not a lit appearance.'
     )
-    fig.savefig(folder / 'candidate-01-state-maps.png', dpi=150, bbox_inches='tight')
+    fig.savefig(str(folder / 'candidate-01-state-maps.png'), dpi=150, bbox_inches='tight')
     plt.close(fig)
     write(
         OUT / 'figures.json',

@@ -46,7 +46,7 @@ for task in ["T2", "T3"]:
     axes[0].legend()
     fig.suptitle(f"{task}: same-model U/M trajectories (overlap is expected if equal)")
     fig.tight_layout()
-    fig.savefig(output / f"{task}-trajectories.png", dpi=160)
+    fig.savefig(str(output / f"{task}-trajectories.png"), dpi=160)
     plt.close(fig)
 
 keys = [f"diagnostic-T3-D-{imp}-128" for imp in ["U", "M"]]
@@ -62,6 +62,7 @@ if all(k in runs for k in keys):
         for key in keys
     ]
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), layout="constrained")
+    im = None
     for col, name in enumerate(["waterfilm", "wetness"]):
         ix = names.index(name)
         density = [f[:, ix] / np.maximum(area, 1e-20) for f in fields]
@@ -80,8 +81,9 @@ if all(k in runs for k in keys):
             )
             ax.axhline(-0.1, c="white", ls="--", lw=0.7)
             ax.set(title=f"{label} / {name}", xlabel="u", ylabel="v")
-        fig.colorbar(im, ax=axes[:, col], label="State per reference area", shrink=0.75)
+        if im is not None:
+            fig.colorbar(im, ax=axes[:, col], label="State per reference area", shrink=0.75)
     fig.suptitle("T3 at 14 s: prescribed 5-state composition, X rotation 20 degrees")
-    fig.savefig(output / "T3-distributions.png", dpi=160)
+    fig.savefig(str(output / "T3-distributions.png"), dpi=160)
     plt.close(fig)
 print(output)

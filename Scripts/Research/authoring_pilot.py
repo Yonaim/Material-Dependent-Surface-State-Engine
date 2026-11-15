@@ -15,6 +15,7 @@ import os
 import pathlib
 import shutil
 import subprocess
+from typing import Any
 
 from authoring_study import ROOT, STUDY, digest, read, write, stamp
 from layout_lifetime_validation import archive
@@ -33,7 +34,7 @@ OLD = STUDY / 'layout-lifetime-fix/render/raw/absorbedwetness'
 # 저작 pilot의 조건을 준비하고 probe·실행·분석 단계를 조율한다.
 
 
-def prepare(kind):
+def prepare(kind: str) -> dict[str, Any]:
     folder = OUT / 'raw' / kind
     if folder.exists():
         raise RuntimeError('Preserving existing candidate and run evidence')
@@ -157,7 +158,7 @@ def prepare(kind):
 
 
 def run(kind):
-    plan = (
+    plan: dict[str, Any] = (
         read(OUT / (kind + '-plan.json'))
         if (OUT / (kind + '-plan.json')).exists()
         else prepare(kind)
@@ -203,7 +204,7 @@ def run(kind):
         '--benchmark-output',
         str(output),
     ]
-    record = dict(
+    record: dict[str, Any] = dict(
         started_at=stamp(),
         command=command,
         executable_sha256=digest(EXE),

@@ -18,6 +18,7 @@ import pathlib
 import subprocess
 import sys
 import time
+from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 STUDY = ROOT / "Performance-Data/20261026-coupling-study"
@@ -74,7 +75,7 @@ def compact_mapping_warnings(summary):
     return result
 
 
-def prepare():
+def prepare() -> dict[str, Any]:
     plan_path = EXPERIMENT / "plan.json"
     if plan_path.exists():
         return json.loads(plan_path.read_text(encoding="utf-8"))
@@ -158,7 +159,7 @@ def prepare():
 def run(stage, selected, sparse=False, repeat=False):
     plan = prepare()
     manifest_path = EXPERIMENT / "manifest.json"
-    manifest = (
+    manifest: dict[str, Any] = (
         json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest_path.exists()
         else dict(runs=[])
@@ -203,7 +204,7 @@ def run(stage, selected, sparse=False, repeat=False):
         config = dict(condition, output=str(output), sparse_solver=sparse)
         config_path = output / "request.json"
         write(config_path, config)
-        run_record = dict(
+        run_record: dict[str, Any] = dict(
             id=condition["id"],
             attempt=attempt,
             started_at=stamp(),
@@ -243,7 +244,9 @@ def run(stage, selected, sparse=False, repeat=False):
             run_record.update(status="execution_failed", error=str(exc))
         run_record.update(finished_at=stamp(), elapsed_seconds=time.monotonic() - start)
         if (output / "summary.json").exists():
-            summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+            summary: dict[str, Any] = json.loads(
+                (output / "summary.json").read_text(encoding="utf-8")
+            )
             run_record["summary"] = compact_mapping_warnings(summary)
             names = summary["channels"]
             budget = summary["initial_ice_water"] + sum(

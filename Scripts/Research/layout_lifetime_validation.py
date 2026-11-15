@@ -4,6 +4,7 @@ Archive baseline/fix and validate descriptor rebinding without changing numeric 
 """
 
 import copy, os, pathlib, shutil, subprocess, sys
+from typing import Any
 from authoring_study import ROOT, STUDY, read, write, digest, stamp
 import authoring_render_validation as render
 
@@ -43,7 +44,7 @@ def test(stage):
         raise RuntimeError('Preserving existing test evidence')
     exe = ROOT / 'Build/Release/MDSS_SceneResourceTests.exe'
     hashes = archive(folder / 'inputs', [exe])
-    record = dict(
+    record: dict[str, Any] = dict(
         started_at=stamp(),
         stage=stage,
         command=[str(exe), '--scratch-layout-only'],
@@ -123,7 +124,7 @@ def gpu():
         raise RuntimeError('Preserving GPU regression evidence')
     exe = ROOT / 'Build/Release/MDSS_SurfaceGPUResourceTests.exe'
     hashes = archive(folder / 'inputs', [exe, ROOT / 'Tests/SurfaceGPUResourceTests.cpp'])
-    record = dict(
+    record: dict[str, Any] = dict(
         started_at=stamp(),
         command=[str(exe)],
         source_hashes=hashes,

@@ -10,6 +10,7 @@ Prepare isolated authoring tasks and verify capability boundaries; never fabrica
 # 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse, copy, datetime as dt, hashlib, json, os, pathlib, shutil, subprocess, sys
+from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 STUDY = ROOT / 'Performance-Data/20261027-authoring-readiness'
@@ -28,7 +29,7 @@ def stamp():
     return dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
 
 
-def read(p):
+def read(p: pathlib.Path) -> Any:
     return json.loads(p.read_text(encoding='utf-8'))
 
 
@@ -45,7 +46,7 @@ def digest(p):
         return hashlib.sha256(f.read()).hexdigest()
 
 
-def prepare():
+def prepare() -> dict[str, Any]:
     if (STUDY / 'plan.json').exists():
         return read(STUDY / 'plan.json')
     base = read(ROOT / 'Assets/SurfaceProfiles/IceReactionLab.SRProfile')
@@ -216,7 +217,7 @@ def probe():
         shutil.copy2('\\\\?\\' + str((ROOT / name).resolve()), '\\\\?\\' + str(target.resolve()))
         if digest(target) != h:
             raise RuntimeError('Archive mismatch')
-    manifest = dict(
+    manifest: dict[str, Any] = dict(
         started_at=stamp(), executable_sha256=digest(EXE), source_hashes=hashes, scope=plan['scope']
     )
     with (out / 'probe.log').open('w', encoding='utf-8') as log:

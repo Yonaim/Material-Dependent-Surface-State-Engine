@@ -314,7 +314,12 @@ write(
 images = EXPERIMENT / "figures"
 images.mkdir(exist_ok=True)
 plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False})
-colors = {v: plt.get_cmap("tab10")(i) for i, v in enumerate("ABCDEF")}
+colors = dict(
+    zip(
+        "ABCDEF",
+        ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"],
+    )
+)
 for case in ["plate", "bunny", "mud"]:
     prefix = f"{case}-128-60-"
     variants = [v for v in "ABCDEF" if prefix + v in runs]
@@ -336,7 +341,7 @@ for case in ["plate", "bunny", "mud"]:
     axes[-1].legend(ncol=2)
     fig.suptitle(f"{case}: matched-input {','.join(variants)}, 128 grid, 60 Hz")
     fig.tight_layout()
-    fig.savefig(images / f"{case}-trajectories.png", dpi=150)
+    fig.savefig(str(images / f"{case}-trajectories.png"), dpi=150)
     plt.close(fig)
 
     rows = (len(variants) + 2) // 3
@@ -352,8 +357,9 @@ for case in ["plate", "bunny", "mud"]:
     water = runs[key]["summary"]["channels"].index("waterfilm")
     fields = [states(prefix + v)[:, water] / np.maximum(area, 1e-20) for v in variants]
     vmax = max(float(f[patch].max()) for f in fields)
+    scatter = None
     for ax, label, field in zip(axes.flat, variants, fields):
-        im = ax.scatter(
+        scatter = ax.scatter(
             u[patch],
             vcoord[patch],
             c=field[patch],
@@ -369,9 +375,11 @@ for case in ["plate", "bunny", "mud"]:
         ax.set_visible(False)
     fig.suptitle(f"{case}: Waterfilm per reference area, t=14 s (deposition patch view)")
     fig.subplots_adjust(right=0.86, hspace=0.3)
-    cax = fig.add_axes([0.9, 0.17, 0.02, 0.65])
-    fig.colorbar(im, cax=cax)
-    fig.savefig(images / f"{case}-waterfilm.png", dpi=160)
+    if scatter is None:
+        raise RuntimeError("No deposition fields were available for the waterfilm plot.")
+    cax = fig.add_axes((0.9, 0.17, 0.02, 0.65))
+    fig.colorbar(scatter, cax=cax)
+    fig.savefig(str(images / f"{case}-waterfilm.png"), dpi=160)
     plt.close(fig)
 
 if all(f"plate-128-60-{v}" in runs for v in "DE"):
@@ -414,7 +422,7 @@ if all(f"plate-128-60-{v}" in runs for v in "DE"):
         title="Effect and observed numerical sensitivity",
     )
     fig.tight_layout()
-    fig.savefig(images / "plate-contrast.png", dpi=160)
+    fig.savefig(str(images / "plate-contrast.png"), dpi=160)
     plt.close(fig)
 
 lines = [
