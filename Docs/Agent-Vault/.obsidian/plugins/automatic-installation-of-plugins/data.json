@@ -1,7 +1,7 @@
 {
   "loadSettingsOnInstall": true,
   "loadSettingsOnStartup": false,
-  "autoInstallPlugins": true,
+  "autoInstallPlugins": false,
   "autoEnablePlugins": true,
   "mergePluginSettings": true,
   "logLevel": "error"
