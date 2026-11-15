@@ -1,0 +1,17 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceFolder}/Source/**",
+        "${workspaceFolder}/Build/**",
+        "${env:VULKAN_SDK}/Include"
+      ],
+      "defines": [],
+      "windowsSdkVersion": "10.0.22621.0",
+      "intelliSenseMode": "windows-msvc-x64",
+      "cppStandard": "c++20"
+    }
+  ],
+  "version": 4
+}
