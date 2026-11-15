@@ -13,9 +13,13 @@
 
 namespace MDSS::GPU
 {
-#pragma region Queue_Lifecycle_and_Access
+// ============================================================
+// 00. Queue Lifecycle and Access
+// ============================================================
+#pragma region 00_Queue_Lifecycle_and_Access
+// 선택한 family의 queue를 보관해 command 제출에 제공한다.
 
-    TVulkanQueue::TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
+    FVulkanQueue::FVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
         : FamilyIndices(FindFamilies(PhysicalDevice, Surface))
     {
         if (!FamilyIndices.Complete())
@@ -25,31 +29,35 @@ namespace MDSS::GPU
 
         vkGetDeviceQueue(Device, FamilyIndices.GraphicsFamily.value(), 0, &GraphicsQueue);
         vkGetDeviceQueue(Device, FamilyIndices.PresentFamily.value(), 0, &PresentQueue);
-        TLogger::Debug("Vulkan", "Queue handles acquired from logical device.");
+        FLogger::Debug("Vulkan", "Queue handles acquired from logical device.");
     }
 
-    VkQueue TVulkanQueue::GetGraphics() const noexcept
+    VkQueue FVulkanQueue::GetGraphics() const noexcept
     {
         return GraphicsQueue;
     }
 
-    VkQueue TVulkanQueue::GetPresent() const noexcept
+    VkQueue FVulkanQueue::GetPresent() const noexcept
     {
         return PresentQueue;
     }
 
-    const TQueueFamilyIndices& TVulkanQueue::GetFamilyIndices() const noexcept
+    const FQueueFamilyIndices& FVulkanQueue::GetFamilyIndices() const noexcept
     {
         return FamilyIndices;
     }
 
 #pragma endregion
 
-#pragma region Queue_Family_Selection
+// ============================================================
+// 01. Queue Family Selection
+// ============================================================
+#pragma region 01_Queue_Family_Selection
+// graphics·present 등 필요한 작업을 지원하는 queue family를 찾는다.
 
-    TQueueFamilyIndices TVulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    FQueueFamilyIndices FVulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
-        TQueueFamilyIndices Indices;
+        FQueueFamilyIndices Indices;
 
         std::uint32_t QueueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, nullptr);
@@ -60,6 +68,7 @@ namespace MDSS::GPU
         for (std::uint32_t Index = 0; Index < QueueFamilyCount; ++Index)
         {
             constexpr VkQueueFlags RequiredGraphicsComputeFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+
             if ((QueueFamilies[Index].queueFlags & RequiredGraphicsComputeFlags) == RequiredGraphicsComputeFlags)
             {
                 Indices.GraphicsFamily = Index;
@@ -67,6 +76,7 @@ namespace MDSS::GPU
 
             VkBool32 bPresentSupported = VK_FALSE;
             vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, Index, Surface, &bPresentSupported);
+
             if (bPresentSupported == VK_TRUE)
             {
                 Indices.PresentFamily = Index;

@@ -20,28 +20,32 @@
 
 namespace MDSS::GPU
 {
-#pragma region Swapchain_Lifecycle
+// ============================================================
+// 00. Swapchain Lifecycle
+// ============================================================
+#pragma region 00_Swapchain_Lifecycle
+// surface 조건에 맞는 swapchain을 만들고 재생성·종료 자원을 관리한다.
 
-    TSwapchain::TSwapchain(const TVulkanContext& Context, const TWindow& TWindow) : Device(Context.GetDevice())
+    FSwapchain::FSwapchain(const FVulkanContext& Context, const FWindow& FWindow) : Device(Context.GetDevice())
     {
-        Create(Context, TWindow);
+        Create(Context, FWindow);
     }
 
-    TSwapchain::~TSwapchain()
+    FSwapchain::~FSwapchain()
     {
         Destroy();
     }
 
-    void TSwapchain::Recreate(const TVulkanContext& Context, const TWindow& TWindow)
+    void FSwapchain::Recreate(const FVulkanContext& Context, const FWindow& FWindow)
     {
         Destroy();
         Device = Context.GetDevice();
-        Create(Context, TWindow);
+        Create(Context, FWindow);
     }
 
-    void TSwapchain::Create(const TVulkanContext& Context, const TWindow& TWindow)
+    void FSwapchain::Create(const FVulkanContext& Context, const FWindow& FWindow)
     {
-        const TSwapchainSupportDetails Support = QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const FSwapchainSupportDetails Support = QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
 
         if (Support.Formats.empty() || Support.PresentModes.empty())
         {
@@ -50,9 +54,10 @@ namespace MDSS::GPU
 
         const VkSurfaceFormatKHR SurfaceFormat = ChooseSurfaceFormat(Support.Formats);
         const VkPresentModeKHR   PresentMode = ChoosePresentMode(Support.PresentModes);
-        const VkExtent2D         SelectedExtent = ChooseExtent(Support.Capabilities, TWindow);
+        const VkExtent2D         SelectedExtent = ChooseExtent(Support.Capabilities, FWindow);
 
         std::uint32_t ImageCount = Support.Capabilities.minImageCount + 1;
+
         if (Support.Capabilities.maxImageCount > 0 && ImageCount > Support.Capabilities.maxImageCount)
         {
             ImageCount = Support.Capabilities.maxImageCount;
@@ -67,16 +72,20 @@ namespace MDSS::GPU
         CreateInfo.imageExtent = SelectedExtent;
         CreateInfo.imageArrayLayers = 1;
         CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        bCanReadback = (Support.Capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
+
+        if (bCanReadback)
+            CreateInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         const auto&                        QueueFamilies = Context.GetQueues().GetFamilyIndices();
-        const std::array<std::uint32_t, 2> TQueueFamilyIndices = {QueueFamilies.GraphicsFamily.value(),
+        const std::array<std::uint32_t, 2> FQueueFamilyIndices = {QueueFamilies.GraphicsFamily.value(),
                                                                   QueueFamilies.PresentFamily.value()};
 
-        if (TQueueFamilyIndices[0] != TQueueFamilyIndices[1])
+        if (FQueueFamilyIndices[0] != FQueueFamilyIndices[1])
         {
             CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            CreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(TQueueFamilyIndices.size());
-            CreateInfo.pQueueFamilyIndices = TQueueFamilyIndices.data();
+            CreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(FQueueFamilyIndices.size());
+            CreateInfo.pQueueFamilyIndices = FQueueFamilyIndices.data();
         }
         else
         {
@@ -112,15 +121,15 @@ namespace MDSS::GPU
             throw;
         }
 
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "TSwapchain created: " + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
                           ", " + std::to_string(Images.size()) + " images.");
-        TLogger::Debug("TRenderer",
+        FLogger::Debug("TRenderer",
                        "TSwapchain format=" + std::to_string(static_cast<int>(ImageFormat)) +
                            ", present mode=" + std::to_string(static_cast<int>(PresentMode)) + ".");
     }
 
-    void TSwapchain::Destroy()
+    void FSwapchain::Destroy()
     {
         for (VkImageView ImageView : ImageViews)
         {
@@ -129,6 +138,7 @@ namespace MDSS::GPU
                 vkDestroyImageView(Device, ImageView, nullptr);
             }
         }
+
         ImageViews.clear();
         Images.clear();
 
@@ -144,45 +154,54 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Swapchain_Accessors
+// ============================================================
+// 01. Swapchain Accessors
+// ============================================================
+#pragma region 01_Swapchain_Accessors
+// acquire·present와 렌더 attachment가 사용할 swapchain 정보를 제공한다.
 
-    VkSwapchainKHR TSwapchain::GetHandle() const noexcept
+    VkSwapchainKHR FSwapchain::GetHandle() const noexcept
     {
         return SwapchainData;
     }
 
-    VkFormat TSwapchain::GetImageFormat() const noexcept
+    VkFormat FSwapchain::GetImageFormat() const noexcept
     {
         return ImageFormat;
     }
 
-    VkExtent2D TSwapchain::GetExtent() const noexcept
+    VkExtent2D FSwapchain::GetExtent() const noexcept
     {
         return Extent;
     }
 
-    const std::vector<VkImage>& TSwapchain::GetImages() const noexcept
+    const std::vector<VkImage>& FSwapchain::GetImages() const noexcept
     {
         return Images;
     }
 
-    const std::vector<VkImageView>& TSwapchain::GetImageViews() const noexcept
+    const std::vector<VkImageView>& FSwapchain::GetImageViews() const noexcept
     {
         return ImageViews;
     }
 
 #pragma endregion
 
-#pragma region Surface_Format_and_Present_Selection
+// ============================================================
+// 02. Surface Format and Present Selection
+// ============================================================
+#pragma region 02_Surface_Format_and_Present_Selection
+// 장치가 지원하는 format·present mode·extent에서 실행 구성을 선택한다.
 
-    TSwapchainSupportDetails TSwapchain::QuerySupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    FSwapchainSupportDetails FSwapchain::QuerySupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
-        TSwapchainSupportDetails Details;
+        FSwapchainSupportDetails Details;
 
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, &Details.Capabilities);
 
         std::uint32_t FormatCount = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &FormatCount, nullptr);
+
         if (FormatCount > 0)
         {
             Details.Formats.resize(FormatCount);
@@ -191,6 +210,7 @@ namespace MDSS::GPU
 
         std::uint32_t PresentModeCount = 0;
         vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, &PresentModeCount, nullptr);
+
         if (PresentModeCount > 0)
         {
             Details.PresentModes.resize(PresentModeCount);
@@ -201,7 +221,7 @@ namespace MDSS::GPU
         return Details;
     }
 
-    VkSurfaceFormatKHR TSwapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& Formats)
+    VkSurfaceFormatKHR FSwapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& Formats)
     {
         const auto Preferred = std::find_if(Formats.begin(),
                                             Formats.end(),
@@ -214,11 +234,12 @@ namespace MDSS::GPU
         return Preferred != Formats.end() ? *Preferred : Formats.front();
     }
 
-    VkPresentModeKHR TSwapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& PresentModes)
+    VkPresentModeKHR FSwapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& PresentModes)
     {
         // IMMEDIATE presents as soon as rendering completes, independently of the display refresh rate.
         // This may produce tearing; fall back to MAILBOX and then FIFO when unsupported.
         const auto Immediate = std::find(PresentModes.begin(), PresentModes.end(), VK_PRESENT_MODE_IMMEDIATE_KHR);
+
         if (Immediate != PresentModes.end())
         {
             return VK_PRESENT_MODE_IMMEDIATE_KHR;
@@ -229,7 +250,7 @@ namespace MDSS::GPU
         return Mailbox != PresentModes.end() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D TSwapchain::ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const TWindow& TWindow)
+    VkExtent2D FSwapchain::ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const FWindow& FWindow)
     {
         if (Capabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max())
         {
@@ -238,7 +259,7 @@ namespace MDSS::GPU
 
         std::int32_t Width = 0;
         std::int32_t Height = 0;
-        glfwGetFramebufferSize(TWindow.GetNativeHandle(), &Width, &Height);
+        glfwGetFramebufferSize(FWindow.GetNativeHandle(), &Width, &Height);
 
         VkExtent2D Extent = {static_cast<std::uint32_t>(std::max(Width, 1)),
                              static_cast<std::uint32_t>(std::max(Height, 1))};
@@ -250,7 +271,7 @@ namespace MDSS::GPU
         return Extent;
     }
 
-    VkCompositeAlphaFlagBitsKHR TSwapchain::ChooseCompositeAlpha(const VkSurfaceCapabilitiesKHR& Capabilities)
+    VkCompositeAlphaFlagBitsKHR FSwapchain::ChooseCompositeAlpha(const VkSurfaceCapabilitiesKHR& Capabilities)
     {
         constexpr std::array<VkCompositeAlphaFlagBitsKHR, 4> Candidates = {VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
                                                                            VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
@@ -270,9 +291,13 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Swapchain_Image_Views
+// ============================================================
+// 03. Swapchain Image Views
+// ============================================================
+#pragma region 03_Swapchain_Image_Views
+// 획득한 swapchain 이미지마다 렌더 attachment용 view를 만든다.
 
-    void TSwapchain::CreateImageViews()
+    void FSwapchain::CreateImageViews()
     {
         ImageViews.resize(Images.size());
 
@@ -299,6 +324,7 @@ namespace MDSS::GPU
                 {
                     vkDestroyImageView(Device, ImageViews[CreatedIndex], nullptr);
                 }
+
                 ImageViews.clear();
                 throw std::runtime_error("Failed to create swapchain image view.");
             }

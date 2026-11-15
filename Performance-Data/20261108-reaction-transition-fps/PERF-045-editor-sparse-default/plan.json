@@ -1,0 +1,24 @@
+{
+  "experiment_id": "PERF-045-editor-sparse-default",
+  "status": "completed",
+  "question": "Does enabling sparse solver scheduling for the default ReactionTransitionComparison scene reduce editor-mode frame cost?",
+  "single_change": "Set sparse_solver from false (application default) to true; keep per-workgroup channel mask false and every other setting fixed.",
+  "hypothesis": "The three plates' local contacts activate less than their full top surfaces, so sparse workgroup scheduling should lower Pass 1 and Pass 2 cost.",
+  "conditions": {
+    "configuration": "Debug",
+    "scene": "Assets/Scenes/ReactionTransitionComparison.Scene",
+    "resolution": 128,
+    "render_mesh_resolution": 128,
+    "presentation_mode": false,
+    "replay_demo": true,
+    "per_workgroup_channel_mask": false,
+    "active_channel_mask": true,
+    "warmup_frames": 180,
+    "measure_frames": 60,
+    "repetitions_per_condition": 3,
+    "dt_seconds": 0.016666666666666666
+  },
+  "metrics": ["frame_gpu_elapsed_ms", "solver_gpu_ms", "pass1_gpu_ms", "pass2_gpu_ms", "render_gpu_ms", "command_record_cpu_ms", "fence_wait_cpu_ms", "cpu_frame_ms"],
+  "correctness": "Compare same-step State arrays bytewise and require zero negative and nonfinite values. Record actual viewport and runtime settings from the benchmark outputs.",
+  "limitations": "Benchmark mode fixes one simulation step per frame. It measures editor UI rendering but does not reproduce interactive wall-clock catch-up steps or the user's exact window layout."
+}

@@ -9,7 +9,7 @@
 
 namespace MDSS
 {
-    class TSceneFileDialog final
+    class FSceneFileDialog final
     {
     public:
         [[nodiscard]] static std::optional<std::filesystem::path> OpenScene();

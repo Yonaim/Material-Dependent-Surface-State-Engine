@@ -31,16 +31,17 @@ namespace MDSS::GPU
 
             if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0)
             {
-                TLogger::Error("Vulkan Validation", Message);
+                FLogger::Error("Vulkan Validation", Message);
             }
             else if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0)
             {
-                TLogger::Warning("Vulkan Validation", Message);
+                FLogger::Warning("Vulkan Validation", Message);
             }
             else
             {
-                TLogger::Debug("Vulkan Validation", Message);
+                FLogger::Debug("Vulkan Validation", Message);
             }
+
             return VK_FALSE;
         }
 
@@ -54,14 +55,19 @@ namespace MDSS::GPU
                                      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
             CreateInfo.pfnUserCallback = DebugCallback;
+
             return CreateInfo;
         }
     } // namespace
 #endif
 
-#pragma region Vulkan_Instance_Lifecycle
+// ============================================================
+// 00. Vulkan Instance Lifecycle
+// ============================================================
+#pragma region 00_Vulkan_Instance_Lifecycle
+// 요청 extension·validation 설정으로 Vulkan instance를 생성·해제한다.
 
-    TVulkanInstance::TVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
+    FVulkanInstance::FVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
     {
         const std::vector<const char*> Extensions = BuildExtensionList(RequiredExtensions);
         ValidateExtensions(Extensions);
@@ -103,6 +109,7 @@ namespace MDSS::GPU
 #endif
 
         const VkResult Result = vkCreateInstance(&CreateInfo, nullptr, &Instance);
+
         if (Result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create Vulkan instance (VkResult: " +
@@ -121,14 +128,14 @@ namespace MDSS::GPU
         }
 #endif
 
-        TLogger::Info("Vulkan", "Instance created (API 1.2).");
-        TLogger::Debug("Vulkan", "Enabled instance extension count=" + std::to_string(Extensions.size()) + ".");
+        FLogger::Info("Vulkan", "Instance created (API 1.2).");
+        FLogger::Debug("Vulkan", "Enabled instance extension count=" + std::to_string(Extensions.size()) + ".");
 #if MDSS_ENABLE_VALIDATION
-        TLogger::Info("Vulkan", "Validation enabled (core, synchronization, best practices).");
+        FLogger::Info("Vulkan", "Validation enabled (core, synchronization, best practices).");
 #endif
     }
 
-    TVulkanInstance::~TVulkanInstance()
+    FVulkanInstance::~FVulkanInstance()
     {
 #if MDSS_ENABLE_VALIDATION
         if (DebugMessenger != VK_NULL_HANDLE)
@@ -139,6 +146,7 @@ namespace MDSS::GPU
             {
                 DestroyDebugMessenger(Instance, DebugMessenger, nullptr);
             }
+
             DebugMessenger = VK_NULL_HANDLE;
         }
 #endif
@@ -152,18 +160,26 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Vulkan_Instance_Access
+// ============================================================
+// 01. Vulkan Instance Access
+// ============================================================
+#pragma region 01_Vulkan_Instance_Access
+// 장치 선택과 surface 생성이 참조할 instance 식별자를 제공한다.
 
-    VkInstance TVulkanInstance::GetHandle() const noexcept
+    VkInstance FVulkanInstance::GetHandle() const noexcept
     {
         return Instance;
     }
 
 #pragma endregion
 
-#pragma region Extension_and_Layer_Validation
+// ============================================================
+// 02. Extension and Layer Validation
+// ============================================================
+#pragma region 02_Extension_and_Layer_Validation
+// 요청한 extension·layer가 실행 환경에 있는지 검사한다.
 
-    std::vector<const char*> TVulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
+    std::vector<const char*> FVulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
     {
         std::vector<const char*> Extensions = RequiredExtensions;
 
@@ -187,7 +203,7 @@ namespace MDSS::GPU
         return Extensions;
     }
 
-    void TVulkanInstance::ValidateExtensions(const std::vector<const char*>& Extensions)
+    void FVulkanInstance::ValidateExtensions(const std::vector<const char*>& Extensions)
     {
         std::uint32_t AvailableCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &AvailableCount, nullptr);
@@ -211,7 +227,7 @@ namespace MDSS::GPU
     }
 
 #if MDSS_ENABLE_VALIDATION
-    void TVulkanInstance::ValidateLayers()
+    void FVulkanInstance::ValidateLayers()
     {
         std::uint32_t LayerCount = 0;
         vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);

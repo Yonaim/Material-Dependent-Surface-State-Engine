@@ -18,7 +18,7 @@ namespace MDSS::SurfaceState
      * @brief Shared geometry를 참조하고 Instance별 texel State를 소유한다.
      * @note State channel count는 Profile에서 구축한 registry의 크기다.
      */
-    class TSurfaceInstanceStateData
+    class FSurfaceInstanceStateData
     {
     public:
         // Instance state construction
@@ -29,26 +29,26 @@ namespace MDSS::SurfaceState
          * @param StateCount Registry가 결정한 동적 State 채널 수.
          * @throws std::invalid_argument ID, geometry 또는 Surface/Profile 대응이 잘못된 경우.
          */
-        TSurfaceInstanceStateData(TSurfaceInstanceID                                ID,
-                                  std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
+        FSurfaceInstanceStateData(FSurfaceInstanceID                                ID,
+                                  std::shared_ptr<const FSharedSurfaceGeometryData> Geometry,
                                   std::size_t                                       StateCount);
 
         // Instance state access
-        [[nodiscard]] TSurfaceInstanceID                      GetID() const noexcept;
-        [[nodiscard]] const TSharedSurfaceGeometryData&       GetGeometry() const noexcept;
+        [[nodiscard]] FSurfaceInstanceID                      GetID() const noexcept;
+        [[nodiscard]] const FSharedSurfaceGeometryData&       GetGeometry() const noexcept;
         [[nodiscard]] std::size_t                             GetStateCount() const noexcept;
-        [[nodiscard]] const std::vector<TSurfaceStateValues>& GetStates() const noexcept;
+        [[nodiscard]] const std::vector<FSurfaceStateValues>& GetStates() const noexcept;
         /** @brief Solver가 Instance별 상태 채널을 갱신할 mutable state 배열을 반환한다. */
-        [[nodiscard]] std::vector<TSurfaceStateValues>& GetStates() noexcept;
+        [[nodiscard]] std::vector<FSurfaceStateValues>& GetStates() noexcept;
         /**
          * @brief texel의 정적 SurfaceProfileMap index를 조회한다.
          * @throws std::out_of_range texel index가 geometry에 없는 경우.
          */
-        [[nodiscard]] TSurfaceProfileIndex GetProfileIndex(TLocalTexelIndex Texel) const;
+        [[nodiscard]] FSurfaceProfileIndex GetProfileIndex(FLocalTexelIndex Texel) const;
 
     private:
-        TSurfaceInstanceID                                ID = InvalidSurfaceInstanceID;
-        std::shared_ptr<const TSharedSurfaceGeometryData> Geometry;
-        std::vector<TSurfaceStateValues>                  States;
+        FSurfaceInstanceID                                ID = InvalidSurfaceInstanceID;
+        std::shared_ptr<const FSharedSurfaceGeometryData> Geometry;
+        std::vector<FSurfaceStateValues>                  States;
     };
 } // namespace MDSS::SurfaceState

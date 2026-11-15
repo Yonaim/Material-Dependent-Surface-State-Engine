@@ -1,3 +1,4 @@
+# 소스·의존성·셰이더·테스트와 연구 도구의 빌드 대상을 구성한다.
 cmake_minimum_required(VERSION 3.24)
 
 project(MDSS_Engine
@@ -281,6 +282,7 @@ if(BUILD_TESTING)
         ${MDSS_SURFACE_PACKING_SOURCES}
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
     )
     target_include_directories(MDSS_SimulationTransportTests PRIVATE Source)
     target_link_libraries(MDSS_SimulationTransportTests PRIVATE glm::glm)
@@ -313,6 +315,8 @@ if(BUILD_TESTING)
             target_compile_options(MDSS_SceneResourceTests PRIVATE -Wall -Wextra -Wpedantic)
         endif()
         add_test(NAME MDSS_SceneResources COMMAND MDSS_SceneResourceTests)
+        add_test(NAME MDSS_ScratchDescriptorLifetime COMMAND MDSS_SceneResourceTests --scratch-layout-only)
+        set_tests_properties(MDSS_ScratchDescriptorLifetime PROPERTIES SKIP_RETURN_CODE 77)
         add_test(NAME MDSS_DemoAnimation COMMAND MDSS_SceneResourceTests --demo-animation)
         add_test(NAME MDSS_CavityFillDisplayBound COMMAND MDSS_SceneResourceTests --cavity-fill-bound)
         add_test(NAME MDSS_LavaScene COMMAND MDSS_SceneResourceTests --lava-scene)
@@ -338,6 +342,7 @@ if(BUILD_TESTING)
         ${MDSS_SURFACE_PACKING_SOURCES}
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
     )
     target_include_directories(MDSS_SurfaceCacheTests PRIVATE Source)
     target_include_directories(MDSS_SurfaceCacheTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
@@ -364,6 +369,7 @@ if(BUILD_TESTING)
         Source/SurfaceState/State/SurfaceInstanceStateData.cpp
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
     )
     target_include_directories(MDSS_SurfaceStateTests PRIVATE Source)
     target_link_libraries(MDSS_SurfaceStateTests PRIVATE glm::glm nlohmann_json::nlohmann_json)
@@ -450,6 +456,7 @@ if(BUILD_TESTING)
         Source/SurfaceState/Solver/SurfaceStateSolver.cpp
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
         Source/GPU/Vulkan/Resource/GPUBuffer.cpp
     )
     add_dependencies(MDSS_SurfaceGPUResourceTests MDSS_Shaders)
@@ -465,8 +472,44 @@ if(BUILD_TESTING)
         target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME MDSS_SurfaceGPUResource COMMAND MDSS_SurfaceGPUResourceTests)
+    add_test(NAME MDSS_LocalReactions COMMAND MDSS_SurfaceGPUResourceTests --reactions-only)
+    set_tests_properties(MDSS_LocalReactions PROPERTIES SKIP_RETURN_CODE 77)
     add_test(NAME MDSS_MesoPeakPacking COMMAND MDSS_SurfaceGPUResourceTests --meso-peak-only)
     set_tests_properties(MDSS_SurfaceGPUResource PROPERTIES SKIP_RETURN_CODE 77)
+
+    # Explicitly invoked headless study runner; uses the production mesh mapping and GPU solver.
+    get_target_property(MDSS_RESEARCH_SOURCES MDSS_SurfaceGPUResourceTests SOURCES)
+    list(REMOVE_ITEM MDSS_RESEARCH_SOURCES Tests/SurfaceGPUResourceTests.cpp)
+    include(Scripts/Research/MesoStudy.cmake)
+    add_executable(MDSS_CouplingStudy Scripts/Research/CouplingStudy.cpp ${MDSS_RESEARCH_SOURCES}
+        Source/AssetManager/Core/Asset.cpp
+        Source/AssetManager/Loaders/OBJLoader.cpp
+        Source/AssetManager/Loaders/MTLLoader.cpp
+        Source/AssetManager/Loaders/SRProfileLoader.cpp
+        Source/AssetManager/Assets/SRProfileAsset.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
+        ${MesoGenerated}
+        Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp
+        Source/AssetManager/Loaders/TextureLoader.cpp)
+    add_dependencies(MDSS_CouplingStudy MDSS_Shaders)
+    target_include_directories(MDSS_CouplingStudy PRIVATE Source "${CMAKE_BINARY_DIR}/generated")
+    target_include_directories(MDSS_CouplingStudy SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/delaunator")
+    target_link_libraries(MDSS_CouplingStudy PRIVATE Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
+    target_compile_definitions(MDSS_CouplingStudy PRIVATE MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}")
+    include(Scripts/Research/ModularShaders.cmake)
+
+    # Explicit read-only fixture probe, separate from the rendered application and GPU research runner.
+    add_executable(MDSS_AuthoringProbe Scripts/Research/AuthoringProbe.cpp
+        Source/AssetManager/Core/Asset.cpp
+        Source/AssetManager/Assets/SRProfileAsset.cpp
+        Source/AssetManager/Loaders/SRProfileLoader.cpp
+        Source/SurfaceState/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp)
+    target_include_directories(MDSS_AuthoringProbe PRIVATE Source)
+    target_link_libraries(MDSS_AuthoringProbe PRIVATE glm::glm nlohmann_json::nlohmann_json)
 endif()
 
 # Vendored triangulation is used only by the source-topology render mesh builder.

@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Build MDSS, run the configured scene/resolution matrix, and preserve raw captures."""
+"""benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
+
+Build MDSS, run the configured scene/resolution matrix, and preserve raw captures.
+"""
+
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+# region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 
@@ -17,16 +26,32 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MATRIX = ROOT / "Config/Performance/solver-resolution-matrix.json"
 DEFAULT_RESULTS = ROOT / "Performance-Data"
 
 
+# endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+# region 01_Processing_Helpers
+# benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
+
+
 def run_text(command: list[str], *, cwd: Path, timeout: int = 30) -> str:
     try:
-        result = subprocess.run(command, cwd=cwd, text=True, encoding="utf-8", errors="replace",
-                                capture_output=True, timeout=timeout, check=False)
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=timeout,
+            check=False,
+        )
     except (OSError, subprocess.TimeoutExpired):
         return ""
     return result.stdout if result.returncode == 0 else ""
@@ -37,7 +62,9 @@ def git_snapshot() -> dict[str, Any]:
     status = run_text(["git", "status", "--porcelain"], cwd=ROOT)
     tracked_diff = run_text(["git", "diff", "--binary", "HEAD"], cwd=ROOT, timeout=60)
     digest = hashlib.sha256(tracked_diff.encode("utf-8", errors="replace"))
-    untracked = run_text(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT).splitlines()
+    untracked = run_text(
+        ["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT
+    ).splitlines()
     for relative in sorted(untracked):
         path = ROOT / relative
         if path.is_file():
@@ -52,7 +79,11 @@ def git_snapshot() -> dict[str, Any]:
 
 def gpu_summary() -> str | None:
     output = run_text(["vulkaninfo", "--summary"], cwd=ROOT, timeout=15)
-    candidates = [line.strip() for line in output.splitlines() if re.search(r"deviceName|GPU[0-9]+", line, re.I)]
+    candidates = [
+        line.strip()
+        for line in output.splitlines()
+        if re.search(r"deviceName|GPU[0-9]+", line, re.I)
+    ]
     return "; ".join(candidates[:8]) if candidates else None
 
 
@@ -96,14 +127,21 @@ def preserve_inputs(raw_dir: Path, binary: Path) -> dict[str, Any]:
     """Keep recoverable inputs, rather than relying on a dirty-tree hash alone."""
     inputs = raw_dir / "inputs"
     inputs.mkdir()
-    patch = subprocess.run(["git", "diff", "--binary", "HEAD"], cwd=ROOT, capture_output=True, check=True)
+    patch = subprocess.run(
+        ["git", "diff", "--binary", "HEAD"], cwd=ROOT, capture_output=True, check=True
+    )
     (inputs / "working-tree.patch").write_bytes(patch.stdout)
     paths = [ROOT / "CMakeLists.txt"]
     for folder in ("Source", "Shaders", "Assets", "Config", "Scripts", "ThirdParty"):
-        paths.extend(path for path in (ROOT / folder).rglob("*")
-                     if path.is_file() and ".git" not in path.parts and "__pycache__" not in path.parts)
+        paths.extend(
+            path
+            for path in (ROOT / folder).rglob("*")
+            if path.is_file() and ".git" not in path.parts and "__pycache__" not in path.parts
+        )
     hashes = {}
-    with zipfile.ZipFile(inputs / "source-assets.zip", "w", compression=zipfile.ZIP_DEFLATED) as archive:
+    with zipfile.ZipFile(
+        inputs / "source-assets.zip", "w", compression=zipfile.ZIP_DEFLATED
+    ) as archive:
         for path in sorted(paths):
             relative = path.relative_to(ROOT).as_posix()
             hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -111,17 +149,40 @@ def preserve_inputs(raw_dir: Path, binary: Path) -> dict[str, Any]:
     for path in sorted((ROOT / "Build/bin/Shaders/Release").rglob("*.spv")):
         hashes[path.relative_to(ROOT).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
     write_json(inputs / "sha256.json", hashes)
-    return {"source_archive": "raw/inputs/source-assets.zip", "patch": "raw/inputs/working-tree.patch",
-            "input_hashes": "raw/inputs/sha256.json", "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
+    return {
+        "source_archive": "raw/inputs/source-assets.zip",
+        "patch": "raw/inputs/working-tree.patch",
+        "input_hashes": "raw/inputs/sha256.json",
+        "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+    }
+
+
+# endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+# region 02_Main_Process
+# benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--matrix", type=Path, default=DEFAULT_MATRIX, help="Matrix JSON path.")
-    parser.add_argument("--binary", type=Path, default=ROOT / "Build/bin/MDSS", help="MDSS executable.")
-    parser.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS, help="Result-set parent directory.")
-    parser.add_argument("--skip-build", action="store_true", help="Use an already built executable.")
-    parser.add_argument("--dry-run", action="store_true", help="Print planned commands without building or launching.")
+    parser.add_argument(
+        "--binary", type=Path, default=ROOT / "Build/bin/MDSS", help="MDSS executable."
+    )
+    parser.add_argument(
+        "--results-dir", type=Path, default=DEFAULT_RESULTS, help="Result-set parent directory."
+    )
+    parser.add_argument(
+        "--skip-build", action="store_true", help="Use an already built executable."
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print planned commands without building or launching.",
+    )
     parser.add_argument("--timeout", type=int, default=600, help="Per-run timeout in seconds.")
     args = parser.parse_args()
 
@@ -135,28 +196,54 @@ def main() -> int:
         for resolution in matrix["resolutions"]:
             for repeat in range(1, matrix["repeats"] + 1):
                 name = f"{scene_id}-r{resolution}-repeat-{repeat}"
-                runs.append({"name": name, "scene_id": scene_id, "scene": scene, "resolution": resolution,
-                             "repeat": repeat})
+                runs.append(
+                    {
+                        "name": name,
+                        "scene_id": scene_id,
+                        "scene": scene,
+                        "resolution": resolution,
+                        "repeat": repeat,
+                    }
+                )
     random.Random(matrix.get("order_seed", 0)).shuffle(runs)
 
     if args.dry_run:
         for run in runs:
             output = Path("<result-set>") / "raw" / f"{run['name']}.jsonl"
-            command = [str(binary), "--benchmark-scene", run["scene"]["resolved_path"],
-                       "--benchmark-resolution", str(run["resolution"]), "--benchmark-warmup-frames", str(warmup),
-                       "--benchmark-measure-frames", str(measure), "--benchmark-output", str(output)]
+            command = [
+                str(binary),
+                "--benchmark-scene",
+                run["scene"]["resolved_path"],
+                "--benchmark-resolution",
+                str(run["resolution"]),
+                "--benchmark-warmup-frames",
+                str(warmup),
+                "--benchmark-measure-frames",
+                str(measure),
+                "--benchmark-output",
+                str(output),
+            ]
             print(" ".join(command))
         return 0
 
     if matrix.get("build_before_run", True) and not args.skip_build:
         build_type = matrix.get("build_type", "Release")
         validation = "ON" if matrix.get("validation_layers", False) else "OFF"
-        build = subprocess.run([str(ROOT / "Scripts/build.sh"), f"-DCMAKE_BUILD_TYPE={build_type}",
-                                f"-DMDSS_ENABLE_VALIDATION={validation}"], cwd=ROOT, check=False)
+        build = subprocess.run(
+            [
+                str(ROOT / "Scripts/build.sh"),
+                f"-DCMAKE_BUILD_TYPE={build_type}",
+                f"-DMDSS_ENABLE_VALIDATION={validation}",
+            ],
+            cwd=ROOT,
+            check=False,
+        )
         if build.returncode != 0:
             return build.returncode
     if not binary.is_file():
-        parser.error(f"MDSS binary not found: {binary}; build it or pass --skip-build with --binary.")
+        parser.error(
+            f"MDSS binary not found: {binary}; build it or pass --skip-build with --binary."
+        )
 
     timestamp = dt.datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")
     result_root = args.results_dir.resolve()
@@ -192,22 +279,49 @@ def main() -> int:
         for run in runs:
             raw_path = raw_dir / f"{run['name']}.jsonl"
             log_path = raw_dir / f"{run['name']}.log"
-            command = [str(binary), "--benchmark-scene", run["scene"]["resolved_path"],
-                       "--benchmark-resolution", str(run["resolution"]), "--benchmark-warmup-frames", str(warmup),
-                       "--benchmark-measure-frames", str(measure), "--benchmark-output", str(raw_path)]
+            command = [
+                str(binary),
+                "--benchmark-scene",
+                run["scene"]["resolved_path"],
+                "--benchmark-resolution",
+                str(run["resolution"]),
+                "--benchmark-warmup-frames",
+                str(warmup),
+                "--benchmark-measure-frames",
+                str(measure),
+                "--benchmark-output",
+                str(raw_path),
+            ]
             started_at = dt.datetime.now().astimezone().isoformat(timespec="seconds")
             started = time.perf_counter()
             with log_path.open("w", encoding="utf-8") as log:
-                completed = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
-                                           timeout=args.timeout, check=False)
-            sample_count = sum(1 for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()) \
-                if raw_path.is_file() else 0
+                completed = subprocess.run(
+                    command,
+                    cwd=ROOT,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    timeout=args.timeout,
+                    check=False,
+                )
+            sample_count = (
+                sum(1 for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip())
+                if raw_path.is_file()
+                else 0
+            )
             record = {
-                "name": run["name"], "scene_id": run["scene_id"], "scene_path": run["scene"]["resolved_path"],
-                "role": run["scene"].get("role"), "resolution": run["resolution"], "repeat": run["repeat"],
-                "warmup_frames": warmup, "measurement_frames": measure, "exit_code": completed.returncode,
-                "sample_count": sample_count, "raw_jsonl": raw_path.relative_to(result_dir).as_posix(),
-                "log": log_path.relative_to(result_dir).as_posix(), "command": command,
+                "name": run["name"],
+                "scene_id": run["scene_id"],
+                "scene_path": run["scene"]["resolved_path"],
+                "role": run["scene"].get("role"),
+                "resolution": run["resolution"],
+                "repeat": run["repeat"],
+                "warmup_frames": warmup,
+                "measurement_frames": measure,
+                "exit_code": completed.returncode,
+                "sample_count": sample_count,
+                "raw_jsonl": raw_path.relative_to(result_dir).as_posix(),
+                "log": log_path.relative_to(result_dir).as_posix(),
+                "command": command,
                 "started_at": started_at,
                 "finished_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
                 "process_seconds": time.perf_counter() - started,
@@ -215,10 +329,20 @@ def main() -> int:
             manifest["runs"].append(record)
             write_json(manifest_path, manifest)
             if completed.returncode != 0 or sample_count != measure:
-                raise RuntimeError(f"{run['name']} failed: exit={completed.returncode}, samples={sample_count}/{measure}; see {log_path}")
-            samples = [json.loads(line) for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-            if [sample["frame_index"] for sample in samples] != list(range(warmup, warmup + measure)):
-                raise RuntimeError(f"{run['name']}: frame indices do not match the measurement window")
+                raise RuntimeError(
+                    f"{run['name']} failed: exit={completed.returncode}, samples={sample_count}/{measure}; see {log_path}"
+                )
+            samples = [
+                json.loads(line)
+                for line in raw_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            if [sample["frame_index"] for sample in samples] != list(
+                range(warmup, warmup + measure)
+            ):
+                raise RuntimeError(
+                    f"{run['name']}: frame indices do not match the measurement window"
+                )
             settings_path = Path(str(raw_path) + ".settings.json")
             if settings_path.is_file():
                 settings = json.loads(settings_path.read_text(encoding="utf-8"))
@@ -230,7 +354,9 @@ def main() -> int:
                 validation = json.loads(validation_path.read_text(encoding="utf-8"))
                 record["validation"] = validation_path.relative_to(result_dir).as_posix()
                 if any(item["nonfinite"] or item["negative"] for item in validation["instances"]):
-                    raise RuntimeError(f"{run['name']}: final State contains nonfinite or negative values")
+                    raise RuntimeError(
+                        f"{run['name']}: final State contains nonfinite or negative values"
+                    )
             write_json(manifest_path, manifest)
             print(f"Captured {run['name']} ({sample_count} frames)", flush=True)
         manifest["status"] = "complete"
@@ -243,10 +369,23 @@ def main() -> int:
 
     write_json(manifest_path, manifest)
     summary_script = Path(__file__).with_name("summarize.py")
-    summary = subprocess.run([sys.executable, str(summary_script), "--manifest", str(manifest_path)], cwd=ROOT,
-                             check=False)
+    summary = subprocess.run(
+        [sys.executable, str(summary_script), "--manifest", str(manifest_path)],
+        cwd=ROOT,
+        check=False,
+    )
     return summary.returncode
 
 
+# endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+# region 03_Script_Execution
+# benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
+
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# endregion

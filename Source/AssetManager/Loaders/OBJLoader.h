@@ -14,24 +14,24 @@
 
 namespace MDSS::Asset
 {
-    struct TOBJMeshSectionData
+    struct FOBJMeshSectionData
     {
         std::uint32_t                 FirstIndex = 0;
         std::uint32_t                 IndexCount = 0;
         std::int32_t                  MaterialIndex = -1;
-        SurfaceState::TSurfaceLocalID Surface = SurfaceState::InvalidSurfaceID;
+        SurfaceState::FSurfaceLocalID Surface = SurfaceState::InvalidSurfaceID;
     };
 
-    struct TOBJLoadResult
+    struct FOBJLoadResult
     {
-        std::vector<TVertex>             Vertices;
+        std::vector<FVertex>             Vertices;
         std::vector<std::uint32_t>       Indices;
-        std::vector<TOBJMeshSectionData> Sections;
-        std::vector<TMaterialSourceData> Materials;
-        std::vector<TMeshTriangleSource> Triangles;
+        std::vector<FOBJMeshSectionData> Sections;
+        std::vector<FMaterialSourceData> Materials;
+        std::vector<FMeshTriangleSource> Triangles;
     };
 
-    class TOBJLoader
+    class FOBJLoader
     {
     public:
         /**
@@ -40,10 +40,10 @@ namespace MDSS::Asset
          * @return 정점, 인덱스, 재질 section 및 변환된 material 데이터.
          * @throws std::runtime_error 파일 파싱 실패 또는 비삼각형 face가 발견된 경우.
          */
-        [[nodiscard]] static TOBJLoadResult Load(const std::filesystem::path& Path);
+        [[nodiscard]] static FOBJLoadResult Load(const std::filesystem::path& Path);
 
     private:
         /** @brief 삼각형 UV gradient에서 각 정점의 tangent와 handedness를 계산한다. */
-        static void GenerateTangents(std::vector<TVertex>& Vertices, const std::vector<std::uint32_t>& Indices);
+        static void GenerateTangents(std::vector<FVertex>& Vertices, const std::vector<std::uint32_t>& Indices);
     };
 } // namespace MDSS::Asset

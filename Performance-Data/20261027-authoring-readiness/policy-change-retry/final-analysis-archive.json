@@ -1,0 +1,17 @@
+{
+  "created_at": "2026-10-27T13:40:50.650372+09:00",
+  "scope": "Post-execution analysis, separate from pre-run inputs",
+  "archive": "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\raw\\final-analysis",
+  "sha256": {
+    "Scripts\\Research\\finalize_authoring_retry.py": "7177870a5f32eeef74dff75caf03b91f1931297f2ae6737d368edcca1a56263c",
+    "Scripts\\Research\\analyze_authoring_retry.py": "de4af00cb53d338e3fb28e6d8fac2a9219c6d571cc75dfab72a2abdd24719fc4",
+    "Scripts\\Research\\retry_authoring_validation.py": "0e4157d9cd68714bb5b573bd92843b23e35ce6b14c5c782a8872b9f99472d905",
+    "Scripts\\Research\\replay_missing_authoring_captures.py": "e64acedeb404d9913afbb9a0c1b0eada762e15ab3a758a4054d59aebdfd52b9b",
+    "Scripts\\Research\\authoring_render_validation.py": "33c0f5ed9a0155aae3dce8b1f66f0ed7b506419bfc3d660ade4c92a9a9907cde",
+    "Scripts\\Research\\authoring_study.py": "a96355b468858fca9377df3250ca97dff4905787a0bed04f4ead1660d60b7e48",
+    "Docs\\MDSSP-Agent-Vault\\03_Development\\06_Authoring-Study-Protocol.md": "e64cc0b96781a3afc3b0adc39e284486385319558ed523522e333f6262fac3a5",
+    "Performance-Data\\20261027-authoring-readiness\\readiness-current.json": "67fffbab783d3cb45d8445851d8cca42a9f0828148905f8e44bd38b0997112db",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\analysis.json": "2c26d607db73d570ce26aba117ace4abb63390390eaffcec31750b2ef6d85061",
+    "Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\policy-resolution.json": "8897f4be69ed4574d155d33d9aad2c4107c8fec92690b89a7d9bdda81199e07d"
+  }
+}

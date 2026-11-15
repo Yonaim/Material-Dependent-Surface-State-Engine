@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 프로젝트 소유 C++ 파일에 공통 clang-format 설정을 적용한다.
 set -euo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"

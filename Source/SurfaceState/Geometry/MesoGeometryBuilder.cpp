@@ -16,7 +16,11 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Differential_Geometry_Helpers
+// ============================================================
+// 00. Differential Geometry Helpers
+// ============================================================
+#pragma region 00_Differential_Geometry_Helpers
+// 이웃 표본에서 기울기·곡률·오목함 계산에 필요한 국소 자료를 만든다.
 
     namespace
     {
@@ -30,20 +34,21 @@ namespace MDSS::SurfaceState
             return std::isfinite(V.x) && std::isfinite(V.y) && std::isfinite(V.z);
         }
 
-        bool IsActive(const TSurfaceTexelGeometry& Texel)
+        bool IsActive(const FSurfaceTexelGeometry& Texel)
         {
-            if (!Texel.IsValid() || !Texel.HasTransferNormal || !IsFinite(Texel.TransferNormal) ||
+            if (!Texel.IsValid() || !Texel.bHasTransferNormal || !IsFinite(Texel.TransferNormal) ||
                 !IsFinite(Texel.Normal))
             {
                 return false;
             }
+
             const float NormalLength2 = glm::dot(Texel.TransferNormal, Texel.TransferNormal);
             return std::isfinite(NormalLength2) && NormalLength2 > GeometryEpsilon &&
                    glm::dot(glm::normalize(Texel.TransferNormal), glm::normalize(Texel.Normal)) > NormalDotMinimum;
         }
 
         // 노멀 맵 normal이 요구하는 Source→Target 높이 차이를 mesh-local 길이 단위로 계산한다.
-        float EdgeHeightDelta(const TSurfaceTexelGeometry& Source, const TSurfaceTexelGeometry& Target)
+        float EdgeHeightDelta(const FSurfaceTexelGeometry& Source, const FSurfaceTexelGeometry& Target)
         {
             const glm::vec3 Delta = Target.Position - Source.Position;
             const glm::vec3 SourceNormal = glm::normalize(Source.Normal);
@@ -54,6 +59,7 @@ namespace MDSS::SurfaceState
             const float     TargetLength = glm::length(TargetTangentDelta);
             const float     SourceNormalComponent = glm::dot(Source.TransferNormal, SourceNormal);
             const float     TargetNormalComponent = glm::dot(Target.TransferNormal, TargetNormal);
+
             if (!std::isfinite(SourceLength) || !std::isfinite(TargetLength) || SourceLength <= GeometryEpsilon ||
                 TargetLength <= GeometryEpsilon || SourceNormalComponent <= NormalDotMinimum ||
                 TargetNormalComponent <= NormalDotMinimum)
@@ -75,15 +81,18 @@ namespace MDSS::SurfaceState
             for (std::size_t Column = 0; Column < 5; ++Column)
             {
                 std::size_t Pivot = Column;
+
                 for (std::size_t Row = Column + 1; Row < 5; ++Row)
                 {
                     if (std::abs(Matrix[Row][Column]) > std::abs(Matrix[Pivot][Column]))
                         Pivot = Row;
                 }
+
                 if (std::abs(Matrix[Pivot][Column]) < 1.0e-12)
                     return false;
                 std::swap(Matrix[Column], Matrix[Pivot]);
                 const double Divisor = Matrix[Column][Column];
+
                 for (std::size_t J = Column; J < 6; ++J)
                     Matrix[Column][J] /= Divisor;
                 for (std::size_t Row = 0; Row < 5; ++Row)
@@ -91,22 +100,25 @@ namespace MDSS::SurfaceState
                     if (Row == Column)
                         continue;
                     const double Factor = Matrix[Row][Column];
+
                     for (std::size_t J = Column; J < 6; ++J)
                         Matrix[Row][J] -= Factor * Matrix[Column][J];
                 }
             }
+
             for (std::size_t I = 0; I < 5; ++I)
                 Out[I] = Matrix[I][5];
             return true;
         }
 
-        void BuildDifferentialGeometry(std::vector<TSurfaceTexelGeometry>& Texels,
+        void BuildDifferentialGeometry(std::vector<FSurfaceTexelGeometry>& Texels,
                                        const std::vector<std::uint8_t>&    Active)
         {
             // 이웃 높이를 국소 접평면 좌표의 이차식에 맞춰 normal과 두 곡률을 구한다.
             for (std::size_t Index = 0; Index < Texels.size(); ++Index)
             {
-                TSurfaceTexelGeometry& Texel = Texels[Index];
+                FSurfaceTexelGeometry& Texel = Texels[Index];
+
                 if (!Active[Index])
                     continue;
                 const glm::vec3 N = glm::normalize(Texel.Normal);
@@ -117,7 +129,8 @@ namespace MDSS::SurfaceState
                 std::array<std::array<double, 6>, 5> NormalEquations{};
                 float                                MeanSpacing = 0.0F;
                 std::size_t                          SampleCount = 0;
-                for (const TLocalTexelIndex NeighborIndex : Texel.NeighborIndices)
+
+                for (const FLocalTexelIndex NeighborIndex : Texel.NeighborIndices)
                 {
                     if (NeighborIndex >= Texels.size() || !Active[NeighborIndex])
                         continue;
@@ -129,19 +142,21 @@ namespace MDSS::SurfaceState
                 }
 
                 std::array<double, 5> Fit{};
+
                 if (SampleCount < 5)
                 {
                     Texel.MesoNormal = glm::normalize(Texel.TransferNormal);
-                    Texel.HasMesoNormal = true;
+                    Texel.bHasMesoNormal = true;
                     continue;
                 }
+
                 const double Scale = std::max(static_cast<double>(MeanSpacing / static_cast<float>(SampleCount)),
                                               static_cast<double>(GeometryEpsilon));
-                for (const TLocalTexelIndex NeighborIndex : Texel.NeighborIndices)
+                for (const FLocalTexelIndex NeighborIndex : Texel.NeighborIndices)
                 {
                     if (NeighborIndex >= Texels.size() || !Active[NeighborIndex])
                         continue;
-                    const TSurfaceTexelGeometry& Neighbor = Texels[NeighborIndex];
+                    const FSurfaceTexelGeometry& Neighbor = Texels[NeighborIndex];
                     const glm::vec3              Edge = Neighbor.Position - Texel.Position;
                     const double                 X = static_cast<double>(glm::dot(Edge, T)) / Scale;
                     const double                 Y = static_cast<double>(glm::dot(Edge, B)) / Scale;
@@ -150,19 +165,23 @@ namespace MDSS::SurfaceState
                         Scale;
                     const double Features[5] = {X, Y, X * X, X * Y, Y * Y};
                     const double Weight = 1.0 / std::max(X * X + Y * Y, 1.0e-10);
+
                     for (std::size_t Row = 0; Row < 5; ++Row)
                     {
                         NormalEquations[Row][5] += Weight * Features[Row] * Z;
+
                         for (std::size_t Column = 0; Column < 5; ++Column)
                             NormalEquations[Row][Column] += Weight * Features[Row] * Features[Column];
                     }
                 }
+
                 if (!Solve5x5(NormalEquations, Fit))
                 {
                     Texel.MesoNormal = glm::normalize(Texel.TransferNormal);
-                    Texel.HasMesoNormal = true;
+                    Texel.bHasMesoNormal = true;
                     continue;
                 }
+
                 const float Fx = static_cast<float>(Fit[0]);
                 const float Fy = static_cast<float>(Fit[1]);
                 const float Fxx = static_cast<float>(2.0 * Fit[2] / Scale);
@@ -172,29 +191,33 @@ namespace MDSS::SurfaceState
                 const float MeanCurvature = ((1.0F + Fy * Fy) * Fxx - 2.0F * Fx * Fy * Fxy + (1.0F + Fx * Fx) * Fyy) /
                                             (2.0F * std::pow(GradientScale, 1.5F));
                 const float GaussianCurvature = (Fxx * Fyy - Fxy * Fxy) / (GradientScale * GradientScale);
+
                 if (std::isfinite(MeanCurvature) && std::isfinite(GaussianCurvature))
                 {
                     Texel.Geometry.MesoMeanCurvature = MeanCurvature;
                     Texel.Geometry.MesoGaussianCurvature = GaussianCurvature;
                     Texel.MesoNormal = glm::normalize(N - Fx * T - Fy * B);
-                    Texel.HasMesoNormal = IsFinite(Texel.MesoNormal);
+                    Texel.bHasMesoNormal = IsFinite(Texel.MesoNormal);
                     const float Spacing = MeanSpacing / static_cast<float>(SampleCount);
+
                     // 위쪽을 향한 normal 기준에서 양의 signed mean curvature는 오목한 그릇 형태를 뜻한다.
                     Texel.Geometry.ConcavityWeight = std::clamp(MeanCurvature * Spacing, 0.0F, 1.0F);
                 }
             }
         }
 
-        void BuildCombinedConcavity(std::vector<TSurfaceTexelGeometry>& Texels)
+        void BuildCombinedConcavity(std::vector<FSurfaceTexelGeometry>& Texels)
         {
             // Normal variation measures the shape operator of the effective Macro + Meso surface.
             // The existing MesoMean/Gaussian fields remain Meso-only diagnostic values.
             for (std::size_t Index = 0; Index < Texels.size(); ++Index)
             {
-                TSurfaceTexelGeometry& Texel = Texels[Index];
+                FSurfaceTexelGeometry& Texel = Texels[Index];
+
                 if (!Texel.IsValid())
                     continue;
-                const glm::vec3 CenterNormal = Texel.HasMesoNormal ? Texel.MesoNormal : Texel.Normal;
+                const glm::vec3 CenterNormal = Texel.bHasMesoNormal ? Texel.MesoNormal : Texel.Normal;
+
                 if (!IsFinite(CenterNormal) || glm::dot(CenterNormal, CenterNormal) <= GeometryEpsilon)
                     continue;
                 const glm::vec3 N = glm::normalize(CenterNormal);
@@ -206,15 +229,18 @@ namespace MDSS::SurfaceState
                 double          UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
                 double          SpacingSum = 0.0;
                 std::size_t     SampleCount = 0;
-                for (const TLocalTexelIndex NeighborIndex : Texel.NeighborIndices)
+
+                for (const FLocalTexelIndex NeighborIndex : Texel.NeighborIndices)
                 {
                     if (NeighborIndex >= Texels.size() || !Texels[NeighborIndex].IsValid())
                         continue;
-                    const TSurfaceTexelGeometry& Other = Texels[NeighborIndex];
-                    const glm::vec3              OtherNormal = Other.HasMesoNormal ? Other.MesoNormal : Other.Normal;
+                    const FSurfaceTexelGeometry& Other = Texels[NeighborIndex];
+                    const glm::vec3              OtherNormal = Other.bHasMesoNormal ? Other.MesoNormal : Other.Normal;
+
                     if (!IsFinite(OtherNormal) || glm::dot(OtherNormal, OtherNormal) <= GeometryEpsilon)
                         continue;
                     const glm::vec3 NeighborNormal = glm::normalize(OtherNormal);
+
                     if (glm::dot(N, NeighborNormal) <= 0.05F)
                         continue;
                     const glm::vec3 OtherPosition = Other.Position + Other.Normal * Other.Geometry.MesoVirtualHeight;
@@ -222,6 +248,7 @@ namespace MDSS::SurfaceState
                     const double    X = glm::dot(Delta, T);
                     const double    Y = glm::dot(Delta, B);
                     const double    DistanceSquared = X * X + Y * Y;
+
                     if (!std::isfinite(DistanceSquared) || DistanceSquared <= GeometryEpsilon * GeometryEpsilon)
                         continue;
                     const double    Weight = 1.0 / DistanceSquared;
@@ -238,7 +265,9 @@ namespace MDSS::SurfaceState
                     SpacingSum += std::sqrt(DistanceSquared);
                     ++SampleCount;
                 }
+
                 const double Determinant = XX * YY - XY * XY;
+
                 if (SampleCount < 3 || Determinant <= 1.0e-6 * std::max(XX * YY, 1.0e-12))
                     continue;
                 const double Sxx = (YY * UX - XY * UY) / Determinant;
@@ -253,6 +282,7 @@ namespace MDSS::SurfaceState
                 const double Negative = std::max(-PrincipalA, 0.0) + std::max(-PrincipalB, 0.0);
                 const double Spacing = SpacingSum / static_cast<double>(SampleCount);
                 const double Score = 8.0 * Spacing * std::max(Positive - 2.0 * Negative, 0.0);
+
                 if (std::isfinite(Score))
                     Texel.Geometry.ConcavityWeight = static_cast<float>(std::clamp(Score, 0.0, 1.0));
             }
@@ -260,17 +290,23 @@ namespace MDSS::SurfaceState
     } // 내부 네임스페이스
 #pragma endregion
 
-#pragma region Meso_Geometry_Build
+// ============================================================
+// 01. Meso Geometry Build
+// ============================================================
+#pragma region 01_Meso_Geometry_Build
+// Normal Map 높이 입력을 실제 texel Meso 형상과 미분 값으로 전처리한다.
 
-    TMesoGeometryBuildReport BuildMesoGeometry(TSharedSurfaceGeometryData& Geometry)
+    FMesoGeometryBuildReport BuildMesoGeometry(FSharedSurfaceGeometryData& Geometry)
     {
-        TMesoGeometryBuildReport            Report;
-        std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
+        FMesoGeometryBuildReport            Report;
+        std::vector<FSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
         const std::size_t                   Count = Texels.size();
+
         if (Count == 0)
             return Report;
 
         std::vector<std::uint8_t> Active(Count, 0U);
+
         for (std::size_t I = 0; I < Count; ++I)
         {
             Active[I] = IsActive(Texels[I]) ? 1U : 0U;
@@ -283,6 +319,7 @@ namespace MDSS::SurfaceState
         std::vector<std::uint8_t> Visited(Count, 0U);
         std::vector<std::size_t>  ComponentIds(Count, std::numeric_limits<std::size_t>::max());
         std::queue<std::size_t>   Queue;
+
         for (std::size_t Root = 0; Root < Count; ++Root)
         {
             if (!Active[Root] || Visited[Root])
@@ -293,11 +330,13 @@ namespace MDSS::SurfaceState
             Visited[Root] = 1U;
             ComponentIds[Root] = ComponentId;
             Queue.push(Root);
+
             while (!Queue.empty())
             {
                 const std::size_t Current = Queue.front();
                 Queue.pop();
-                for (const TLocalTexelIndex Neighbor : Texels[Current].NeighborIndices)
+
+                for (const FLocalTexelIndex Neighbor : Texels[Current].NeighborIndices)
                 {
                     if (Neighbor >= Count || !Active[Neighbor] || Visited[Neighbor])
                         continue;
@@ -312,32 +351,38 @@ namespace MDSS::SurfaceState
         std::vector<float> RHS(Count, 0.0F), X(Count, 0.0F), R(Count, 0.0F), Z(Count, 0.0F), P(Count, 0.0F),
             AP(Count, 0.0F);
         std::vector<float> Degree(Count, 0.0F);
+
         for (std::size_t I = 0; I < Count; ++I)
         {
             if (!Active[I])
                 continue;
-            for (const TLocalTexelIndex Neighbor : Texels[I].NeighborIndices)
+            for (const FLocalTexelIndex Neighbor : Texels[I].NeighborIndices)
             {
                 if (Neighbor >= Count || Neighbor == I || !Active[Neighbor])
                     continue;
                 Degree[I] += 1.0F;
                 RHS[I] -= EdgeHeightDelta(Texels[I], Texels[Neighbor]);
             }
+
             if (Pinned[I])
             {
                 Degree[I] = 1.0F;
                 RHS[I] = 0.0F;
             }
         }
+
         R = RHS;
+
         for (std::size_t I = 0; I < Count; ++I)
         {
             if (Active[I] && !Pinned[I] && Degree[I] > 0.0F)
                 Z[I] = R[I] / Degree[I];
         }
+
         P = Z;
         double RZ = 0.0;
         double RHSNorm2 = 0.0;
+
         for (std::size_t I = 0; I < Count; ++I)
         {
             RZ += static_cast<double>(R[I]) * Z[I];
@@ -350,6 +395,7 @@ namespace MDSS::SurfaceState
         {
             Report.IterationCount = Iteration + 1U;
             double PAP = 0.0;
+
             for (std::size_t I = 0; I < Count; ++I)
             {
                 if (!Active[I])
@@ -357,24 +403,30 @@ namespace MDSS::SurfaceState
                     AP[I] = 0.0F;
                     continue;
                 }
+
                 if (Pinned[I])
                 {
                     AP[I] = P[I];
                     PAP += static_cast<double>(P[I]) * P[I];
                     continue;
                 }
+
                 AP[I] = Degree[I] * P[I];
-                for (const TLocalTexelIndex Neighbor : Texels[I].NeighborIndices)
+
+                for (const FLocalTexelIndex Neighbor : Texels[I].NeighborIndices)
                 {
                     if (Neighbor < Count && Neighbor != I && Active[Neighbor] && !Pinned[Neighbor])
                         AP[I] -= P[Neighbor];
                 }
+
                 PAP += static_cast<double>(P[I]) * AP[I];
             }
+
             if (!(PAP > 1.0e-30) || !std::isfinite(PAP))
                 break;
             const float Alpha = static_cast<float>(RZ / PAP);
             double      NextRZ = 0.0;
+
             for (std::size_t I = 0; I < Count; ++I)
             {
                 X[I] += Alpha * P[I];
@@ -382,9 +434,11 @@ namespace MDSS::SurfaceState
                 Z[I] = Active[I] && !Pinned[I] && Degree[I] > 0.0F ? R[I] / Degree[I] : R[I];
                 NextRZ += static_cast<double>(R[I]) * Z[I];
             }
+
             if (RHSNorm2 <= 1.0e-30 || NextRZ <= RHSNorm2 * RelativeResidualSquared)
                 break;
             const float Beta = static_cast<float>(NextRZ / RZ);
+
             for (std::size_t I = 0; I < Count; ++I)
                 P[I] = Z[I] + Beta * P[I];
             RZ = NextRZ;
@@ -398,6 +452,7 @@ namespace MDSS::SurfaceState
         // 기준점을 고정해 푼 뒤 component 평균을 0으로 옮겨 cavity 높이 기준을 일관되게 둔다.
         std::vector<double>      ComponentHeightSums(Report.ComponentCount, 0.0);
         std::vector<std::size_t> ComponentSizes(Report.ComponentCount, 0U);
+
         for (std::size_t I = 0; I < Count; ++I)
         {
             if (!Active[I])
@@ -405,11 +460,13 @@ namespace MDSS::SurfaceState
             ComponentHeightSums[ComponentIds[I]] += Texels[I].Geometry.MesoVirtualHeight;
             ++ComponentSizes[ComponentIds[I]];
         }
+
         for (std::size_t I = 0; I < Count; ++I)
         {
             if (!Active[I])
                 continue;
             const std::size_t Component = ComponentIds[I];
+
             if (ComponentSizes[Component] > 0U)
             {
                 Texels[I].Geometry.MesoVirtualHeight -=
@@ -421,11 +478,12 @@ namespace MDSS::SurfaceState
         double      EdgeErrorSquared = 0.0;
         double      EdgeTargetSquared = 0.0;
         std::size_t DirectedEdgeCount = 0;
+
         for (std::size_t I = 0; I < Count; ++I)
         {
             if (!Active[I])
                 continue;
-            for (const TLocalTexelIndex Neighbor : Texels[I].NeighborIndices)
+            for (const FLocalTexelIndex Neighbor : Texels[I].NeighborIndices)
             {
                 if (Neighbor >= Count || Neighbor == I || !Active[Neighbor])
                     continue;
@@ -437,11 +495,13 @@ namespace MDSS::SurfaceState
                 ++DirectedEdgeCount;
             }
         }
+
         if (DirectedEdgeCount > 0)
         {
             Report.RelativeEdgeResidual =
                 static_cast<float>(std::sqrt(EdgeErrorSquared / std::max(EdgeTargetSquared, 1.0e-20)));
         }
+
         BuildDifferentialGeometry(Texels, Active);
         BuildCombinedConcavity(Texels);
         return Report;

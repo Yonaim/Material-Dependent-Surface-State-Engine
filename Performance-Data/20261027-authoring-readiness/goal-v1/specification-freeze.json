@@ -1,0 +1,30 @@
+{
+  "frozen_at": "2026-10-27T14:46:07.596467+09:00",
+  "task_id": "AUTH-GOAL-01-v1",
+  "status": "task_specification_only_no_execution",
+  "documents_and_generator": [
+    {
+      "source": "Docs\\MDSSP-Agent-Vault\\03_Development\\06_Authoring-Study-Protocol.md",
+      "archive": "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\specification-snapshot\\0-06_Authoring-Study-Protocol.md",
+      "sha256": "e52e00464d0ad7ddc1647eca5bc6c70dde445bf2b8a42f59baa8722b68f8fa1f"
+    },
+    {
+      "source": "Scripts\\Research\\prepare_authoring_goal.py",
+      "archive": "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\specification-snapshot\\1-prepare_authoring_goal.py",
+      "sha256": "097046f6891fbe14e8a5b8e36b5d9b926f4d4e0675e1dac23617dcfb191041c5"
+    },
+    {
+      "source": "Performance-Data\\20261027-authoring-readiness\\goal-v1\\plan.json",
+      "archive": "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\specification-snapshot\\2-plan.json",
+      "sha256": "a175476f1ce3902a8c4f432ba3b2f1ffb2cd35d55608506fe57eda8956a190a0"
+    },
+    {
+      "source": "Performance-Data\\20261027-authoring-readiness\\goal-v1\\preparation.json",
+      "archive": "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\specification-snapshot\\3-preparation.json",
+      "sha256": "c29407606174c6ff56f305ae189154cb2af46dc1ace70200cc3b64098bb219b3"
+    }
+  ],
+  "prepared_inputs_verified": 8,
+  "application_runs": 0,
+  "note": "Existing evidence known; not blind preregistration. No product code modified by this task preparation."
+}

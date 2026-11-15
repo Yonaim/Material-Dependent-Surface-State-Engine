@@ -12,17 +12,17 @@
 
 namespace MDSS::GPU
 {
-    class TVulkanCommand
+    class FVulkanCommand
     {
     public:
         // Command pool lifecycle
-        TVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily);
-        ~TVulkanCommand();
+        FVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily);
+        ~FVulkanCommand();
 
-        TVulkanCommand(const TVulkanCommand&) = delete;
-        TVulkanCommand& operator=(const TVulkanCommand&) = delete;
-        TVulkanCommand(TVulkanCommand&&) = delete;
-        TVulkanCommand& operator=(TVulkanCommand&&) = delete;
+        FVulkanCommand(const FVulkanCommand&) = delete;
+        FVulkanCommand& operator=(const FVulkanCommand&) = delete;
+        FVulkanCommand(FVulkanCommand&&) = delete;
+        FVulkanCommand& operator=(FVulkanCommand&&) = delete;
 
         [[nodiscard]] VkCommandPool GetPool() const noexcept;
         /** @brief graphics command pool에서 primary command buffer를 할당한다. */

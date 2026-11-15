@@ -12,14 +12,20 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region State_Registry_Construction
+// ============================================================
+// 00. State Registry Construction
+// ============================================================
+#pragma region 00_State_Registry_Construction
+// Profile의 State 이름을 정규화해 Scene 공통 channel로 등록한다.
 
-    TSurfaceStateRegistry::TSurfaceStateRegistry(const std::vector<TSurfaceResponseProfileData>& Profiles)
+    FSurfaceStateRegistry::FSurfaceStateRegistry(const std::vector<FSurfaceResponseProfileData>& Profiles)
     {
         std::set<std::string> StateNames;
-        for (const TSurfaceResponseProfileData& Profile : Profiles)
+
+        for (const FSurfaceResponseProfileData& Profile : Profiles)
         {
             ValidateSurfaceResponseProfileData(Profile);
+
             for (const auto& Entry : Profile.States)
             {
                 StateNames.insert(Entry.first);
@@ -33,25 +39,29 @@ namespace MDSS::SurfaceState
 
         Names.assign(StateNames.begin(), StateNames.end());
         const auto Lava = std::find(Names.begin(), Names.end(), "lava");
+
         if (Lava != Names.end() && Lava != Names.begin())
         {
             std::rotate(Names.begin(), Lava, Lava + 1);
         }
+
         IDs.reserve(Names.size());
+
         for (std::size_t Index = 0; Index < Names.size(); ++Index)
         {
-            IDs.emplace(Names[Index], static_cast<TStateId>(Index));
+            IDs.emplace(Names[Index], static_cast<FStateId>(Index));
         }
 
-        for (const TSurfaceResponseProfileData& Profile : Profiles)
+        for (const FSurfaceResponseProfileData& Profile : Profiles)
         {
-            for (const TSurfaceStateTransition& Transition : Profile.Transitions)
+            for (const FSurfaceStateTransition& Transition : Profile.Transitions)
             {
                 if (!IDs.contains(Transition.Source))
                 {
                     throw std::invalid_argument("Transition references unknown source State '" + Transition.Source +
                                                 "'.");
                 }
+
                 if (!IDs.contains(Transition.Target))
                 {
                     throw std::invalid_argument("Transition references unknown target State '" + Transition.Target +
@@ -62,62 +72,76 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region State_Lookup_and_Profile_Resolution
+// ============================================================
+// 01. State Lookup and Profile Resolution
+// ============================================================
+#pragma region 01_State_Lookup_and_Profile_Resolution
+// State 이름·ID를 조회하고 Profile을 Registry channel 순서로 대응시킨다.
 
-    std::size_t TSurfaceStateRegistry::GetStateCount() const noexcept
+    std::size_t FSurfaceStateRegistry::GetStateCount() const noexcept
     {
         return Names.size();
     }
 
-    TStateId TSurfaceStateRegistry::GetStateId(std::string_view Name) const
+    FStateId FSurfaceStateRegistry::GetStateId(std::string_view Name) const
     {
         const std::string CanonicalName = NormalizeSurfaceStateName(Name);
         const auto        Found = IDs.find(CanonicalName);
+
         if (Found == IDs.end())
         {
             throw std::out_of_range("Unknown State name: '" + CanonicalName + "'.");
         }
+
         return Found->second;
     }
 
-    const std::string& TSurfaceStateRegistry::GetStateName(TStateId ID) const
+    const std::string& FSurfaceStateRegistry::GetStateName(FStateId ID) const
     {
         if (ID >= Names.size())
         {
             throw std::out_of_range("Invalid TStateId.");
         }
+
         return Names[ID];
     }
 
-    TRegisteredSurfaceResponseProfileData
-    TSurfaceStateRegistry::ResolveProfile(const TSurfaceResponseProfileData& Profile) const
+    FRegisteredSurfaceResponseProfileData
+    FSurfaceStateRegistry::ResolveProfile(const FSurfaceResponseProfileData& Profile) const
     {
         ValidateSurfaceResponseProfileData(Profile);
 
-        TRegisteredSurfaceResponseProfileData Result;
+        FRegisteredSurfaceResponseProfileData Result;
         Result.States.resize(Names.size());
+
         for (const auto& [Name, Parameters] : Profile.States)
         {
             const auto Found = IDs.find(Name);
+
             if (Found == IDs.end())
             {
                 throw std::invalid_argument("Profile contains State not registered in this registry: '" + Name + "'.");
             }
+
             Result.States[Found->second] = Parameters;
         }
 
         Result.Transitions.reserve(Profile.Transitions.size());
-        for (const TSurfaceStateTransition& Transition : Profile.Transitions)
+
+        for (const FSurfaceStateTransition& Transition : Profile.Transitions)
         {
             const auto Source = IDs.find(Transition.Source);
             const auto Target = IDs.find(Transition.Target);
+
             if (Source == IDs.end() || Target == IDs.end())
             {
                 throw std::invalid_argument("Profile transition references a State absent from this registry.");
             }
+
             Result.Transitions.push_back(
                 {Source->second, Target->second, Transition.Threshold, Transition.TransitionRate});
         }
+
         return Result;
     }
 #pragma endregion

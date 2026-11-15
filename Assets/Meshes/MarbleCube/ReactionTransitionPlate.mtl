@@ -1,0 +1,18 @@
+newmtl marble
+Kd 0.52 0.31 0.16
+Ns 35
+newmtl marble_back
+Kd 0.52 0.31 0.16
+Ns 35
+newmtl marble_right
+Kd 0.52 0.31 0.16
+Ns 35
+newmtl marble_left
+Kd 0.52 0.31 0.16
+Ns 35
+newmtl marble_top
+Kd 0.52 0.31 0.16
+Ns 35
+newmtl marble_bottom
+Kd 0.52 0.31 0.16
+Ns 35

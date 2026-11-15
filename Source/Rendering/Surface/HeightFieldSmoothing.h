@@ -15,22 +15,22 @@
 namespace MDSS::Rendering
 {
     /** @brief Optional, render-only Gaussian filter for one accumulation State's texel heights. */
-    class THeightFieldSmoothing final
+    class FHeightFieldSmoothing final
     {
     public:
         // Smoothing resource lifecycle
-        THeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
+        FHeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
                               VkDevice              Device,
                               VkDescriptorSetLayout SurfaceLayout,
                               VkDescriptorSetLayout HeightLayout,
                               std::size_t           MaxInstances);
-        ~THeightFieldSmoothing();
-        THeightFieldSmoothing(const THeightFieldSmoothing&) = delete;
-        THeightFieldSmoothing& operator=(const THeightFieldSmoothing&) = delete;
+        ~FHeightFieldSmoothing();
+        FHeightFieldSmoothing(const FHeightFieldSmoothing&) = delete;
+        FHeightFieldSmoothing& operator=(const FHeightFieldSmoothing&) = delete;
 
         // Smoothing outputs and command recording
         [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance, std::uint32_t Channel) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const;
+        [[nodiscard]] const GPU::FGPUBuffer& GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const;
         void                                 Invalidate() noexcept;
         /** @brief Releases lazily-created smoothing outputs. Caller must ensure no in-flight GPU work uses them. */
         void ReleaseOutputs() noexcept;
@@ -39,10 +39,10 @@ namespace MDSS::Rendering
                     std::uint32_t                                         Channel,
                     std::uint32_t                                         Channels,
                     std::uint32_t                                         TexelCount,
-                    const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
+                    const SurfaceState::FSurfaceStateDescriptorResources& StateDescriptors,
                     VkDescriptorSet                                       InputSet,
-                    const GPU::TGPUBuffer&                                InputBuffer,
-                    const GPU::TGPUBuffer&                                GeometryCacheBuffer,
+                    const GPU::FGPUBuffer&                                InputBuffer,
+                    const GPU::FGPUBuffer&                                GeometryCacheBuffer,
                     bool                                                  bStateAB,
                     float                                                 AccumulationDisplayScale,
                     std::uint32_t                                         OccupancyTileSize,
@@ -50,9 +50,9 @@ namespace MDSS::Rendering
                     bool                                                  bSharedHalo);
 
     private:
-        struct TOutput
+        struct FOutput
         {
-            std::unique_ptr<GPU::TGPUBuffer> Buffer;
+            std::unique_ptr<GPU::FGPUBuffer> Buffer;
             VkDescriptorSet                  Set = VK_NULL_HANDLE;
             VkBuffer                         LastInputBuffer = VK_NULL_HANDLE;
             float                            LastDisplayScale = 0.0F;
@@ -66,6 +66,6 @@ namespace MDSS::Rendering
         VkPipelineLayout                                         PipelineLayout = VK_NULL_HANDLE;
         std::array<VkPipeline, 2>                                Pipelines{};
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;
-        std::map<std::pair<std::size_t, std::uint32_t>, TOutput> Outputs;
+        std::map<std::pair<std::size_t, std::uint32_t>, FOutput> Outputs;
     };
 }

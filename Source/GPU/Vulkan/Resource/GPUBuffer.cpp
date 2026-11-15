@@ -13,14 +13,18 @@
 
 namespace MDSS::GPU
 {
-#pragma region Buffer_Lifecycle
+// ============================================================
+// 00. Buffer Lifecycle
+// ============================================================
+#pragma region 00_Buffer_Lifecycle
+// 요청 크기·usage에 맞는 buffer와 backing memory의 수명을 관리한다.
 
-    TGPUBuffer::TGPUBuffer(VkPhysicalDevice         PhysicalDevice,
+    FGPUBuffer::FGPUBuffer(VkPhysicalDevice         PhysicalDevice,
                            VkDevice                 Device,
                            VkDeviceSize             Size,
                            VkBufferUsageFlags       Usage,
                            VkMemoryPropertyFlags    MemoryProperties,
-                           TGPUBufferMemoryCategory Category)
+                           EGPUBufferMemoryCategory Category)
         : Device(Device), Size(Size), Usage(Usage), MemoryCategory(Category), MemoryProperties(MemoryProperties)
     {
         if (Size == 0)
@@ -60,7 +64,8 @@ namespace MDSS::GPU
             {
                 throw std::runtime_error("Failed to bind Vulkan buffer memory.");
             }
-            TGPUResourceMemoryStats::BufferAllocated(AllocationSize, MemoryCategory);
+
+            FGPUResourceMemoryStats::BufferAllocated(AllocationSize, MemoryCategory);
         }
         catch (...)
         {
@@ -69,20 +74,22 @@ namespace MDSS::GPU
                 vkFreeMemory(Device, Memory, nullptr);
                 Memory = VK_NULL_HANDLE;
             }
+
             if (Handle != VK_NULL_HANDLE)
             {
                 vkDestroyBuffer(Device, Handle, nullptr);
                 Handle = VK_NULL_HANDLE;
             }
+
             AllocationSize = 0;
             throw;
         }
 
-        TLogger::Verbose(
+        FLogger::Verbose(
             "Vulkan", "TGPUBuffer created (size=" + std::to_string(Size) + ", usage=" + std::to_string(Usage) + ").");
     }
 
-    TGPUBuffer::~TGPUBuffer()
+    FGPUBuffer::~FGPUBuffer()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -92,18 +99,23 @@ namespace MDSS::GPU
 
         if (Memory != VK_NULL_HANDLE)
         {
-            TGPUResourceMemoryStats::BufferFreed(AllocationSize, MemoryCategory);
+            FGPUResourceMemoryStats::BufferFreed(AllocationSize, MemoryCategory);
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
+
         AllocationSize = 0;
     }
 
 #pragma endregion
 
-#pragma region Buffer_Transfers
+// ============================================================
+// 01. Buffer Transfers
+// ============================================================
+#pragma region 01_Buffer_Transfers
+// CPU와 GPU 사이의 upload·download·copy에서 범위와 메모리 조건을 맞춘다.
 
-    void TGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
+    void FGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
         if (Data == nullptr)
         {
@@ -126,6 +138,7 @@ namespace MDSS::GPU
         }
 
         void* MappedMemory = nullptr;
+
         if (vkMapMemory(Device, Memory, Offset, DataSize, 0, &MappedMemory) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to map Vulkan buffer memory.");
@@ -136,7 +149,7 @@ namespace MDSS::GPU
         UploadRevision.fetch_add(1, std::memory_order_release);
     }
 
-    void TGPUBuffer::Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset) const
+    void FGPUBuffer::Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
         if (Destination == nullptr)
         {
@@ -155,6 +168,7 @@ namespace MDSS::GPU
         }
 
         void* MappedMemory = nullptr;
+
         if (vkMapMemory(Device, Memory, Offset, DataSize, 0, &MappedMemory) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to map Vulkan buffer memory for download.");
@@ -166,43 +180,51 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Buffer_Accessors
+// ============================================================
+// 02. Buffer Accessors
+// ============================================================
+#pragma region 02_Buffer_Accessors
+// buffer handle·크기·할당 정보를 전송·descriptor 소비자에게 제공한다.
 
-    VkBuffer TGPUBuffer::GetHandle() const noexcept
+    VkBuffer FGPUBuffer::GetHandle() const noexcept
     {
         return Handle;
     }
 
-    VkDeviceSize TGPUBuffer::GetSize() const noexcept
+    VkDeviceSize FGPUBuffer::GetSize() const noexcept
     {
         return Size;
     }
 
-    VkBufferUsageFlags TGPUBuffer::GetUsage() const noexcept
+    VkBufferUsageFlags FGPUBuffer::GetUsage() const noexcept
     {
         return Usage;
     }
 
-    VkMemoryPropertyFlags TGPUBuffer::GetMemoryProperties() const noexcept
+    VkMemoryPropertyFlags FGPUBuffer::GetMemoryProperties() const noexcept
     {
         return MemoryProperties;
     }
 
-    TGPUBufferMemoryCategory TGPUBuffer::GetMemoryCategory() const noexcept
+    EGPUBufferMemoryCategory FGPUBuffer::GetMemoryCategory() const noexcept
     {
         return MemoryCategory;
     }
 
-    std::uint64_t TGPUBuffer::GetUploadRevision() const noexcept
+    std::uint64_t FGPUBuffer::GetUploadRevision() const noexcept
     {
         return UploadRevision.load(std::memory_order_acquire);
     }
 
 #pragma endregion
 
-#pragma region Memory_Type_Selection
+// ============================================================
+// 03. Memory Type Selection
+// ============================================================
+#pragma region 03_Memory_Type_Selection
+// 요구 memory property와 장치의 type mask를 만족하는 메모리 종류를 선택한다.
 
-    std::uint32_t TGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
+    std::uint32_t FGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                              std::uint32_t         TypeFilter,
                                              VkMemoryPropertyFlags RequiredProperties)
     {

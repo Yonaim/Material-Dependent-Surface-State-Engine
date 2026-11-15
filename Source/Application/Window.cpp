@@ -23,9 +23,13 @@ namespace MDSS
         std::uint32_t WindowCount = 0;
     } // namespace
 
-#pragma region Window_Lifecycle
+// ============================================================
+// 00. Window Lifecycle
+// ============================================================
+#pragma region 00_Window_Lifecycle
+// GLFW 창과 입력 callback을 생성하고 종료 시 소유 창을 해제한다.
 
-    TWindow::TWindow(std::uint32_t Width, std::uint32_t Height, std::string Title)
+    FWindow::FWindow(std::uint32_t Width, std::uint32_t Height, std::string Title)
     {
         InitializeGLFW();
 
@@ -43,51 +47,55 @@ namespace MDSS
         glfwSetWindowUserPointer(Handle, this);
         glfwSetFramebufferSizeCallback(Handle, FramebufferSizeCallback);
 
-        TLogger::Info("TApplication",
-                      "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
+        FLogger::Info("TApplication",
+                        "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
     }
 
-    TWindow::~TWindow()
+FWindow::~FWindow()
+{
+    if (Handle != nullptr)
     {
-        if (Handle != nullptr)
-        {
-            glfwDestroyWindow(Handle);
-            Handle = nullptr;
-        }
-
-        TerminateGLFW();
+        glfwDestroyWindow(Handle);
+        Handle = nullptr;
     }
+
+    TerminateGLFW();
+}
 
 #pragma endregion
 
-#pragma region Window_State_and_Events
+// ============================================================
+// 01. Window State and Events
+// ============================================================
+#pragma region 01_Window_State_and_Events
+// 창 크기·종료 요청·이벤트 처리를 현재 프레임에 노출한다.
 
-    bool TWindow::ShouldClose() const
+    bool FWindow::ShouldClose() const
     {
         return glfwWindowShouldClose(Handle) == GLFW_TRUE;
     }
 
-    void TWindow::PollEvents() const
+    void FWindow::PollEvents() const
     {
         glfwPollEvents();
     }
 
-    GLFWwindow* TWindow::GetNativeHandle() const noexcept
+    GLFWwindow* FWindow::GetNativeHandle() const noexcept
     {
         return Handle;
     }
 
-    bool TWindow::WasFramebufferResized() const noexcept
+    bool FWindow::WasFramebufferResized() const noexcept
     {
         return bFramebufferResized;
     }
 
-    void TWindow::ResetFramebufferResized() noexcept
+    void FWindow::ResetFramebufferResized() noexcept
     {
         bFramebufferResized = false;
     }
 
-    void TWindow::GetFramebufferSize(std::uint32_t& Width, std::uint32_t& Height) const noexcept
+    void FWindow::GetFramebufferSize(std::uint32_t& Width, std::uint32_t& Height) const noexcept
     {
         int FramebufferWidth = 0;
         int FramebufferHeight = 0;
@@ -97,7 +105,7 @@ namespace MDSS
         Height = static_cast<std::uint32_t>(std::max(FramebufferHeight, 0));
     }
 
-    void TWindow::WaitForNonZeroFramebuffer() const
+    void FWindow::WaitForNonZeroFramebuffer() const
     {
         std::uint32_t Width = 0;
         std::uint32_t Height = 0;
@@ -110,25 +118,30 @@ namespace MDSS
         }
     }
 
-    void TWindow::FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height)
+    void FWindow::FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height)
     {
-        auto* WindowInstance = static_cast<TWindow*>(glfwGetWindowUserPointer(WindowHandle));
+        auto* WindowInstance = static_cast<FWindow*>(glfwGetWindowUserPointer(WindowHandle));
+
         if (WindowInstance == nullptr)
         {
             return;
         }
 
         WindowInstance->bFramebufferResized = true;
-        TLogger::Debug("TApplication",
+        FLogger::Debug("TApplication",
                        "TFramebuffer resize requested: " + std::to_string(std::max(Width, 0)) + "x" +
                            std::to_string(std::max(Height, 0)) + ".");
     }
 
 #pragma endregion
 
-#pragma region GLFW_Lifecycle
+// ============================================================
+// 02. GLFW Lifecycle
+// ============================================================
+#pragma region 02_GLFW_Lifecycle
+// 창 사용에 필요한 GLFW 초기화와 종료 순서를 관리한다.
 
-    void TWindow::InitializeGLFW()
+    void FWindow::InitializeGLFW()
     {
         std::scoped_lock Lock(GLFWMutex);
 
@@ -138,13 +151,14 @@ namespace MDSS
             {
                 throw std::runtime_error("Failed to initialize GLFW.");
             }
-            TLogger::Debug("TApplication", "GLFW initialized.");
+
+            FLogger::Debug("TApplication", "GLFW initialized.");
         }
 
         ++WindowCount;
     }
 
-    void TWindow::TerminateGLFW()
+    void FWindow::TerminateGLFW()
     {
         std::scoped_lock Lock(GLFWMutex);
 
@@ -158,7 +172,7 @@ namespace MDSS
         if (WindowCount == 0)
         {
             glfwTerminate();
-            TLogger::Verbose("TApplication", "GLFW terminated.");
+            FLogger::Verbose("TApplication", "GLFW terminated.");
         }
     }
 #pragma endregion

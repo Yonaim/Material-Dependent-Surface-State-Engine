@@ -1,0 +1,96 @@
+{
+  "created_at": "2026-10-27T07:02:38.252577+09:00",
+  "status": "completed_declaration_only_execution_audit",
+  "tasks": [
+    {
+      "task": "T0",
+      "states": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "rules": [
+        "ice_melting",
+        "water_cooling"
+      ],
+      "rotation_x_degrees": 8,
+      "U_M_numeric_requests_identical": true,
+      "recipe_sha256": "61bc4558a5402ecc4d9555b56aca99b29a53a771911c61385f530d5443768562"
+    },
+    {
+      "task": "T1",
+      "states": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm"
+      ],
+      "rules": [
+        "ice_melting",
+        "water_cooling"
+      ],
+      "rotation_x_degrees": 8,
+      "U_M_numeric_requests_identical": true,
+      "recipe_sha256": "e18a5dc31e3d4af1bd0e71fce9f3c9b132674a0277c1f529449324b896de86e1"
+    },
+    {
+      "task": "T2",
+      "states": [
+        "heat",
+        "ice",
+        "waterfilm",
+        "wetness"
+      ],
+      "rules": [
+        "ice_melting",
+        "water_cooling",
+        "surface_absorption"
+      ],
+      "rotation_x_degrees": 8,
+      "U_M_numeric_requests_identical": true,
+      "recipe_sha256": "d08430d3040b171ba268cb0836ff4f4901ef273a5ae2a4492068ebb0fe75c8fe"
+    },
+    {
+      "task": "T3",
+      "states": [
+        "heat",
+        "ice",
+        "mud",
+        "waterfilm",
+        "wetness"
+      ],
+      "rules": [
+        "ice_melting",
+        "water_cooling",
+        "surface_absorption"
+      ],
+      "rotation_x_degrees": 20,
+      "U_M_numeric_requests_identical": true,
+      "recipe_sha256": "b7b48df4f3d07db7c4313707a5c6075eaa414e35a925bf3c1be4d74d80cb174b"
+    }
+  ],
+  "note": "The generic module/coordinator and common request adapter were authored with all task definitions known. This is a declaration-only execution-capability audit, not a blinded marginal development-time experiment.",
+  "categories": {
+    "shared_infrastructure": [
+      "OBJ/UV graph and areas",
+      "GPU resource ABI",
+      "transport provider and helpers",
+      "reaction/geometry services",
+      "generic profile extension/input/diagnostic adapter"
+    ],
+    "M_foundation": [
+      "module registration and ownership validation",
+      "independent Vulkan coordinator",
+      "separate-channel shader extraction and batch selection"
+    ],
+    "task_specific_solver_code": "None planned; verify fixed compiled implementation handles all T1-T3 without edits"
+  },
+  "human_productivity": "not measured",
+  "verified_at": "2026-10-27T07:51:29.308032+09:00",
+  "main_diagnostic_executable_hashes": [
+    "7b1bb308e1214b0242a9e836b3f454143bbf2a482ebd8831466e97ab906c5ac5"
+  ],
+  "fourteen_main_runs_single_executable": true,
+  "decision": "no_go_for_H3_in_v1_tasks",
+  "limitation": "No retrospective reconstruction of marginal authoring time; the generic infrastructure was written with task definitions known"
+}

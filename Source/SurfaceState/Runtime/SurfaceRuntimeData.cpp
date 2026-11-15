@@ -11,23 +11,27 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Runtime_Surface_Data
+// ============================================================
+// 00. Runtime Surface Data
+// ============================================================
+#pragma region 00_Runtime_Surface_Data
+// 공유 Geometry와 해당 Surface의 Profile·자산 참조를 유지한다.
 
-    TSurfaceRuntimeData::TSurfaceRuntimeData(TSharedSurfaceGeometryData Geometry)
-        : Geometry(std::make_shared<const TSharedSurfaceGeometryData>(std::move(Geometry)))
+    FSurfaceRuntimeData::FSurfaceRuntimeData(FSharedSurfaceGeometryData Geometry)
+        : Geometry(std::make_shared<const FSharedSurfaceGeometryData>(std::move(Geometry)))
     {
     }
 
-    std::shared_ptr<const TSharedSurfaceGeometryData> TSurfaceRuntimeData::GetSharedGeometry() const noexcept
+    std::shared_ptr<const FSharedSurfaceGeometryData> FSurfaceRuntimeData::GetSharedGeometry() const noexcept
     {
         return Geometry;
     }
 
-    TSurfaceRuntimeData TSurfacePreprocessor::Build(const TSurfaceMappingData&        Mapping,
-                                                    std::vector<TSurfaceProfileIndex> ProfileMap,
+    FSurfaceRuntimeData FSurfacePreprocessor::Build(const FSurfaceMappingData&        Mapping,
+                                                    std::vector<FSurfaceProfileIndex> ProfileMap,
                                                     std::uint32_t                     ProfileCount)
     {
-        return TSurfaceRuntimeData(TSurfaceGeometryBuilder::Build(Mapping, std::move(ProfileMap), ProfileCount));
+        return FSurfaceRuntimeData(FSurfaceGeometryBuilder::Build(Mapping, std::move(ProfileMap), ProfileCount));
     }
 #pragma endregion
 } // namespace MDSS::SurfaceState

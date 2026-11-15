@@ -9,18 +9,22 @@
 
 namespace MDSS::Asset
 {
-#pragma region TSRProfileAsset_Implementation
+// ============================================================
+// 00. FSRProfileAsset Implementation
+// ============================================================
+#pragma region 00_TSRProfileAsset_Implementation
+// 검증된 Surface Response Profile 데이터의 에셋 표현.
 
-    TSRProfileAsset::TSRProfileAsset(TAssetID                                  ID,
+    FSRProfileAsset::FSRProfileAsset(FAssetID                                  ID,
                                      std::string                               Name,
                                      std::filesystem::path                     SourcePath,
-                                     SurfaceState::TSurfaceResponseProfileData Data)
-        : TAsset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
+                                     SurfaceState::FSurfaceResponseProfileData Data)
+        : FAsset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
     {
         ValidateSurfaceResponseProfileData(this->Data);
     }
 
-    const SurfaceState::TSurfaceResponseProfileData& TSRProfileAsset::GetData() const noexcept
+    const SurfaceState::FSurfaceResponseProfileData& FSRProfileAsset::GetData() const noexcept
     {
         return Data;
     }

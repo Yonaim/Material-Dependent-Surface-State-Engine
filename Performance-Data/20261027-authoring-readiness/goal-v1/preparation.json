@@ -1,0 +1,20 @@
+{
+  "created_at": "2026-10-27T14:45:12.861703+09:00",
+  "status": "static_input_checks_passed",
+  "preparation_checks": [
+    {
+      "folder": "start",
+      "relative_paths_only": true,
+      "references_exist": true
+    },
+    {
+      "folder": "work",
+      "relative_paths_only": true,
+      "references_exist": true
+    }
+  ],
+  "prepared_files": 8,
+  "application_runs": 0,
+  "product_source_changed": false,
+  "note": "JSON/reference checks only, not actual SceneLoader/GPU validation"
+}

@@ -10,14 +10,18 @@
 
 namespace MDSS::GPU
 {
-#pragma region TGraphicsPass_Implementation
+// ============================================================
+// 00. FGraphicsPass Implementation
+// ============================================================
+#pragma region 00_TGraphicsPass_Implementation
+// Vulkan render pass 실행 구간의 공통 기록 helper 구현.
 
-    TGraphicsPass::TGraphicsPass(const TRenderPass& RenderPass) noexcept : RenderPass(&RenderPass)
+    FGraphicsPass::FGraphicsPass(const FRenderPass& RenderPass) noexcept : RenderPass(&RenderPass)
     {
     }
 
-    void TGraphicsPass::Begin(VkCommandBuffer               CommandBuffer,
-                              const TFramebuffer&           Framebuffers,
+    void FGraphicsPass::Begin(VkCommandBuffer               CommandBuffer,
+                              const FFramebuffer&           Framebuffers,
                               std::size_t                   FramebufferIndex,
                               VkExtent2D                    RenderExtent,
                               std::span<const VkClearValue> ClearValues,
@@ -33,10 +37,12 @@ namespace MDSS::GPU
         BeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         BeginInfo.renderPass = RenderPass->GetHandle();
         BeginInfo.framebuffer = Framebuffers.Get(FramebufferIndex);
+
         if (BeginInfo.renderPass == VK_NULL_HANDLE || BeginInfo.framebuffer == VK_NULL_HANDLE)
         {
             throw std::logic_error("Graphics pass begin received an uninitialized Vulkan render target.");
         }
+
         BeginInfo.renderArea.offset = {0, 0};
         BeginInfo.renderArea.extent = RenderExtent;
         BeginInfo.clearValueCount = static_cast<std::uint32_t>(ClearValues.size());
@@ -44,7 +50,7 @@ namespace MDSS::GPU
         vkCmdBeginRenderPass(CommandBuffer, &BeginInfo, Contents);
     }
 
-    void TGraphicsPass::End(VkCommandBuffer CommandBuffer) const
+    void FGraphicsPass::End(VkCommandBuffer CommandBuffer) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || RenderPass == nullptr)
         {

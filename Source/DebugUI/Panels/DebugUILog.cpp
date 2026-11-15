@@ -1,69 +1,82 @@
+/**
+ * @file DebugUILog.cpp
+ * @brief Logger 기록의 필터·검색·복사와 로그 패널 표시를 처리한다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
 {
-    void TDebugUI::DrawLogWindow()
+    void FDebugUI::DrawLogWindow()
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowSize({std::max(Viewport->WorkSize.x * 0.70F, 720.0F), LogWindowHeight},
+        ImGui::SetNextWindowSize({std::max(Viewport->WorkSize.x * 0.70F, 720.0F), LogState.WindowHeight},
                                  ImGuiCond_FirstUseEver);
 
         if (ImGui::Begin("Log"))
         {
-            const std::uint64_t CurrentRevision = TLogger::GetRevision();
-            if (CurrentRevision != LastSeenLogRevision)
+            const std::uint64_t CurrentRevision = FLogger::GetRevision();
+
+            if (CurrentRevision != LogState.LastSeenRevision)
             {
-                CachedLogEntries = TLogger::GetEntries();
-                bScrollLogToBottom = true;
-                LastSeenLogRevision = CurrentRevision;
+                LogState.Entries = FLogger::GetEntries();
+                LogState.bScrollToBottom = true;
+                LogState.LastSeenRevision = CurrentRevision;
             }
 
             if (ImGui::Button("Clear"))
             {
-                TLogger::Clear();
-                bScrollLogToBottom = true;
+                FLogger::Clear();
+                LogState.bScrollToBottom = true;
             }
 
             ImGui::SameLine();
             ImGui::SetNextItemWidth(260.0F);
-            ImGui::InputTextWithHint("##LogSearch", "Search logs...", LogSearch.data(), LogSearch.size());
+            ImGui::InputTextWithHint("##LogSearch", "Search logs...", LogState.Search.data(), LogState.Search.size());
             ImGui::SameLine();
+
             if (ImGui::Button("Copy Visible"))
             {
                 std::string ClipboardText;
-                for (const TLogEntry& Entry : CachedLogEntries)
+
+                for (const FLogEntry& Entry : LogState.Entries)
                 {
                     const std::size_t Index = static_cast<std::size_t>(Entry.Level);
-                    if (Index < LogLevelFilters.size() && LogLevelFilters[Index] &&
-                        ContainsCaseInsensitive(Entry.Formatted, LogSearch.data()))
+
+                    if (Index < LogState.LevelFilters.size() && LogState.LevelFilters[Index] &&
+                        ContainsCaseInsensitive(Entry.Formatted, LogState.Search.data()))
                     {
                         ClipboardText += Entry.Formatted;
                         ClipboardText.push_back('\n');
                     }
                 }
+
                 ImGui::SetClipboardText(ClipboardText.c_str());
             }
 
             ImGui::SameLine();
+
             if (ImGui::Button("All"))
             {
-                LogLevelFilters.fill(true);
+                LogState.LevelFilters.fill(true);
             }
+
             ImGui::SameLine();
+
             if (ImGui::Button("None"))
             {
-                LogLevelFilters.fill(false);
+                LogState.LevelFilters.fill(false);
             }
 
             ImGui::SameLine();
             ImGui::TextUnformatted("Filter:");
 
-            for (const TLogLevel Level : DisplayedLevels)
+            for (const ELogLevel Level : DisplayedLevels)
             {
                 ImGui::SameLine();
                 const std::size_t Index = static_cast<std::size_t>(Level);
                 ImGui::PushStyleColor(ImGuiCol_Text, GetLogColor(Level));
-                ImGui::Checkbox(TLogger::GetLevelName(Level), &LogLevelFilters[Index]);
+                ImGui::Checkbox(FLogger::GetLevelName(Level), &LogState.LevelFilters[Index]);
                 ImGui::PopStyleColor();
             }
 
@@ -71,14 +84,16 @@ namespace MDSS
 
             ImGui::BeginChild(
                 "LogMessages", ImVec2(0.0F, 0.0F), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
-            for (const TLogEntry& Entry : CachedLogEntries)
+            for (const FLogEntry& Entry : LogState.Entries)
             {
                 const std::size_t Index = static_cast<std::size_t>(Entry.Level);
-                if (Index >= LogLevelFilters.size() || !LogLevelFilters[Index])
+
+                if (Index >= LogState.LevelFilters.size() || !LogState.LevelFilters[Index])
                 {
                     continue;
                 }
-                if (!ContainsCaseInsensitive(Entry.Formatted, LogSearch.data()))
+
+                if (!ContainsCaseInsensitive(Entry.Formatted, LogState.Search.data()))
                 {
                     continue;
                 }
@@ -92,24 +107,29 @@ namespace MDSS
                 {
                     ImGui::SetClipboardText(Entry.Formatted.c_str());
                 }
+
                 if (ImGui::BeginPopupContextItem("LogLineContext"))
                 {
                     if (ImGui::MenuItem("Copy Line"))
                     {
                         ImGui::SetClipboardText(Entry.Formatted.c_str());
                     }
+
                     ImGui::EndPopup();
                 }
+
                 ImGui::PopID();
             }
 
-            if (bScrollLogToBottom)
+            if (LogState.bScrollToBottom)
             {
                 ImGui::SetScrollHereY(1.0F);
-                bScrollLogToBottom = false;
+                LogState.bScrollToBottom = false;
             }
+
             ImGui::EndChild();
         }
+
         ImGui::End();
     }
 } // namespace MDSS

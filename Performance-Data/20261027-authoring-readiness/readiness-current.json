@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-10-27T14:10:35.799493+09:00",
+  "status": "layout_lifetime_fixed_reference_capture_gates_passed_human_study_not_ready",
+  "geometry_test": "passed_on_previous_policy_retry",
+  "scratch_lifetime_regression": "passed_12_switches",
+  "surface_gpu_resource": "passed",
+  "render_conditions_observed": 6,
+  "reference_render_validations_passed": 6,
+  "render_acceptance": "passed_scoped_functional_gates",
+  "human_sessions": 0,
+  "human_productivity": "not_measured",
+  "independent_quality_gate": "not_validated",
+  "full_material_ledger": "not_collected_in_app_capture",
+  "earlier_failures_preserved": true,
+  "sources": {
+    "summary": "layout-lifetime-fix/summary.json",
+    "analysis": "layout-lifetime-fix/render/analysis.json",
+    "before_after": "layout-lifetime-fix/before-after-state.json"
+  }
+}

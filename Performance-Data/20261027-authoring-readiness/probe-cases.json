@@ -1,0 +1,32 @@
+[
+  {
+    "id": "base",
+    "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\base.SRProfile",
+    "state": "waterfilm",
+    "expected_builtin_absorbed_wetness_binding": false
+  },
+  {
+    "id": "wetness",
+    "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\wetness.SRProfile",
+    "state": "wetness",
+    "expected_builtin_absorbed_wetness_binding": false
+  },
+  {
+    "id": "absorbedwetness",
+    "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\absorbedwetness.SRProfile",
+    "state": "absorbedwetness",
+    "expected_builtin_absorbed_wetness_binding": true
+  },
+  {
+    "id": "residue",
+    "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\residue.SRProfile",
+    "state": "residue",
+    "expected_builtin_absorbed_wetness_binding": false
+  },
+  {
+    "id": "threshold",
+    "profile": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\raw\\task-pack\\reference\\threshold.SRProfile",
+    "state": "waterfilm",
+    "expected_builtin_absorbed_wetness_binding": false
+  }
+]

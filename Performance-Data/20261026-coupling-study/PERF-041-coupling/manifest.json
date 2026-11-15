@@ -1,0 +1,2609 @@
+{
+  "runs": [
+    {
+      "id": "smoke-A",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:41:03.268373+09:00",
+      "status": "failed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-A-attempt1",
+      "executable_sha256": "359681bf21708cee70d2a6531a0ed3d8a389cf2d398deeb1b2a6441d154c31da",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c3eb95c1be73142f9e5747bdbe5daba32e3572ee44485bd4f91d4e903beffbd1",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 1,
+      "finished_at": "2026-10-26T20:41:11.642653+09:00",
+      "elapsed_seconds": 8.375
+    },
+    {
+      "id": "smoke-A",
+      "attempt": 2,
+      "started_at": "2026-10-26T20:42:26.646543+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-A-attempt2",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:42:35.270418+09:00",
+      "elapsed_seconds": 8.625,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.5742570101688,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "2114878560591644830",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 8.7008,
+        "gpu_p95_ms": 10.9826,
+        "hz": 60,
+        "initial_geometry_hash": "4602708827301880613",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 6.716174937082542e-05,
+        "max_local_budget_residual": 1.6008729062377824e-06,
+        "max_mass_residual": 6.942373966012383e-05,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "A",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 7.840845666332129e-10
+    },
+    {
+      "id": "smoke-B",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:42:35.273426+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-B-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:42:48.745942+09:00",
+      "elapsed_seconds": 13.469000000040978,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.1487306465833,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          1938.051993466295,
+          147.35714945236896
+        ],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "8174618623374308042",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 92.82236,
+        "gpu_p95_ms": 103.69328,
+        "hz": 60,
+        "initial_geometry_hash": "4602708827301880613",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00018935187381430296,
+        "max_local_budget_residual": 7.539056241512299e-06,
+        "max_mass_residual": 0.0006363960028465954,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "B",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 7.187574258344003e-09
+    },
+    {
+      "id": "smoke-C",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:42:48.748484+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-C-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:42:54.915871+09:00",
+      "elapsed_seconds": 6.156000000075437,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.5741771797266,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "18145637178304551471",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 19.3522,
+        "gpu_p95_ms": 21.73972,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 6.640149246095461e-05,
+        "max_local_budget_residual": 1.5898517631285358e-06,
+        "max_mass_residual": 3.765334713534685e-05,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "C",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 4.25263872494415e-10
+    },
+    {
+      "id": "smoke-D",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:42:54.91791+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-D-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:43:08.401974+09:00",
+      "elapsed_seconds": 13.483999999938533,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.148681766092,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          1938.0745264725585,
+          147.32435815392185
+        ],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "15892447320148208019",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 98.52663,
+        "gpu_p95_ms": 116.64346,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00013801300974591868,
+        "max_local_budget_residual": 7.500872015953064e-06,
+        "max_mass_residual": 0.0006651464545939234,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 7.51228718232613e-09
+    },
+    {
+      "id": "smoke-E",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:43:08.404527+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-E-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:43:21.901478+09:00",
+      "elapsed_seconds": 13.483999999938533,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.1486503820593,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          1938.0756803660356,
+          147.31846197252972
+        ],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "6090853686710032706",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 86.22785,
+        "gpu_p95_ms": 97.5623,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00013475695232045837,
+        "max_local_budget_residual": 7.500872015953064e-06,
+        "max_mass_residual": 0.0006183820414662478,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 6.98412124398024e-09
+    },
+    {
+      "id": "smoke-F",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:43:21.904529+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-F-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:43:35.3134+09:00",
+      "elapsed_seconds": 13.390999999945052,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.1487620326752,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          1938.052198683506,
+          147.35871199745338
+        ],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "13084150300479931202",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 97.13406,
+        "gpu_p95_ms": 114.27868,
+        "hz": 60,
+        "initial_geometry_hash": "12026518897126686361",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00019148759656673064,
+        "max_local_budget_residual": 7.539056241512299e-06,
+        "max_mass_residual": 0.000664209718706843,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "F",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 7.501707513819838e-09
+    },
+    {
+      "id": "smoke-D-ledger-off",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:43:35.316447+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-D-ledger-off-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:43:47.164946+09:00",
+      "elapsed_seconds": 11.844000000040978,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.148681766092,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          0.0,
+          0.0
+        ],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "15892447320148208019",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 81.72452,
+        "gpu_p95_ms": 84.9409,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0,
+        "max_local_budget_residual": 0.0,
+        "max_mass_residual": 0.0006651464545939234,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": false,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 7.51228718232613e-09
+    },
+    {
+      "id": "plate-128-60-A",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:45:25.204036+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-A-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:46:39.329269+09:00",
+      "elapsed_seconds": 74.125,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16936.67187301415,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "10857837669736880157",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 8.02248,
+        "gpu_p95_ms": 11.37428,
+        "hz": 60,
+        "initial_geometry_hash": "4602708827301880613",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0024505890905857086,
+        "max_local_budget_residual": 2.339221100555733e-05,
+        "max_mass_residual": 0.001798120720195584,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "A",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 1.1269884236444328e-08
+    },
+    {
+      "id": "plate-128-60-B",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:46:39.331669+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-B-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:49:42.740556+09:00",
+      "elapsed_seconds": 183.40599999995902,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.30193718741,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43481.69053910313,
+          105828.41925384184
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "9902233040054630216",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 92.13932,
+        "gpu_p95_ms": 104.69792,
+        "hz": 60,
+        "initial_geometry_hash": "4602708827301880613",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00045099208363174443,
+        "max_local_budget_residual": 1.2038183327053864e-05,
+        "max_mass_residual": 0.0037335480010369793,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "B",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 2.3400349759785953e-08
+    },
+    {
+      "id": "plate-128-60-C",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:49:42.743877+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-C-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:51:06.569814+09:00",
+      "elapsed_seconds": 83.82799999997951,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16936.65029108089,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "6380978722916864735",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 20.42126,
+        "gpu_p95_ms": 22.39464,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0023861490190029144,
+        "max_local_budget_residual": 2.0097468222957104e-05,
+        "max_mass_residual": 0.0022035932197468355,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "C",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 1.3811219798445573e-08
+    },
+    {
+      "id": "plate-128-60-D",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:51:06.57248+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-D-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:54:03.351481+09:00",
+      "elapsed_seconds": 176.78200000000652,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.545060338216,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43701.553377628916,
+          106790.32071279205
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "16959655177347697591",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 95.66259,
+        "gpu_p95_ms": 103.34995,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00045647983447441,
+        "max_local_budget_residual": 1.2494312661648355e-05,
+        "max_mass_residual": 0.007889723448897712,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 4.944955526510253e-08
+    },
+    {
+      "id": "plate-128-60-E",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:54:03.352989+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-E-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T20:57:05.823094+09:00",
+      "elapsed_seconds": 182.46799999999348,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.27714054449,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43779.39744379569,
+          107999.61256368102
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "16515904276797547746",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 85.57184,
+        "gpu_p95_ms": 93.83692,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0004432888020435219,
+        "max_local_budget_residual": 1.164337012383998e-05,
+        "max_mass_residual": 0.011118523849290796,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 6.968635378831689e-08
+    },
+    {
+      "id": "plate-128-60-F",
+      "attempt": 1,
+      "started_at": "2026-10-26T20:57:05.826118+09:00",
+      "status": "interrupted",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-F-attempt1",
+      "executable_sha256": "3a025aa167ae06494e546bc99ed6f20ac094c21ff42ec325feda1ab86249828b",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "527f4eb5fa00efa593a08204e3c8d2608d5a8a009af9ca486176e1f7597056e8",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "reason": "Runner interrupted after dense D/E completion to validate equivalent sparse numerical execution; partial raw retained."
+    },
+    {
+      "id": "smoke-D",
+      "attempt": 2,
+      "started_at": "2026-10-26T21:00:20.189057+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-D-attempt2",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:00:32.735388+09:00",
+      "elapsed_seconds": 12.53200000000652,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.148681766092,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          1938.0745264725585,
+          147.32435815392185
+        ],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "15892447320148208019",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 37.75592,
+        "gpu_p95_ms": 93.6562,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00013801300974591868,
+        "max_local_budget_residual": 7.500872015953064e-06,
+        "max_mass_residual": 0.0006651464545939234,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 7.51228718232613e-09
+    },
+    {
+      "id": "smoke-E",
+      "attempt": 2,
+      "started_at": "2026-10-26T21:00:32.738439+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\smoke-E-attempt2",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:00:42.541569+09:00",
+      "elapsed_seconds": 9.797000000020489,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          1231.1486503820593,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          1938.0756803660356,
+          147.31846197252972
+        ],
+        "cumulative_input": [
+          13391.51104869213,
+          0.0,
+          6455.4373428182
+        ],
+        "driver_version": 8388961,
+        "final_hash": "6090853686710032706",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 25.71648,
+        "gpu_p95_ms": 87.08708,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00013475695232045837,
+        "max_local_budget_residual": 7.500872015953064e-06,
+        "max_mass_residual": 0.0006183820414662478,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 60,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 6.98412124398024e-09
+    },
+    {
+      "id": "plate-128-60-D",
+      "attempt": 2,
+      "started_at": "2026-10-26T21:00:57.219288+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-D-attempt2",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:03:16.553331+09:00",
+      "elapsed_seconds": 139.3279999999795,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.545060338216,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43701.553377628916,
+          106790.32071279205
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "16959655177347697591",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 42.44721,
+        "gpu_p95_ms": 98.07759,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00045647983447441,
+        "max_local_budget_residual": 1.2494312661648355e-05,
+        "max_mass_residual": 0.007889723448897712,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 4.944955526510253e-08
+    },
+    {
+      "id": "plate-128-60-E",
+      "attempt": 2,
+      "started_at": "2026-10-26T21:03:16.556598+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-E-attempt2",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:05:33.581500+09:00",
+      "elapsed_seconds": 137.03100000007544,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.27714054449,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43779.39744379569,
+          107999.61256368102
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "16515904276797547746",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 24.9189,
+        "gpu_p95_ms": 87.6672,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0004432888020435219,
+        "max_local_budget_residual": 1.164337012383998e-05,
+        "max_mass_residual": 0.011118523849290796,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 6.968635378831689e-08
+    },
+    {
+      "id": "plate-128-60-F",
+      "attempt": 2,
+      "started_at": "2026-10-26T21:11:49.001740+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-F-attempt2",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:14:02.678650+09:00",
+      "elapsed_seconds": 133.6720000000205,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.569916725883,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43489.35182529331,
+          106156.72841498104
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "15264086450000086196",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 41.88557,
+        "gpu_p95_ms": 94.38118,
+        "hz": 60,
+        "initial_geometry_hash": "12026518897126686361",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0004569133290880863,
+        "max_local_budget_residual": 1.1799057262333601e-05,
+        "max_mass_residual": 0.004927466579829343,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "F",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 3.088334243074885e-08
+    },
+    {
+      "id": "plate-128-120-D",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:14:02.682049+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-120-D-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:18:04.978813+09:00",
+      "elapsed_seconds": 242.2970000000205,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16768.15217698561,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43701.254164571685,
+          106785.18933742892
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "4472288734299893465",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 30.49216,
+        "gpu_p95_ms": 34.6574,
+        "hz": 120,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00041584678900598705,
+        "max_local_budget_residual": 1.1043965059798211e-05,
+        "max_mass_residual": 0.016960410270257853,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 1680,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 1.0630090527382204e-07
+    },
+    {
+      "id": "plate-128-120-E",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:18:04.982835+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-120-E-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:22:07.842355+09:00",
+      "elapsed_seconds": 242.84400000004098,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16767.890481911687,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43779.10650526621,
+          107994.68605132286
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "13620715190356505927",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 16.74328,
+        "gpu_p95_ms": 19.5126,
+        "hz": 120,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00038719773145418936,
+        "max_local_budget_residual": 1.081306800188031e-05,
+        "max_mass_residual": 0.010168413442443125,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 1680,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 6.373145088510715e-08
+    },
+    {
+      "id": "plate-128-240-D",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:22:07.845379+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-240-D-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:29:47.764772+09:00",
+      "elapsed_seconds": 459.905999999959,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16773.416681850304,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43700.9919634748,
+          106781.76552668995
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "15929711610668144841",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 25.68832,
+        "gpu_p95_ms": 27.68524,
+        "hz": 240,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0005799035550960723,
+        "max_local_budget_residual": 1.0520043588257977e-05,
+        "max_mass_residual": 0.026882952530286275,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 3360,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 1.684913362864759e-07
+    },
+    {
+      "id": "plate-128-240-E",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:29:47.767977+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-240-E-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:37:33.068733+09:00",
+      "elapsed_seconds": 465.2970000000205,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16773.158261865396,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43778.84634382741,
+          107991.3124841796
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "7080783630111579134",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 13.30256,
+        "gpu_p95_ms": 14.30012,
+        "hz": 240,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0005698081963141215,
+        "max_local_budget_residual": 1.0960632607748266e-05,
+        "max_mass_residual": 0.011629828411969356,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 3360,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 7.289100137745451e-08
+    },
+    {
+      "id": "plate-256-60-D",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:37:33.072253+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-256-60-D-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:45:59.584970+09:00",
+      "elapsed_seconds": 506.51600000006147,
+      "summary": {
+        "bootstrap_max_abs": 1.1749258440353109e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.900143106323,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43695.61693175057,
+          106686.88851700787
+        ],
+        "cumulative_input": [
+          160698.0960148358,
+          0.0,
+          77465.11048102127
+        ],
+        "driver_version": 8388961,
+        "final_hash": "12846469225800398665",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 149.07713,
+        "gpu_p95_ms": 403.70379,
+        "hz": 60,
+        "initial_geometry_hash": "672095257153436282",
+        "initial_hash": "2138041297295378125",
+        "initial_ice_water": 82085.68481969765,
+        "max_global_step_budget_residual": 0.0004225305047252906,
+        "max_local_budget_residual": 3.1367086334999073e-06,
+        "max_mass_residual": 0.015732620900962502,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 393216,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 393216,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 9.860571908344234e-08
+    },
+    {
+      "id": "plate-256-60-E",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:45:59.587984+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-256-60-E-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:54:31.788053+09:00",
+      "elapsed_seconds": 512.2029999999795,
+      "summary": {
+        "bootstrap_max_abs": 1.1749258440353109e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.60970073189,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43770.67323962597,
+          107824.69996471818
+        ],
+        "cumulative_input": [
+          160698.0960148358,
+          0.0,
+          77465.11048102127
+        ],
+        "driver_version": 8388961,
+        "final_hash": "3343557036927652353",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 95.92764,
+        "gpu_p95_ms": 366.3192,
+        "hz": 60,
+        "initial_geometry_hash": "672095257153436282",
+        "initial_hash": "2138041297295378125",
+        "initial_ice_water": 82085.68481969765,
+        "max_global_step_budget_residual": 0.00040532488668738984,
+        "max_local_budget_residual": 3.1458587751442835e-06,
+        "max_mass_residual": 0.01351848297053948,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 393216,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 393216,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 8.472839602623132e-08
+    },
+    {
+      "id": "plate-128-60-D-repeat",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:54:31.792588+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-D-repeat-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:56:39.726405+09:00",
+      "elapsed_seconds": 127.93799999996554,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.545060338216,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43701.553377628916,
+          106790.32071279205
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "16959655177347697591",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 38.93732,
+        "gpu_p95_ms": 92.95627,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00045647983447441,
+        "max_local_budget_residual": 1.2494312661648355e-05,
+        "max_mass_residual": 0.007889723448897712,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 4.944955526510253e-08
+    },
+    {
+      "id": "plate-128-60-D-dirty",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:56:39.729428+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\plate-128-60-D-dirty-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:58:48.447996+09:00",
+      "elapsed_seconds": 128.71799999999348,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "plate",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.545060594184,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          43701.55330638856,
+          106790.32080584916
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "17646097540468637585",
+        "frozen_failures": 0,
+        "full_geometry": false,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 40.1432,
+        "gpu_p95_ms": 92.89256,
+        "hz": 60,
+        "initial_geometry_hash": "2502954013950930096",
+        "initial_hash": "15010663844321290661",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00045373048362551513,
+        "max_local_budget_residual": 1.2494312661648355e-05,
+        "max_mass_residual": 0.007843081475584768,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 4.915722247904853e-08
+    },
+    {
+      "id": "bunny-128-60-B",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:58:48.452828+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\bunny-128-60-B-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/StanfordBunny/StanfordBunny.obj": "6c54b0e020fd3e158e84af808f2c95a0d7908af72845fc85e201767334d6f53a",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:59:06.243223+09:00",
+      "elapsed_seconds": 17.780999999959022,
+      "summary": {
+        "bootstrap_max_abs": 8.241191812823789e-39,
+        "case": "bunny",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          8940.522244022897,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          35834.58456647641,
+          85025.59414574549
+        ],
+        "cumulative_input": [
+          120191.45743432193,
+          0.0,
+          11629.289146328223
+        ],
+        "driver_version": 8388961,
+        "final_hash": "4872217792513812050",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 1.994,
+        "gpu_p95_ms": 2.77428,
+        "hz": 60,
+        "initial_geometry_hash": "18172517032833196837",
+        "initial_hash": "11624647864921539884",
+        "initial_ice_water": 67994.10272270252,
+        "max_global_step_budget_residual": 0.00027197227529152795,
+        "max_local_budget_residual": 3.2918389479164034e-05,
+        "max_mass_residual": 0.007425973142744624,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 16384,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 6598,
+        "variant": "B",
+        "mapping_warning_count": 67282,
+        "mapping_warning_categories": {
+          "no_texel_centers": 64447,
+          "seam_no_candidates": 2834,
+          "dropped_links": 1
+        },
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": [
+          "Triangle 0 on Surface 0 covers no texel centers.",
+          "UV seam between triangles 29830 and 31244 has no texel candidates.",
+          "UV seam texel links were dropped: 94 bidirectional links could not fit within the eight-neighbor limit."
+        ]
+      },
+      "relative_mass_residual": 9.326371269085476e-08
+    },
+    {
+      "id": "bunny-128-60-D",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:59:06.285516+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\bunny-128-60-D-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/StanfordBunny/StanfordBunny.obj": "6c54b0e020fd3e158e84af808f2c95a0d7908af72845fc85e201767334d6f53a",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:59:24.241841+09:00",
+      "elapsed_seconds": 17.92200000002049,
+      "summary": {
+        "bootstrap_max_abs": 8.241191812823789e-39,
+        "case": "bunny",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          8909.368769348435,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          36075.79091351188,
+          85370.71232536243
+        ],
+        "cumulative_input": [
+          120191.45743432193,
+          0.0,
+          11629.289146328223
+        ],
+        "driver_version": 8388961,
+        "final_hash": "3805406373023320413",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 2.08468,
+        "gpu_p95_ms": 2.54513,
+        "hz": 60,
+        "initial_geometry_hash": "13037168279516780237",
+        "initial_hash": "11624647864921539884",
+        "initial_ice_water": 67994.10272270252,
+        "max_global_step_budget_residual": 0.000265064809835147,
+        "max_local_budget_residual": 3.0648079700767994e-05,
+        "max_mass_residual": 0.004725637854789966,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 16384,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 6598,
+        "variant": "D",
+        "mapping_warning_count": 67282,
+        "mapping_warning_categories": {
+          "no_texel_centers": 64447,
+          "seam_no_candidates": 2834,
+          "dropped_links": 1
+        },
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": [
+          "Triangle 0 on Surface 0 covers no texel centers.",
+          "UV seam between triangles 29830 and 31244 has no texel candidates.",
+          "UV seam texel links were dropped: 94 bidirectional links could not fit within the eight-neighbor limit."
+        ]
+      },
+      "relative_mass_residual": 5.9349868724042476e-08
+    },
+    {
+      "id": "bunny-128-60-E",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:59:24.312084+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\bunny-128-60-E-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/StanfordBunny/StanfordBunny.obj": "6c54b0e020fd3e158e84af808f2c95a0d7908af72845fc85e201767334d6f53a",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T21:59:43.728508+09:00",
+      "elapsed_seconds": 19.344000000040978,
+      "summary": {
+        "bootstrap_max_abs": 8.241191812823789e-39,
+        "case": "bunny",
+        "channels": [
+          "heat",
+          "ice",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          8891.089105173905,
+          0.0,
+          0.0
+        ],
+        "cumulative_extents": [
+          36261.08010936118,
+          85540.226576875
+        ],
+        "cumulative_input": [
+          120191.45743432193,
+          0.0,
+          11629.289146328223
+        ],
+        "driver_version": 8388961,
+        "final_hash": "2620663791088499934",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 1.78824,
+        "gpu_p95_ms": 2.02362,
+        "hz": 60,
+        "initial_geometry_hash": "13037168279516780237",
+        "initial_hash": "11624647864921539884",
+        "initial_ice_water": 67994.10272270252,
+        "max_global_step_budget_residual": 0.0002289175374553084,
+        "max_local_budget_residual": 3.326500882394612e-05,
+        "max_mass_residual": 0.0058344394146843115,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 16384,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 6598,
+        "variant": "E",
+        "mapping_warning_count": 67282,
+        "mapping_warning_categories": {
+          "no_texel_centers": 64447,
+          "seam_no_candidates": 2834,
+          "dropped_links": 1
+        },
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": [
+          "Triangle 0 on Surface 0 covers no texel centers.",
+          "UV seam between triangles 29830 and 31244 has no texel candidates.",
+          "UV seam texel links were dropped: 94 bidirectional links could not fit within the eight-neighbor limit."
+        ]
+      },
+      "relative_mass_residual": 7.327544428503049e-08
+    },
+    {
+      "id": "mud-128-60-B",
+      "attempt": 1,
+      "started_at": "2026-10-26T21:59:43.828661+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\mud-128-60-B-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T22:02:08.918727+09:00",
+      "elapsed_seconds": 144.98400000005495,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "mud",
+        "channels": [
+          "heat",
+          "ice",
+          "mud",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.30193718741,
+          0.0,
+          3052.6904121633593,
+          0.0
+        ],
+        "cumulative_extents": [
+          43481.69053910313,
+          105828.41925384184
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "5416822996851389338",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 32.94244,
+        "gpu_p95_ms": 115.60432,
+        "hz": 60,
+        "initial_geometry_hash": "4602708827301880613",
+        "initial_hash": "5103319484418869030",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00045099208363174443,
+        "max_local_budget_residual": 1.2038183327053864e-05,
+        "max_mass_residual": 0.0037335480010369793,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "B",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 2.3400349759785953e-08
+    },
+    {
+      "id": "mud-128-60-D",
+      "attempt": 1,
+      "started_at": "2026-10-26T22:02:09.008241+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\mud-128-60-D-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T22:04:46.395744+09:00",
+      "elapsed_seconds": 157.295999999973,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "mud",
+        "channels": [
+          "heat",
+          "ice",
+          "mud",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.544382579425,
+          0.0,
+          3053.721236232556,
+          0.0
+        ],
+        "cumulative_extents": [
+          43699.83192602923,
+          106780.90932396431
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "1950342762324626540",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 47.86576,
+        "gpu_p95_ms": 124.29737,
+        "hz": 60,
+        "initial_geometry_hash": "4329027285092236806",
+        "initial_hash": "5103319484418869030",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.0004437319860504678,
+        "max_local_budget_residual": 1.2494312661648355e-05,
+        "max_mass_residual": 0.008584175477153622,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "D",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 5.38020961586621e-08
+    },
+    {
+      "id": "mud-128-60-E",
+      "attempt": 1,
+      "started_at": "2026-10-26T22:04:46.485452+09:00",
+      "status": "completed",
+      "output": "Performance-Data\\20261026-coupling-study\\PERF-041-coupling\\raw\\mud-128-60-E-attempt1",
+      "executable_sha256": "a2f0ebc0e3e8b1f0426b086d515b114580bac64c39a0fa152b163decaf995131",
+      "plan_sha256": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb",
+      "assets": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6"
+      },
+      "sources": {
+        "Scripts\\Research\\CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+        "Source\\SurfaceState\\Solver\\SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+        "Shaders\\Simulation\\Solver\\SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+        "Shaders\\Simulation\\Solver\\StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+        "Shaders\\Simulation\\Geometry\\SurfaceAccumulationHeight.comp": "241cc3066446956b026e12be0ddd4bbc5ddd1394899e727a795c902348fc3334"
+      },
+      "reaction_shaders": {
+        "Build\\bin\\Shaders\\Debug\\Simulation\\Solver\\SurfaceReaction.comp.spv": "13b915d74bd6531937107a1f618855acf68fdf8681c734cb0f7cbe4e65bf2778",
+        "Build\\bin\\Shaders\\Release\\Simulation\\Solver\\SurfaceReaction.comp.spv": "38c7421aa265d81062449c0ebcc08afa57b31b8a2639988d55e58f4eafb666a2"
+      },
+      "exit_code": 0,
+      "finished_at": "2026-10-26T22:07:22.307428+09:00",
+      "elapsed_seconds": 155.73499999998603,
+      "summary": {
+        "bootstrap_max_abs": 1.1730003198154822e-38,
+        "case": "mud",
+        "channels": [
+          "heat",
+          "ice",
+          "mud",
+          "waterfilm"
+        ],
+        "cumulative_decay": [
+          16757.276313086157,
+          0.0,
+          3053.5155200622216,
+          0.0
+        ],
+        "cumulative_extents": [
+          43778.934884177805,
+          107995.95193979263
+        ],
+        "cumulative_input": [
+          160698.13258429762,
+          0.0,
+          0.0,
+          77465.24811381074
+        ],
+        "driver_version": 8388961,
+        "final_hash": "4888916457619280322",
+        "frozen_failures": 0,
+        "full_geometry": true,
+        "gpu": "AMD Radeon RX 6700 XT",
+        "gpu_median_ms": 31.33628,
+        "gpu_p95_ms": 113.24448,
+        "hz": 60,
+        "initial_geometry_hash": "4329027285092236806",
+        "initial_hash": "5103319484418869030",
+        "initial_ice_water": 82085.70045590546,
+        "max_global_step_budget_residual": 0.00045255596515494977,
+        "max_local_budget_residual": 1.1535318664393501e-05,
+        "max_mass_residual": 0.010762280449853279,
+        "meso": "zero height, macro normals; no normal map",
+        "negative": 0,
+        "nonfinite": 0,
+        "reaction_arithmetic": 0,
+        "reaction_budget": 0,
+        "reaction_ledger_enabled": true,
+        "sparse_solver": true,
+        "steps": 840,
+        "texels": 98304,
+        "timing_scope": "headless production solver; diagnostic readbacks between steps; not application performance",
+        "valid_texels": 98304,
+        "variant": "E",
+        "mapping_warning_count": 0,
+        "mapping_warning_categories": {},
+        "mapping_warning_details": "See this run's raw summary.json for every original warning",
+        "mapping_warning_examples": []
+      },
+      "relative_mass_residual": 6.74535660635742e-08
+    }
+  ]
+}

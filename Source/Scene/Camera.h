@@ -9,12 +9,12 @@
 
 namespace MDSS
 {
-    class TCamera
+    class FCamera
     {
     public:
         // Camera construction and matrices
-        TCamera() = default;
-        TCamera(glm::vec3 Position,
+        FCamera() = default;
+        FCamera(glm::vec3 Position,
                 glm::vec3 Target,
                 float     VerticalFieldOfViewDegrees = 60.0F,
                 float     NearPlane = 0.1F,

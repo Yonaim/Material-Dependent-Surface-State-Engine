@@ -1,0 +1,45 @@
+diff --git a/Tests/SharedSurfaceGeometryTests.cpp b/Tests/SharedSurfaceGeometryTests.cpp
+index 4a51e31..68ee0ef 100644
+--- a/Tests/SharedSurfaceGeometryTests.cpp
++++ b/Tests/SharedSurfaceGeometryTests.cpp
+@@ -216,13 +216,14 @@ namespace
+         const auto Mesh = BuildSurfaceTexelMesh(Geometry);
+         Check(Mesh.Surfaces.size() == 2 && Mesh.Surfaces[0].IndexCount == 24 && Mesh.Surfaces[1].IndexCount == 6,
+               "texel grids should produce two triangles per complete cell with separate Surface ranges");
+-        Check(std::ranges::find(Mesh.Indices, 4U) != Mesh.Indices.end(),
++        Check(std::ranges::any_of(Mesh.Indices,
++                                 [&](std::uint32_t I) { return Mesh.Vertices[I].Samples.x == 4U; }),
+               "interior texels must participate even when the source mesh only has corner vertices");
+         for (std::size_t I = 0; I < Mesh.Indices.size(); I += 3)
+         {
+-            const auto& A = Geometry.GetTexels()[Mesh.Indices[I]];
+-            const auto& B = Geometry.GetTexels()[Mesh.Indices[I + 1]];
+-            const auto& C = Geometry.GetTexels()[Mesh.Indices[I + 2]];
++            const auto& A = Geometry.GetTexels()[Mesh.Vertices[Mesh.Indices[I]].Samples.x];
++            const auto& B = Geometry.GetTexels()[Mesh.Vertices[Mesh.Indices[I + 1]].Samples.x];
++            const auto& C = Geometry.GetTexels()[Mesh.Vertices[Mesh.Indices[I + 2]].Samples.x];
+             Check(A.Surface == B.Surface && A.Surface == C.Surface && A.Chart == B.Chart && A.Chart == C.Chart,
+                   "triangles must not connect different Surfaces or charts");
+             Check(glm::dot(glm::cross(B.Position - A.Position, C.Position - A.Position), A.Normal) > 0,
+@@ -230,8 +231,19 @@ namespace
+         }
+         Geometry.GetTexels()[4].Surface = SurfaceState::InvalidSurfaceID;
+         const auto Hole = BuildSurfaceTexelMesh(Geometry);
+-        Check(std::ranges::find(Hole.Indices, 4U) == Hole.Indices.end() && Hole.Surfaces[0].IndexCount == 12,
+-              "invalid texels must be omitted while retaining valid three-corner cell triangles");
++        // Indices address compact render vertices, not simulation texels. Once texel 4 is
++        // omitted, render vertex 4 may legitimately sample another, still valid texel.
++        Check(std::ranges::all_of(Hole.Indices,
++                                 [&](std::uint32_t I)
++                                 {
++                                     if (I >= Hole.Vertices.size())
++                                         return false;
++                                     const auto T = Hole.Vertices[I].Samples.x;
++                                     return T < Geometry.GetTexels().size() && Geometry.GetTexels()[T].IsValid();
++                                 }),
++              "render triangles must only reference vertices that sample valid texels");
++        Check(Hole.Surfaces[0].IndexCount == 12,
++              "removing the center texel must retain four valid three-corner cell triangles");
+         Geometry.GetTexels()[10].Chart = 42;
+         Check(BuildSurfaceTexelMesh(Geometry).Surfaces[1].IndexCount == 3,
+               "chart boundaries must not be bridged by the regular UV grid");

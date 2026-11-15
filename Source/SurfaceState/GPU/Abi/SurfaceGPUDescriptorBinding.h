@@ -1,9 +1,14 @@
+/**
+ * @file SurfaceGPUDescriptorBinding.h
+ * @brief Solver·geometry·render가 공유하는 storage buffer binding 번호를 정의한다.
+ */
+
 #pragma once
 #include <cstdint>
 
 namespace MDSS::SurfaceState
 {
-    enum class TSurfaceGPUDescriptorBinding : std::uint32_t
+    enum class ESurfaceGPUDescriptorBinding : std::uint32_t
     {
         TexelSurfaceIndices = 0,
         TexelProfileIndices,
@@ -28,6 +33,8 @@ namespace MDSS::SurfaceState
         DynamicGeometry,
         AccumulationHeights,
         DynamicConcavityWeights,
+        Reactions,
+        ReactionScratch,
         Count
     };
 

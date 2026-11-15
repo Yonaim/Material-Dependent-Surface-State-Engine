@@ -1,0 +1,56 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 5,
+  "name": "ReactionTransitionControl",
+  "states": {
+    "fuel": {
+      "stateCapacity": 4.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    },
+    "heat": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.12,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    },
+    "burn": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    },
+    "scorched": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    }
+  },
+  "reactions": []
+}

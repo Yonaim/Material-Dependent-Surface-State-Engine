@@ -1,0 +1,9 @@
+{
+  "recorded_at": "2026-10-27T13:19:17.036352+09:00",
+  "stage": "render-validation input archival, before launching app",
+  "status": "preflight_failed",
+  "error": "Win32 path length exceeded during digest of extended-path copied file",
+  "app_launches": 0,
+  "resolution": "Digest helper uses extended paths; next rendering attempt uses separate render/ folder",
+  "original_partial_archive_preserved": true
+}

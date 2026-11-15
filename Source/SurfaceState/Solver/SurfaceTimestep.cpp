@@ -1,6 +1,6 @@
 /**
- * @file SurfaceStateSystem.cpp
- * @brief SurfaceStateSystem의 구현을 제공한다.
+ * @file SurfaceTimestep.cpp
+ * @brief 변환·Profile·전송 옵션 변화에 따라 안정 시간 간격과 가중치 cache를 갱신한다.
  */
 
 #include "AssetManager/Assets/MeshAsset.h"
@@ -29,29 +29,37 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Timestep_and_Transfer_Caches
+// ============================================================
+// 00. Timestep and Transfer Caches
+// ============================================================
+#pragma region 00_Timestep_and_Transfer_Caches
+// 변환·Profile·옵션 변화에 따라 안정 시간 간격과 가중치 cache를 갱신한다.
 
-    float TSurfaceStateSystem::GetMaximumStableDeltaTime()
+    float FSurfaceStateSystem::GetMaximumStableDeltaTime()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
-        if (StableDeltaTimeModelMatrices.size() != Instances.size())
-            bStableDeltaTimeDirty = true;
+
+        if (Execution.StableDeltaTimeModelMatrices.size() != Instances.size())
+            Execution.bStableDeltaTimeDirty = true;
         for (std::size_t I = 0; I < Instances.size(); ++I)
         {
-            if (!GPUResources->GetInstanceDescriptors(I) || I >= StableDeltaTimeModelMatrices.size())
+            if (!GPUResources->GetInstanceDescriptors(I) || I >= Execution.StableDeltaTimeModelMatrices.size())
                 continue;
             const glm::mat3 Model(Instances[I].GetTransform().GetMatrix());
+
             for (glm::length_t Column = 0; Column < 3; ++Column)
                 for (glm::length_t Row = 0; Row < 3; ++Row)
-                    if (StableDeltaTimeModelMatrices[I][Column][Row] != Model[Column][Row])
-                        bStableDeltaTimeDirty = true;
+                    if (Execution.StableDeltaTimeModelMatrices[I][Column][Row] != Model[Column][Row])
+                        Execution.bStableDeltaTimeDirty = true;
         }
-        if (!bStableDeltaTimeDirty)
-            return CachedMaximumStableDeltaTime;
+
+        if (!Execution.bStableDeltaTimeDirty)
+            return Execution.CachedMaximumStableDeltaTime;
 
         double     Limit = 1.0 / 60.0;
-        const bool SatEnabled = DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::SaturationDrive);
-        const bool GeoEnabled = DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::GeometryDrive);
+        const bool bSatEnabled = Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::SaturationDrive);
+        const bool bGeoEnabled = Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::GeometryDrive);
+
         for (std::size_t I = 0; I < Instances.size(); ++I)
         {
             if (!GPUResources->GetInstanceDescriptors(I))
@@ -66,22 +74,26 @@ namespace MDSS::SurfaceState
                 Geometry,
                 Model,
                 nullptr,
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight));
+                Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight),
+                Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight),
+                Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight));
             for (std::size_t T = 0; T < Texels.size(); ++T)
             {
-                const auto Profile = Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(T));
+                const auto Profile = Geometry.GetProfileIndex(static_cast<FLocalTexelIndex>(T));
+
                 if (!Texels[T].IsValid() || Profile >= Profiles.size())
                     continue;
                 const double AreaScale = GetSurfaceWorldTexelArea(Texels[T], Model) / SurfaceStateReferenceArea;
+
                 if (AreaScale <= 0.0)
                     continue;
                 double          WeightSum = 0.0, HeightWeightSum = 0.0;
                 const glm::vec3 Position = Texels[T].Position + Texels[T].Normal * Texels[T].Geometry.MesoVirtualHeight;
+
                 for (std::size_t D = 0; D < SurfaceNeighborCount; ++D)
                 {
                     const auto N = Texels[T].NeighborIndices[D];
+
                     if (N >= Texels.size())
                         continue;
                     const double W = Weights[T * SurfaceNeighborCount + D];
@@ -91,31 +103,35 @@ namespace MDSS::SurfaceState
                     // DirectionDrive <= 1; use an upper bound including both gravity directions.
                     HeightWeightSum += W * std::abs((Linear * (Target - Position)).z);
                 }
+
                 for (const auto& [Name, Original] : Assets.GetSRProfile(Profiles[Profile]).GetData().States)
                 {
-                    const TStateId State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Name);
+                    const FStateId State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Name);
                     const auto     Override = RuntimeProfileOverrides.find({Profiles[Profile], State});
                     const auto&    P = Override == RuntimeProfileOverrides.end() ? Original : Override->second;
+
                     // SaturationDrive <= source saturation; Geometry uses the same unclamped mobility.
                     const double RateBound =
-                        (SatEnabled ? BaseSaturationTransferRate * P.SaturationTransferFactor * WeightSum : 0.0) +
-                        (GeoEnabled ? BaseGeometryTransferRate * P.GeometryTransferFactor * HeightWeightSum : 0.0);
+                        (bSatEnabled ? BaseSaturationTransferRate * P.SaturationTransferFactor * WeightSum : 0.0) +
+                        (bGeoEnabled ? BaseGeometryTransferRate * P.GeometryTransferFactor * HeightWeightSum : 0.0);
                     if (RateBound > 0.0)
                         Limit = std::min(Limit, 0.9 * P.StateCapacity * AreaScale / RateBound);
                 }
             }
         }
-        CachedMaximumStableDeltaTime = static_cast<float>(Limit);
-        StableDeltaTimeModelMatrices.resize(Instances.size());
+
+        Execution.CachedMaximumStableDeltaTime = static_cast<float>(Limit);
+        Execution.StableDeltaTimeModelMatrices.resize(Instances.size());
+
         for (std::size_t I = 0; I < Instances.size(); ++I)
-            StableDeltaTimeModelMatrices[I] = glm::mat3(Instances[I].GetTransform().GetMatrix());
-        bStableDeltaTimeDirty = false;
-        return CachedMaximumStableDeltaTime;
+            Execution.StableDeltaTimeModelMatrices[I] = glm::mat3(Instances[I].GetTransform().GetMatrix());
+        Execution.bStableDeltaTimeDirty = false;
+        return Execution.CachedMaximumStableDeltaTime;
     }
 
-    void TSurfaceStateSystem::PrepareTransferWeightCachesForSettingChange()
+    void FSurfaceStateSystem::PrepareTransferWeightCachesForSettingChange()
     {
-        if (!bTransferWeightSettingsDirty)
+        if (!Execution.bTransferWeightSettingsDirty)
             return;
         if (vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
             throw std::runtime_error("Failed to wait for the graphics queue before preparing TransferWeight caches.");
@@ -126,13 +142,14 @@ namespace MDSS::SurfaceState
             GPUResources->UpdateTransferWeightCache(
                 SceneIndex,
                 Scene.GetStaticMeshInstances()[SceneIndex].GetTransform(),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
-                bHalfDynamicWeightsEnabled);
+                Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight),
+                Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight),
+                Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight),
+                Execution.bHalfDynamicWeightsEnabled);
         }
-        bTransferWeightSettingsDirty = false;
-        bForceFullGeometryOnNextStep = true;
+
+        Execution.bTransferWeightSettingsDirty = false;
+        Execution.bForceFullGeometryOnNextStep = true;
     }
 
 #pragma endregion

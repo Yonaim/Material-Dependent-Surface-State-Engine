@@ -1,0 +1,8 @@
+# GLSL follows the project's Allman layout without reordering shader includes.
+BasedOnStyle: InheritParentConfig
+Language: Cpp
+SortIncludes: Never
+IncludeBlocks: Preserve
+ReflowComments: false
+AlignConsecutiveDeclarations: None
+InsertBraces: true

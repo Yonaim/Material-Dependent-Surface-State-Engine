@@ -13,7 +13,7 @@
 
 namespace MDSS::Asset
 {
-    struct TVertex
+    struct FVertex
     {
         glm::vec3 Position{0.0F};
         glm::vec3 Normal{0.0F, 0.0F, 1.0F};
@@ -22,11 +22,11 @@ namespace MDSS::Asset
     };
 
     /** @brief Render vertex와 OBJ 원본 position topology를 함께 보존한 triangle. */
-    struct TMeshTriangleSource
+    struct FMeshTriangleSource
     {
         std::array<std::uint32_t, 3>  RenderVertexIndices{};
         std::array<std::int32_t, 3>   OriginalPositionIndices{};
         std::array<std::int32_t, 3>   OriginalUVIndices{};
-        SurfaceState::TSurfaceLocalID Surface = SurfaceState::InvalidSurfaceID;
+        SurfaceState::FSurfaceLocalID Surface = SurfaceState::InvalidSurfaceID;
     };
 } // namespace MDSS::Asset

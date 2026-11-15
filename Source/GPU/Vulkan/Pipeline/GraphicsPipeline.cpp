@@ -21,12 +21,14 @@ namespace MDSS::GPU
         std::vector<std::uint32_t> ReadSpirvFile(const char* Path)
         {
             std::ifstream File(Path, std::ios::ate | std::ios::binary);
+
             if (!File.is_open())
             {
                 throw std::runtime_error(std::string("Failed to open shader file: ") + Path);
             }
 
             const std::streamsize Size = File.tellg();
+
             if (Size <= 0 || (Size % static_cast<std::streamsize>(sizeof(std::uint32_t))) != 0)
             {
                 throw std::runtime_error(std::string("Invalid SPIR-V file size: ") + Path);
@@ -45,11 +47,15 @@ namespace MDSS::GPU
         }
     } // namespace
 
-#pragma region Pipeline_Lifecycle
+// ============================================================
+// 00. Pipeline Lifecycle
+// ============================================================
+#pragma region 00_Pipeline_Lifecycle
+// shader와 layout에서 pipeline을 만들고 소유 pipeline을 해제한다.
 
-    TGraphicsPipeline::TGraphicsPipeline(VkDevice                       Device,
-                                         VkRenderPass                   TRenderPass,
-                                         const TGraphicsPipelineConfig& Config)
+    FGraphicsPipeline::FGraphicsPipeline(VkDevice                       Device,
+                                         VkRenderPass                   FRenderPass,
+                                         const FGraphicsPipelineConfig& Config)
         : Device(Device)
     {
         if (Config.ShaderStages.empty())
@@ -64,14 +70,14 @@ namespace MDSS::GPU
 
         try
         {
-            for (const TShaderStageConfig& StageConfig : Config.ShaderStages)
+            for (const FShaderStageConfig& StageConfig : Config.ShaderStages)
             {
                 if (StageConfig.ShaderPath.empty() || StageConfig.EntryPoint.empty())
                 {
                     throw std::invalid_argument("Graphics pipeline shader stage path/entry point must not be empty.");
                 }
 
-                TLogger::Debug("TRenderer",
+                FLogger::Debug("TRenderer",
                                "Loading shader stage " + std::to_string(static_cast<int>(StageConfig.Stage)) + ": " +
                                    StageConfig.ShaderPath);
                 const VkShaderModule Module = CreateShaderModule(Device, StageConfig.ShaderPath.c_str());
@@ -145,10 +151,12 @@ namespace MDSS::GPU
             ColorBlending.pAttachments = &ColorBlendAttachment;
 
             std::vector<VkDynamicState> DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
             if (Config.bDynamicLineWidth)
             {
                 DynamicStates.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
             }
+
             VkPipelineDynamicStateCreateInfo DynamicState{};
             DynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             DynamicState.dynamicStateCount = static_cast<std::uint32_t>(DynamicStates.size());
@@ -180,7 +188,7 @@ namespace MDSS::GPU
             PipelineInfo.pColorBlendState = &ColorBlending;
             PipelineInfo.pDynamicState = &DynamicState;
             PipelineInfo.layout = PipelineLayout;
-            PipelineInfo.renderPass = TRenderPass;
+            PipelineInfo.renderPass = FRenderPass;
             PipelineInfo.subpass = 0;
 
             if (vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
@@ -188,7 +196,7 @@ namespace MDSS::GPU
                 throw std::runtime_error("Failed to create Vulkan graphics pipeline.");
             }
 
-            TLogger::Info("TRenderer",
+            FLogger::Info("TRenderer",
                           "Graphics pipeline created with " + std::to_string(ShaderStageInfos.size()) +
                               " shader stage(s).");
         }
@@ -198,11 +206,13 @@ namespace MDSS::GPU
             {
                 vkDestroyShaderModule(Device, Module, nullptr);
             }
+
             if (PipelineLayout != VK_NULL_HANDLE)
             {
                 vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
                 PipelineLayout = VK_NULL_HANDLE;
             }
+
             throw;
         }
 
@@ -212,13 +222,14 @@ namespace MDSS::GPU
         }
     }
 
-    TGraphicsPipeline::~TGraphicsPipeline()
+    FGraphicsPipeline::~FGraphicsPipeline()
     {
         if (Pipeline != VK_NULL_HANDLE)
         {
             vkDestroyPipeline(Device, Pipeline, nullptr);
             Pipeline = VK_NULL_HANDLE;
         }
+
         if (PipelineLayout != VK_NULL_HANDLE)
         {
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
@@ -228,23 +239,31 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Pipeline_Accessors
+// ============================================================
+// 01. Pipeline Accessors
+// ============================================================
+#pragma region 01_Pipeline_Accessors
+// 기록 단계에서 사용할 pipeline·layout 식별자를 제공한다.
 
-    VkPipeline TGraphicsPipeline::GetHandle() const noexcept
+    VkPipeline FGraphicsPipeline::GetHandle() const noexcept
     {
         return Pipeline;
     }
 
-    VkPipelineLayout TGraphicsPipeline::GetLayout() const noexcept
+    VkPipelineLayout FGraphicsPipeline::GetLayout() const noexcept
     {
         return PipelineLayout;
     }
 
 #pragma endregion
 
-#pragma region Shader_Module_Creation
+// ============================================================
+// 02. Shader Module Creation
+// ============================================================
+#pragma region 02_Shader_Module_Creation
+// SPIR-V 파일을 읽어 Vulkan shader module을 생성한다.
 
-    VkShaderModule TGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
+    VkShaderModule FGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
     {
         const std::vector<std::uint32_t> Code = ReadSpirvFile(Path);
 
@@ -254,10 +273,12 @@ namespace MDSS::GPU
         CreateInfo.pCode = Code.data();
 
         VkShaderModule Module = VK_NULL_HANDLE;
+
         if (vkCreateShaderModule(Device, &CreateInfo, nullptr, &Module) != VK_SUCCESS)
         {
             throw std::runtime_error(std::string("Failed to create shader module: ") + Path);
         }
+
         return Module;
     }
 #pragma endregion

@@ -30,10 +30,10 @@ namespace MDSS::SurfaceState
      * @brief 한 Surface instance와 채널에 대한 discrete contact event.
      * @note 입력 출처가 제출하며 Surface Input 처리 단계가 texel-space InputDelta로 변환한다.
      */
-    struct TSurfaceContactInput
+    struct FSurfaceContactInput
     {
-        TSurfaceInstanceID TargetInstance = InvalidSurfaceInstanceID;
-        TStateId           State = InvalidStateId;
+        FSurfaceInstanceID TargetInstance = InvalidSurfaceInstanceID;
+        FStateId           State = InvalidStateId;
         glm::vec3          WorldPosition{0.0F};
         glm::vec3          WorldDirection{0.0F};
         float              Radius = 0.0F;

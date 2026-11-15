@@ -26,9 +26,13 @@ namespace MDSS::Rendering
         }
     }
 
-#pragma region Smoothing_Resource_Lifecycle
+// ============================================================
+// 00. Smoothing Resource Lifecycle
+// ============================================================
+#pragma region 00_Smoothing_Resource_Lifecycle
+// 높이 필터에 필요한 image·buffer·pipeline을 관리한다.
 
-    THeightFieldSmoothing::THeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
+    FHeightFieldSmoothing::FHeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
                                                  VkDescriptorSetLayout SurfaceLayout,
                                                  VkDescriptorSetLayout HeightLayout,
@@ -41,7 +45,8 @@ namespace MDSS::Rendering
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
         Limits = Properties.limits;
-        const auto StorageBindings = static_cast<std::uint32_t>(SurfaceState::TSurfaceGPUDescriptorBinding::Count) + 2U;
+        const auto StorageBindings = static_cast<std::uint32_t>(SurfaceState::ESurfaceGPUDescriptorBinding::Count) + 2U;
+
         if (Limits.maxPerStageDescriptorStorageBuffers < StorageBindings ||
             Limits.maxDescriptorSetStorageBuffers < StorageBindings || Limits.maxComputeWorkGroupInvocations < 64 ||
             Limits.maxComputeWorkGroupSize[0] < 64)
@@ -66,14 +71,17 @@ namespace MDSS::Rendering
                     Shaders::EShader::Rendering_Surface_Smoothing_HeightFieldSmoothing_comp_h0,
                     Shaders::EShader::Rendering_Surface_Smoothing_HeightFieldSmoothing_comp_h1};
                 std::ifstream File(Shaders::Path(Variants[Variant]), std::ios::binary | std::ios::ate);
+
                 if (!File)
                     throw std::runtime_error("Cannot open height-field smoothing compute shader.");
                 const auto Size = File.tellg();
+
                 if (Size <= 0 || Size % 4 != 0)
                     throw std::runtime_error("Invalid height-field smoothing SPIR-V.");
                 std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
                 File.seekg(0);
                 File.read(reinterpret_cast<char*>(Code.data()), Size);
+
                 if (!File)
                     throw std::runtime_error("Cannot read height-field smoothing compute shader.");
                 VkShaderModuleCreateInfo ModuleInfo{};
@@ -120,9 +128,10 @@ namespace MDSS::Rendering
         }
     }
 
-    THeightFieldSmoothing::~THeightFieldSmoothing()
+    FHeightFieldSmoothing::~FHeightFieldSmoothing()
     {
         Outputs.clear();
+
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
         for (VkPipeline Pipeline : Pipelines)
@@ -134,19 +143,23 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Smoothing_Output_Access
+// ============================================================
+// 01. Smoothing Output Access
+// ============================================================
+#pragma region 01_Smoothing_Output_Access
+// 필터링한 표시용 높이·normal 출력을 소비자에게 제공한다.
 
-    VkDescriptorSet THeightFieldSmoothing::GetOutputSet(std::size_t Instance, std::uint32_t Channel) const
+    VkDescriptorSet FHeightFieldSmoothing::GetOutputSet(std::size_t Instance, std::uint32_t Channel) const
     {
         return Outputs.at({Instance, Channel}).Set;
     }
 
-    const GPU::TGPUBuffer& THeightFieldSmoothing::GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const
+    const GPU::FGPUBuffer& FHeightFieldSmoothing::GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const
     {
         return *Outputs.at({Instance, Channel}).Buffer;
     }
 
-    void THeightFieldSmoothing::Invalidate() noexcept
+    void FHeightFieldSmoothing::Invalidate() noexcept
     {
         for (auto& [Key, Output] : Outputs)
         {
@@ -155,7 +168,7 @@ namespace MDSS::Rendering
         }
     }
 
-    void THeightFieldSmoothing::ReleaseOutputs() noexcept
+    void FHeightFieldSmoothing::ReleaseOutputs() noexcept
     {
         // Output buffers are allocated lazily the first time smoothing is enabled.
         // Keeping them alive after the A/B toggle is disabled can leave a sizeable
@@ -170,17 +183,21 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Smoothing_Command_Recording
+// ============================================================
+// 02. Smoothing Command Recording
+// ============================================================
+#pragma region 02_Smoothing_Command_Recording
+// Solver State를 변경하지 않고 표시용 높이 필터 명령을 기록한다.
 
-    void THeightFieldSmoothing::Record(VkCommandBuffer                                       Command,
+    void FHeightFieldSmoothing::Record(VkCommandBuffer                                       Command,
                                        std::size_t                                           Instance,
                                        std::uint32_t                                         Channel,
                                        std::uint32_t                                         Channels,
                                        std::uint32_t                                         TexelCount,
-                                       const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
+                                       const SurfaceState::FSurfaceStateDescriptorResources& StateDescriptors,
                                        VkDescriptorSet                                       InputSet,
-                                       const GPU::TGPUBuffer&                                InputBuffer,
-                                       const GPU::TGPUBuffer&                                GeometryCacheBuffer,
+                                       const GPU::FGPUBuffer&                                InputBuffer,
+                                       const GPU::FGPUBuffer&                                GeometryCacheBuffer,
                                        bool                                                  bStateAB,
                                        float                                                 AccumulationDisplayScale,
                                        std::uint32_t                                         OccupancyTileSize,
@@ -195,15 +212,16 @@ namespace MDSS::Rendering
             throw std::invalid_argument("Height-field smoothing sparse tile size must be 8, 16, or 32.");
         const auto Key = std::make_pair(Instance, Channel);
         auto       It = Outputs.find(Key);
+
         if (It == Outputs.end())
         {
-            TOutput Output;
-            Output.Buffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+            FOutput Output;
+            Output.Buffer = std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                               Device,
                                                               Bytes,
                                                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                              GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
+                                                              GPU::EGPUBufferMemoryCategory::SurfaceRuntime);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;
@@ -218,6 +236,7 @@ namespace MDSS::Rendering
             Write.descriptorCount = 1;
             Write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             Write.pBufferInfo = &Buffer;
+
             // The smoothed geometry replaces binding 0, while downstream overlay
             // passes still read the input preview's occupancy GeometryCache at binding 1.
             VkCopyDescriptorSet CopyGeometryCache{};
@@ -230,6 +249,7 @@ namespace MDSS::Rendering
             vkUpdateDescriptorSets(Device, 1, &Write, 1, &CopyGeometryCache);
             It = Outputs.emplace(Key, std::move(Output)).first;
         }
+
         if (It->second.Buffer->GetSize() != Bytes)
             throw std::logic_error("Height-field smoothing size changed without rebuilding Scene resources.");
 
@@ -254,6 +274,7 @@ namespace MDSS::Rendering
         const std::array<VkDescriptorSet, 3> Sets{
             bStateAB ? StateDescriptors.GetABSet() : StateDescriptors.GetBASet(), InputSet, It->second.Set};
         const VkDeviceSize CacheWords = GeometryCacheBuffer.GetSize() / sizeof(std::uint32_t);
+
         if (CacheWords < static_cast<VkDeviceSize>(TexelCount) * 6U + 14U ||
             (CacheWords - static_cast<VkDeviceSize>(TexelCount) * 6U - 14U) % 7U != 0U)
             throw std::invalid_argument("Height-field smoothing geometry cache layout is invalid.");
@@ -272,14 +293,14 @@ namespace MDSS::Rendering
             bSparse && It->second.bInitialized && It->second.LastInputBuffer == InputBuffer.GetHandle() &&
             It->second.LastDisplayScale == AccumulationDisplayScale && It->second.LastTileSize == OccupancyTileSize;
 
-        struct TPush
+        struct FPush
         {
             std::uint32_t Texels, Channel, Channels, Padding;
             float         DisplayScale;
             std::uint32_t TileSize, UseSparse;
         };
-        static_assert(sizeof(TPush) == 28);
-        const TPush Push{
+        static_assert(sizeof(FPush) == 28);
+        const FPush Push{
             TexelCount, Channel, Channels, 0U, AccumulationDisplayScale, OccupancyTileSize, bUseSparse ? 1U : 0U};
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipelines[bUseSparse && bSharedHalo ? 1U : 0U]);
         vkCmdBindDescriptorSets(Command,
@@ -291,6 +312,7 @@ namespace MDSS::Rendering
                                 0,
                                 nullptr);
         vkCmdPushConstants(Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), &Push);
+
         if (bUseSparse)
         {
             vkCmdDispatchIndirect(Command, GeometryCacheBuffer.GetHandle(), NormalDispatchIndirectOffset);
@@ -300,10 +322,12 @@ namespace MDSS::Rendering
             const std::uint32_t GroupCount = (TexelCount - 1U) / 64U + 1U;
             const std::uint32_t GroupsX = std::min(GroupCount, Limits.maxComputeWorkGroupCount[0]);
             const std::uint32_t GroupsY = (GroupCount - 1U) / GroupsX + 1U;
+
             if (GroupsY > Limits.maxComputeWorkGroupCount[1])
                 throw std::overflow_error("Height-field smoothing dispatch exceeds Vulkan workgroup limits.");
             vkCmdDispatch(Command, GroupsX, GroupsY, 1);
         }
+
         It->second.bInitialized = true;
         It->second.LastInputBuffer = InputBuffer.GetHandle();
         It->second.LastDisplayScale = AccumulationDisplayScale;

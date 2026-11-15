@@ -1,0 +1,148 @@
+{
+  "id": "compatibility",
+  "created_at": "2026-10-27T18:26:30.263701+09:00",
+  "status": "prepared_before_execution",
+  "scope": "Instrumentation consistency",
+  "prior_knowledge": "Earlier six-second results and published internal studies known; no blind or independent quality claim",
+  "hypothesis": "Readback does not alter final State",
+  "input_folder": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\compatibility\\input",
+  "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\compatibility\\capture.jsonl",
+  "final_requested_serial": 360,
+  "actual_final_serial_includes_two_drain_frames": true,
+  "required_checkpoints": [
+    0,
+    60,
+    360
+  ],
+  "freeze_plan": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\goal-v1\\plan.json",
+  "performance_comparison": false,
+  "human_sessions": 0,
+  "profile": {
+    "type": "SurfaceResponseProfile",
+    "version": 5,
+    "name": "Ice Reaction Lab",
+    "states": {
+      "ice": {
+        "stateCapacity": 4,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0,
+        "gravityFlowFactor": 0,
+        "decayRate": 0,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 1,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.035
+      },
+      "waterfilm": {
+        "stateCapacity": 2,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0.16,
+        "gravityFlowFactor": 0.025,
+        "decayRate": 0,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 0.18,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.035
+      },
+      "heat": {
+        "stateCapacity": 2,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0.15,
+        "gravityFlowFactor": 0,
+        "decayRate": 0.015,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 0,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.025
+      },
+      "absorbedwetness": {
+        "stateCapacity": 1,
+        "inputFactor": 1,
+        "saturationSpreadFactor": 0,
+        "gravityFlowFactor": 0,
+        "decayRate": 0,
+        "cavityDecayProtectionFactor": 0,
+        "cavityExitResistanceFactor": 0,
+        "accumulationFactor": 0,
+        "cavityFillFactor": 0,
+        "thicknessPerAmount": 0.025
+      }
+    },
+    "reactions": [
+      {
+        "id": "ice_melting",
+        "consumes": {
+          "ice": 1,
+          "heat": 0.45
+        },
+        "produces": {
+          "waterfilm": 1
+        },
+        "rate": {
+          "model": "stateProportional",
+          "state": "ice",
+          "coefficient": 0.5
+        },
+        "modifiers": [
+          {
+            "state": "heat",
+            "function": "rampAbove",
+            "threshold": 0.25,
+            "scale": 1
+          }
+        ]
+      },
+      {
+        "id": "water_cooling",
+        "consumes": {
+          "heat": 1
+        },
+        "produces": {},
+        "rate": {
+          "model": "stateProportional",
+          "state": "heat",
+          "coefficient": 0.5
+        },
+        "modifiers": [
+          {
+            "state": "waterfilm",
+            "function": "linear",
+            "scale": 1
+          }
+        ]
+      },
+      {
+        "id": "surface_absorption",
+        "mode": "inflowFraction",
+        "inflowState": "waterfilm",
+        "inflowSources": [
+          "positiveInput",
+          "incoming"
+        ],
+        "fraction": 0.1,
+        "consumes": {
+          "waterfilm": 1
+        },
+        "produces": {
+          "absorbedwetness": 1
+        }
+      }
+    ]
+  },
+  "source_input_sha256": {
+    "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\absorbedwetness\\input\\Editable.SRProfile": "8a2f121678cd628128e4ea0943ffb84ecb9fcc73ab4f1d0312d23100509fe79f",
+    "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\absorbedwetness\\input\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\absorbedwetness\\input\\settings.json": "ccc9622aa785c5b2fc240757b481276470013a3b7ea677151b41d23e89b305c9",
+    "Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\absorbedwetness\\input\\Task.Scene": "4e9b8c10106108aa6268cc5b5c6cdaeb12fc2181ae89324dccc1a54055298857"
+  },
+  "input_sha256": {
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\compatibility\\input\\Editable.SRProfile": "8a2f121678cd628128e4ea0943ffb84ecb9fcc73ab4f1d0312d23100509fe79f",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\compatibility\\input\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\compatibility\\input\\settings.json": "07726d221afd7bd6d418cce1e9d68bcdb1f7afadcb17f5601591197c9b33d7bf",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\compatibility\\input\\Task.DemoAnim": "1d5950205814a9e3c9fba9879853ca2de1b7de97a54df817f41d218415a9aee7",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\pilot\\raw\\compatibility\\input\\Task.Scene": "232a72f3b76d53056647d527be30212e02c13af1acb5e45c311123e7f4e93373"
+  }
+}

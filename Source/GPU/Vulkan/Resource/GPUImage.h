@@ -11,12 +11,12 @@
 
 namespace MDSS::GPU
 {
-    class TGPUImage
+    class FGPUImage
     {
     public:
         // Image allocation and lifecycle
         /** @brief 이미지와 backing memory를 생성한다. 실패하면 std::runtime_error를 던진다. */
-        TGPUImage(VkPhysicalDevice      PhysicalDevice,
+        FGPUImage(VkPhysicalDevice      PhysicalDevice,
                   VkDevice              Device,
                   VkExtent2D            Extent,
                   VkFormat              Format,
@@ -24,12 +24,12 @@ namespace MDSS::GPU
                   VkImageUsageFlags     Usage,
                   VkMemoryPropertyFlags MemoryProperties,
                   std::uint32_t         ArrayLayers = 1);
-        ~TGPUImage();
+        ~FGPUImage();
 
-        TGPUImage(const TGPUImage&) = delete;
-        TGPUImage& operator=(const TGPUImage&) = delete;
-        TGPUImage(TGPUImage&&) = delete;
-        TGPUImage& operator=(TGPUImage&&) = delete;
+        FGPUImage(const FGPUImage&) = delete;
+        FGPUImage& operator=(const FGPUImage&) = delete;
+        FGPUImage(FGPUImage&&) = delete;
+        FGPUImage& operator=(FGPUImage&&) = delete;
 
         /** @brief 기존 image 자원을 해제하고 새 사양으로 다시 생성한다. */
         void Recreate(VkPhysicalDevice      PhysicalDevice,

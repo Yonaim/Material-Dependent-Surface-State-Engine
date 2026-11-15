@@ -1,18 +1,45 @@
+/**
+ * @file Renderer.cpp
+ * @brief 프레임의 Solver·Surface 표시·장면·UI 명령을 기록하고 제출한다.
+ */
+
 #include "Rendering/Core/RendererShared.h"
 
 namespace MDSS::Rendering
 {
-#pragma region Renderer_Lifecycle
+    // 교체 리소스를 준비 완료 전까지 독립 소유해 예외 시 기존 Renderer 자원을 유지한다.
+    struct FRenderer::FSceneReplacementResources
+    {
+        std::unique_ptr<SurfaceState::FSurfaceStateSystem>     Replacement;
+        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementDebugPipeline;
+        std::unique_ptr<SurfaceState::FTexelInspector>         ReplacementInspector;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementGeometryPreview;
+        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementGeometryPipeline;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementLitPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
+        std::unique_ptr<FRenderStateTexture>                   ReplacementRenderStateTexture;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementMudGeometry;
+        std::unique_ptr<FHeightFieldSmoothing>                 ReplacementHeightFieldSmoothing;
+        std::unique_ptr<FAccumulationOverlaySides>             ReplacementOverlaySides;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudTopPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudSidePipelines;
+    };
 
-    TRenderer::TRenderer(const GPU::TVulkanContext&         Context,
-                         TWindow&                           TWindow,
-                         Asset::TAssetManager&              Assets,
-                         SurfaceState::TSurfaceDataManager& SurfaceData,
-                         const TScene&                      Scene,
-                         SurfaceState::TSurfaceStateSystem& SurfaceStateSystem,
-                         TFrameCoordinator&                 FrameCoordinator)
-        : Context(Context), TargetWindow(TWindow), Assets(Assets), SurfaceData(SurfaceData),
-          SurfaceStateSystem(SurfaceStateSystem), FrameCoordinator(FrameCoordinator), SwapchainData(Context, TWindow),
+// ============================================================
+// 00. Renderer Lifecycle
+// ============================================================
+#pragma region 00_Renderer_Lifecycle
+// Scene·device·표시 자원을 연결해 Renderer의 시작과 종료를 관리한다.
+
+    FRenderer::FRenderer(const GPU::FVulkanContext&         Context,
+                         FWindow&                           FWindow,
+                         Asset::FAssetManager&              Assets,
+                         SurfaceState::FSurfaceDataManager& SurfaceData,
+                         const FScene&                      Scene,
+                         SurfaceState::FSurfaceStateSystem& SurfaceStateSystem,
+                         FFrameCoordinator&                 FrameCoordinator)
+        : Context(Context), TargetWindow(FWindow), Assets(Assets), SurfaceData(SurfaceData),
+          SurfaceStateSystem(SurfaceStateSystem), FrameCoordinator(FrameCoordinator), SwapchainData(Context, FWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
           DepthImages(CreateDepthImages(Context.GetPhysicalDevice(),
                                         Context.GetDevice(),
@@ -38,30 +65,58 @@ namespace MDSS::Rendering
                            GetDepthImageViewHandles(DepthImageViews)),
           FrameContext(Context)
     {
-        TScopeExit ConstructionCleanup(
-            [this]
-            {
-                // The TRenderer destructor is not called when construction fails. Release raw Vulkan
-                // handles owned by this object; RAII members clean themselves during stack unwinding.
-                if (TimestampQueryPool != VK_NULL_HANDLE)
-                {
-                    vkDestroyQueryPool(this->Context.GetDevice(), TimestampQueryPool, nullptr);
-                    TimestampQueryPool = VK_NULL_HANDLE;
-                }
-                DestroyRenderFinishedSemaphores();
-                if (MaterialDescriptorPool != VK_NULL_HANDLE)
-                {
-                    vkDestroyDescriptorPool(this->Context.GetDevice(), MaterialDescriptorPool, nullptr);
-                    MaterialDescriptorPool = VK_NULL_HANDLE;
-                }
-                MaterialResources.clear();
-                if (MaterialDescriptorSetLayout != VK_NULL_HANDLE)
-                {
-                    vkDestroyDescriptorSetLayout(this->Context.GetDevice(), MaterialDescriptorSetLayout, nullptr);
-                    MaterialDescriptorSetLayout = VK_NULL_HANDLE;
-                }
-            });
+        TScopeExit ConstructionCleanup([this] { ReleaseRawResourcesAfterFailedConstruction(); });
 
+        ConfigureDeviceCapabilities();
+        InitializeReferenceGizmo();
+        CreateMaterialDescriptorResources();
+        InitializeSurfaceDisplayResources(Scene);
+        InitializeFrameTimingResources();
+        ConfigureSurfaceResolution(Scene);
+
+        FLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
+        FLogger::Debug("TRenderer",
+                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
+                           ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
+        ConstructionCleanup.Release();
+    }
+
+
+    // 00.00. Construction Failure Safety
+    #pragma region 00_00_Construction_Failure_Safety
+    // 생성 중 예외가 발생하면 RAII 객체 외의 Vulkan 핸들을 안전하게 정리한다.
+
+    void FRenderer::ReleaseRawResourcesAfterFailedConstruction()
+    {
+        // The FRenderer destructor is not called when construction fails. Release raw Vulkan
+        // handles owned by this object; RAII members clean themselves during stack unwinding.
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkDestroyQueryPool(this->Context.GetDevice(), TimestampQueryPool, nullptr);
+            TimestampQueryPool = VK_NULL_HANDLE;
+        }
+        DestroyRenderFinishedSemaphores();
+        if (MaterialDescriptorPool != VK_NULL_HANDLE)
+        {
+            vkDestroyDescriptorPool(this->Context.GetDevice(), MaterialDescriptorPool, nullptr);
+            MaterialDescriptorPool = VK_NULL_HANDLE;
+        }
+        MaterialResources.clear();
+        if (MaterialDescriptorSetLayout != VK_NULL_HANDLE)
+        {
+            vkDestroyDescriptorSetLayout(this->Context.GetDevice(), MaterialDescriptorSetLayout, nullptr);
+            MaterialDescriptorSetLayout = VK_NULL_HANDLE;
+        }
+    }
+
+    #pragma endregion
+
+    // 00.01. Device and Gizmo Setup
+    #pragma region 00_01_Device_and_Gizmo_Setup
+    // GPU 능력을 조사하고 Gizmo/축 가이드 정점 자원을 준비한다.
+
+    void FRenderer::ConfigureDeviceCapabilities()
+    {
         VkPhysicalDeviceFeatures DeviceFeatures{};
         vkGetPhysicalDeviceFeatures(Context.GetPhysicalDevice(), &DeviceFeatures);
         VkPhysicalDeviceDriverProperties DriverProperties{};
@@ -75,65 +130,76 @@ namespace MDSS::Rendering
             std::max<VkDeviceSize>(DeviceProperties.limits.minUniformBufferOffsetAlignment, 1U);
 
         MaterialUniformStride =
-            (sizeof(TMaterialUniform) + UniformAlignment - 1U) / UniformAlignment * UniformAlignment;
+            (sizeof(FMaterialUniform) + UniformAlignment - 1U) / UniformAlignment * UniformAlignment;
         bRenderPassSubstageTimingsReliable =
             DriverProperties.driverID != VK_DRIVER_ID_MOLTENVK || DeviceProperties.vendorID != 0x106BU;
         bSupportsWireframeLineWidth = DeviceFeatures.wideLines == VK_TRUE;
+
         if (bSupportsWireframeLineWidth)
         {
             WireframeLineWidthMin = std::max(1.0F, DeviceProperties.limits.lineWidthRange[0]);
             WireframeLineWidthMax = std::max(WireframeLineWidthMin, DeviceProperties.limits.lineWidthRange[1]);
             WireframeLineWidth = std::clamp(2.0F, WireframeLineWidthMin, WireframeLineWidthMax);
         }
+    }
 
-        std::vector<TGizmoVertex> GizmoVertices =
+    void FRenderer::InitializeReferenceGizmo()
+    {
+        std::vector<FGizmoVertex> GizmoVertices =
             BuildWorldReferenceVertices(WorldGridVertexCount, WorldAxisVertexCount);
-        const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
+        const std::vector<FGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
         TranslateGizmoVertexCount = static_cast<std::uint32_t>(TranslateGizmoVertices.size());
         GizmoVertices.insert(GizmoVertices.end(), TranslateGizmoVertices.begin(), TranslateGizmoVertices.end());
-        const std::vector<TGizmoVertex> RotateGizmoVertices = BuildRotateGizmoVertices();
+        const std::vector<FGizmoVertex> RotateGizmoVertices = BuildRotateGizmoVertices();
         RotateGizmoVertexCount = static_cast<std::uint32_t>(RotateGizmoVertices.size());
         GizmoVertices.insert(GizmoVertices.end(), RotateGizmoVertices.begin(), RotateGizmoVertices.end());
-        GizmoVertexBuffer = std::make_unique<GPU::TGPUBuffer>(
+        GizmoVertexBuffer = std::make_unique<GPU::FGPUBuffer>(
             Context.GetPhysicalDevice(),
             Context.GetDevice(),
-            static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)),
+            static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(FGizmoVertex)),
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            GPU::TGPUBufferMemoryCategory::Renderer);
+            GPU::EGPUBufferMemoryCategory::Renderer);
         GizmoVertexBuffer->Upload(GizmoVertices.data(),
-                                  static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
+                                  static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(FGizmoVertex)));
+    }
 
-        CreateMaterialDescriptorResources();
+    #pragma endregion
 
-        if (const SurfaceState::TSurfaceStateDescriptorResources* Descriptors =
+    // 00.02. Surface and Frame Resources
+    #pragma region 00_02_Surface_and_Frame_Resources
+    // Scene별 표현 Pipeline과 in-flight GPU 타이밍·프레임 자원을 구성한다.
+
+    void FRenderer::InitializeSurfaceDisplayResources(const FScene& Scene)
+    {
+        if (const SurfaceState::FSurfaceStateDescriptorResources* Descriptors =
                 SurfaceStateSystem.GetGPUResources().GetAnyInstanceDescriptors())
         {
-            SurfaceDebugPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+            SurfaceDebugPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                 Context.GetDevice(),
                 MainRenderPass.GetHandle(),
                 BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
-            TexelInspector = std::make_unique<SurfaceState::TTexelInspector>(Context.GetPhysicalDevice(),
+            TexelInspector = std::make_unique<SurfaceState::FTexelInspector>(Context.GetPhysicalDevice(),
                                                                              Context.GetDevice(),
                                                                              Descriptors->GetLayout(),
-                                                                             TRenderContext::MaxFramesInFlight);
+                                                                             FRenderContext::MaxFramesInFlight);
             TexelGeometryPreview =
-                std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
                                                                       Descriptors->GetLayout(),
                                                                       Scene.GetStaticMeshInstances().size());
-            TexelGeometryPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+            TexelGeometryPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                 Context.GetDevice(),
                 MainRenderPass.GetHandle(),
                 BuildTexelGeometryPipelineConfig(
                     MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
-            RenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+            RenderStateTexture = std::make_unique<FRenderStateTexture>(Context.GetPhysicalDevice(),
                                                                        Context.GetDevice(),
                                                                        Descriptors->GetLayout(),
                                                                        SurfaceStateSystem.GetGPUResources());
             for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
             {
-                SurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                SurfaceLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -141,7 +207,7 @@ namespace MDSS::Rendering
                                                   VK_NULL_HANDLE,
                                                   RenderStateTexture->GetLayout(),
                                                   Mode));
-                BaseSurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                BaseSurfaceLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -150,26 +216,27 @@ namespace MDSS::Rendering
                                                       RenderStateTexture->GetLayout(),
                                                       Mode));
             }
+
             MudLayerGeometry =
-                std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
                                                                       Descriptors->GetLayout(),
                                                                       Scene.GetStaticMeshInstances().size(),
                                                                       true);
             MudLayerGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
-            HeightFieldSmoothing = std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
+            HeightFieldSmoothing = std::make_unique<FHeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                                            Context.GetDevice(),
                                                                            Descriptors->GetLayout(),
                                                                            MudLayerGeometry->GetOutputLayout(),
                                                                            Scene.GetStaticMeshInstances().size());
-            OverlaySides = std::make_unique<TAccumulationOverlaySides>(Context.GetPhysicalDevice(),
+            OverlaySides = std::make_unique<FAccumulationOverlaySides>(Context.GetPhysicalDevice(),
                                                                        Context.GetDevice(),
                                                                        Descriptors->GetLayout(),
                                                                        MudLayerGeometry->GetOutputLayout(),
                                                                        Scene.GetStaticMeshInstances().size());
             for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
             {
-                MudOverlayTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                MudOverlayTopPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -180,7 +247,7 @@ namespace MDSS::Rendering
                                                true,
                                                RenderStateTexture->GetLayout(),
                                                Mode));
-                MudOverlaySidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                MudOverlaySidePipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -193,6 +260,10 @@ namespace MDSS::Rendering
                                                Mode));
             }
         }
+    }
+
+    void FRenderer::InitializeFrameTimingResources()
+    {
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
         vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &PhysicalDeviceProperties);
@@ -202,53 +273,61 @@ namespace MDSS::Rendering
         std::vector<VkQueueFamilyProperties> QueueFamilies(QueueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(Context.GetPhysicalDevice(), &QueueFamilyCount, QueueFamilies.data());
         const std::uint32_t GraphicsQueueFamily = Context.GetQueues().GetFamilyIndices().GraphicsFamily.value();
+
         if (GraphicsQueueFamily < QueueFamilies.size())
         {
             TimestampValidBits = QueueFamilies[GraphicsQueueFamily].timestampValidBits;
         }
+
         if (TimestampValidBits > 0)
         {
             CreateTimestampQueryPool(SurfaceStateSystem.GetSolverInstanceCount());
         }
         else
         {
-            TLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
+            FLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
         }
+    }
+
+    void FRenderer::ConfigureSurfaceResolution(const FScene& Scene)
+    {
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
         SurfaceTexelMeshResolution = Scene.GetSimulationResolution();
         OverlayTexelMeshResolution = Scene.GetSimulationResolution();
-        TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
-        TLogger::Debug("TRenderer",
-                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
-                           ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
-        ConstructionCleanup.Release();
     }
 
-    TRenderer::~TRenderer()
+    #pragma endregion
+
+    FRenderer::~FRenderer()
     {
         if (Context.GetDevice() != VK_NULL_HANDLE)
         {
             vkDeviceWaitIdle(Context.GetDevice());
         }
-        if (BenchmarkOutput.is_open())
+
+        if (Benchmark.BenchmarkOutput.is_open())
         {
-            for (const std::string& Line : BenchmarkJsonLines)
-                BenchmarkOutput << Line << '\n';
-            BenchmarkOutput.flush();
+            for (const std::string& Line : Benchmark.BenchmarkJsonLines)
+                Benchmark.BenchmarkOutput << Line << '\n';
+            Benchmark.BenchmarkOutput.flush();
         }
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkDestroyQueryPool(Context.GetDevice(), TimestampQueryPool, nullptr);
             TimestampQueryPool = VK_NULL_HANDLE;
         }
+
         DestroyRenderFinishedSemaphores();
 
         SurfaceDebugPipeline.reset();
+
         for (auto& Pipeline : SurfaceLitPipelines)
             Pipeline.reset();
         for (auto& Pipeline : BaseSurfaceLitPipelines)
             Pipeline.reset();
         RenderStateTexture.reset();
+
         for (auto& Pipeline : MudOverlayTopPipelines)
             Pipeline.reset();
         for (auto& Pipeline : MudOverlaySidePipelines)
@@ -259,12 +338,15 @@ namespace MDSS::Rendering
         HeightFieldSmoothing.reset();
         MudLayerGeometry.reset();
         TexelInspector.reset();
+
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorPool(Context.GetDevice(), MaterialDescriptorPool, nullptr);
             MaterialDescriptorPool = VK_NULL_HANDLE;
         }
+
         MaterialResources.clear();
+
         if (MaterialDescriptorSetLayout != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorSetLayout(Context.GetDevice(), MaterialDescriptorSetLayout, nullptr);
@@ -273,179 +355,27 @@ namespace MDSS::Rendering
     }
 
 #pragma endregion
-#pragma region Frame_Rendering
+// ============================================================
+// 01. Frame Rendering
+// ============================================================
+#pragma region 01_Frame_Rendering
+// 완료 자원을 회수한 뒤 이번 frame의 compute·draw 명령을 제출한다.
 
-    void TRenderer::RenderFrame(const TScene& SceneData,
-                                TDebugUI&     DebugInterface,
+    void FRenderer::RenderFrame(const FScene& SceneData,
+                                FDebugUI&     DebugInterface,
                                 float         DeltaTime,
                                 bool          bSuspendSimulationClock)
     {
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
-        using TClock = std::chrono::steady_clock;
-        const auto ToMilliseconds = [](TClock::duration Duration)
-        { return std::chrono::duration<float, std::milli>(Duration).count(); };
-        auto CpuStageStart = TClock::now();
-        FrameContext.WaitForCurrentFrame();
-        if (DebugInterface.GetViewportCount() > MaterialViewportCapacity)
-        {
-            if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
-                throw std::runtime_error("Failed to wait for GPU before growing viewport uniforms.");
-            MaterialViewportCapacity = std::max(DebugInterface.GetViewportCount(), MaterialViewportCapacity * 2U);
-            if (MaterialUniformStride * (MaterialViewportCapacity - 1U) > std::numeric_limits<std::uint32_t>::max())
-                throw std::runtime_error("Too many viewports for dynamic material uniform offsets.");
-            CreateMaterialDescriptorResources();
-        }
-        ProfilingStats.FrameFenceWaitCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
-        if (TexelInspector)
-            TexelInspector->CompleteFrame(FrameIndex);
-        if (OverlaySides)
-        {
-            const auto Activity = OverlaySides->CompleteFrame(FrameIndex);
-            ProfilingStats.OverlayActiveTopTriangles = Activity.Active;
-            ProfilingStats.OverlayTotalTopTriangles = Activity.Total;
-        }
-        if (MudLayerGeometry)
-        {
-            const auto Activity = MudLayerGeometry->CompleteOccupancyFrame(FrameIndex);
-            ProfilingStats.OverlayActiveTiles = Activity.Active;
-            ProfilingStats.OverlayTotalTiles = Activity.Total;
-        }
-        if (TimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
-        {
-            const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
-            const std::uint32_t OverlayQueryOffset =
-                FixedTimestampQueryCount + SolverTimestampStepsSubmitted[FrameIndex] * SolverTimestampGroupCount * 8U;
-            const std::uint32_t QueryCount =
-                OverlayQueryOffset + OverlayTimestampLayersSubmitted[FrameIndex] * OverlayTimestampQueriesPerLayer;
-            std::vector<std::uint64_t> Timestamps(QueryCount, 0U);
-            const VkResult             QueryResult = vkGetQueryPoolResults(Context.GetDevice(),
-                                                                           TimestampQueryPool,
-                                                                           QueryBase,
-                                                                           QueryCount,
-                                                                           Timestamps.size() * sizeof(std::uint64_t),
-                                                                           Timestamps.data(),
-                                                                           sizeof(std::uint64_t),
-                                                                           VK_QUERY_RESULT_64_BIT);
-            if (QueryResult == VK_SUCCESS && TimestampPeriodNanoseconds > 0.0F)
-            {
-                ProfilingStats.OverlayDisplayMode = OverlayDisplayModesSubmitted[FrameIndex];
-                const auto ToMilliseconds = [this](std::uint64_t Start, std::uint64_t End)
-                {
-                    std::uint64_t ElapsedTicks = End - Start;
-                    if (TimestampValidBits < 64U)
-                    {
-                        ElapsedTicks &= (std::uint64_t{1} << TimestampValidBits) - 1U;
-                    }
-                    return static_cast<float>(static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
-                };
-                ProfilingStats.RenderPreparationGpuMilliseconds = ToMilliseconds(Timestamps[0], Timestamps[1]);
-                ProfilingStats.SceneDrawGpuMilliseconds =
-                    ToMilliseconds(Timestamps[2], Timestamps[bRenderPassSubstageTimingsReliable ? 3U : 20U]);
-                ProfilingStats.TexelInspectorGpuMilliseconds = ToMilliseconds(Timestamps[4], Timestamps[5]);
-                ProfilingStats.BaseMeshDrawGpuMilliseconds = ToMilliseconds(Timestamps[6], Timestamps[7]);
-                ProfilingStats.MudOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[8], Timestamps[9]);
-                ProfilingStats.ReservedOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[10], Timestamps[11]);
-                ProfilingStats.OverlayPreparationGpuMilliseconds = ToMilliseconds(Timestamps[12], Timestamps[13]);
-                ProfilingStats.SceneSetupGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[6]);
-                ProfilingStats.RenderPassBeginGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[14]);
-                ProfilingStats.RenderPassColorStageGpuMilliseconds = ToMilliseconds(Timestamps[15], Timestamps[16]);
-                ProfilingStats.RenderPassDepthStageGpuMilliseconds = ToMilliseconds(Timestamps[17], Timestamps[18]);
-                ProfilingStats.ViewportSetupGpuMilliseconds = ToMilliseconds(Timestamps[14], Timestamps[6]);
-                ProfilingStats.UIDrawGpuMilliseconds = ToMilliseconds(Timestamps[3], Timestamps[19]);
-                ProfilingStats.RenderPassEndGpuMilliseconds = ToMilliseconds(Timestamps[19], Timestamps[20]);
-                ProfilingStats.SceneBetweenDrawsGpuMilliseconds =
-                    ToMilliseconds(Timestamps[7], Timestamps[8]) + ToMilliseconds(Timestamps[9], Timestamps[10]);
-                ProfilingStats.SceneTailGpuMilliseconds = ToMilliseconds(Timestamps[11], Timestamps[3]);
-                ProfilingStats.OverlayGeometryGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlayHeightGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlayNormalVertexGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlaySmoothingGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlaySidesGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlaySidesPreBarrierGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlaySidesDispatchGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlaySidesPostBarrierGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlayBoundarySearchGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlayTopCommandGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlaySidesInterPassBarrierGpuMilliseconds = 0.0F;
-                ProfilingStats.OverlayCoverageSampleGpuMilliseconds = 0.0F;
-                for (std::uint32_t Layer = 0; Layer < OverlayTimestampLayersSubmitted[FrameIndex]; ++Layer)
-                {
-                    const std::uint32_t LayerQuery = OverlayQueryOffset + Layer * OverlayTimestampQueriesPerLayer;
-                    ProfilingStats.OverlayGeometryGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery], Timestamps[LayerQuery + 1U]);
-                    ProfilingStats.OverlayHeightGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery], Timestamps[LayerQuery + 12U]);
-                    ProfilingStats.OverlayNormalVertexGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 12U], Timestamps[LayerQuery + 1U]);
-                    ProfilingStats.OverlaySmoothingGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 2U], Timestamps[LayerQuery + 3U]);
-                    ProfilingStats.OverlaySidesGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 4U], Timestamps[LayerQuery + 11U]);
-                    ProfilingStats.OverlaySidesPreBarrierGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 4U], Timestamps[LayerQuery + 5U]);
-                    ProfilingStats.OverlayCoverageSampleGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 5U], Timestamps[LayerQuery + 6U]);
-                    ProfilingStats.OverlayBoundarySearchGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 7U], Timestamps[LayerQuery + 8U]);
-                    ProfilingStats.OverlaySidesInterPassBarrierGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 6U], Timestamps[LayerQuery + 7U]) +
-                        ToMilliseconds(Timestamps[LayerQuery + 8U], Timestamps[LayerQuery + 9U]);
-                    ProfilingStats.OverlayTopCommandGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 9U], Timestamps[LayerQuery + 10U]);
-                    ProfilingStats.OverlaySidesDispatchGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 5U], Timestamps[LayerQuery + 6U]) +
-                        ToMilliseconds(Timestamps[LayerQuery + 7U], Timestamps[LayerQuery + 8U]) +
-                        ToMilliseconds(Timestamps[LayerQuery + 9U], Timestamps[LayerQuery + 10U]);
-                    ProfilingStats.OverlaySidesPostBarrierGpuMilliseconds +=
-                        ToMilliseconds(Timestamps[LayerQuery + 10U], Timestamps[LayerQuery + 11U]);
-                }
-                LastRenderGpuMilliseconds =
-                    ProfilingStats.RenderPreparationGpuMilliseconds + ProfilingStats.SceneDrawGpuMilliseconds;
-                if (bRenderPassSubstageTimingsReliable)
-                    LastRenderGpuMilliseconds +=
-                        ProfilingStats.UIDrawGpuMilliseconds + ProfilingStats.RenderPassEndGpuMilliseconds;
-                LastSolverPass1GpuMilliseconds = 0.0F;
-                LastSolverPass2GpuMilliseconds = 0.0F;
-                ProfilingStats.AccumulationGeometryGpuMilliseconds = 0.0F;
-                ProfilingStats.TransferWeightGpuMilliseconds = 0.0F;
-                if (SolverTimestampStepsSubmitted[FrameIndex] > 0U)
-                {
-                    for (std::uint32_t Slot = 0;
-                         Slot < SolverTimestampGroupCount * SolverTimestampStepsSubmitted[FrameIndex];
-                         ++Slot)
-                    {
-                        const std::uint32_t SlotQuery = FixedTimestampQueryCount + Slot * 8U;
-                        ProfilingStats.AccumulationGeometryGpuMilliseconds +=
-                            ToMilliseconds(Timestamps[SlotQuery], Timestamps[SlotQuery + 1U]);
-                        ProfilingStats.TransferWeightGpuMilliseconds +=
-                            ToMilliseconds(Timestamps[SlotQuery + 2U], Timestamps[SlotQuery + 3U]);
-                        LastSolverPass1GpuMilliseconds +=
-                            ToMilliseconds(Timestamps[SlotQuery + 4U], Timestamps[SlotQuery + 5U]);
-                        LastSolverPass2GpuMilliseconds +=
-                            ToMilliseconds(Timestamps[SlotQuery + 6U], Timestamps[SlotQuery + 7U]);
-                    }
-                }
-                ProfilingStats.SolverPass1GpuMilliseconds = LastSolverPass1GpuMilliseconds;
-                ProfilingStats.SolverPass2GpuMilliseconds = LastSolverPass2GpuMilliseconds;
-                ProfilingStats.SolverGpuMilliseconds = LastSolverPass1GpuMilliseconds + LastSolverPass2GpuMilliseconds +
-                                                       ProfilingStats.AccumulationGeometryGpuMilliseconds +
-                                                       ProfilingStats.TransferWeightGpuMilliseconds;
-                LastSolverGpuMilliseconds = ProfilingStats.SolverGpuMilliseconds;
-                BenchmarkGpuElapsed = ToMilliseconds(Timestamps[21], Timestamps[23]);
-                BenchmarkSimulationElapsed = ToMilliseconds(Timestamps[21], Timestamps[22]);
-                WriteBenchmarkSample(FrameIndex);
-            }
-            bTimestampQueriesSubmitted[FrameIndex] = false;
-            SolverTimestampStepsSubmitted[FrameIndex] = 0;
-            OverlayTimestampLayersSubmitted[FrameIndex] = 0;
-        }
+        CompletePreviousFrame(FrameIndex, DebugInterface);
 
         const bool bResetSolverState = FrameCoordinator.BeginFrame(DebugInterface, DeltaTime, bSuspendSimulationClock);
-        if (bResetSolverState)
+
+        if (bResetSolverState && TexelInspector)
         {
-            if (TexelInspector)
-                TexelInspector->Invalidate();
+            TexelInspector->Invalidate();
         }
+
         ProfilingStats.DroppedSimulationSeconds = FrameCoordinator.GetDroppedSeconds();
 
         if (TargetWindow.WasFramebufferResized())
@@ -455,29 +385,120 @@ namespace MDSS::Rendering
         }
 
         std::uint32_t ImageIndex = 0;
-        CpuStageStart = TClock::now();
-        const VkResult AcquireResult = vkAcquireNextImageKHR(Context.GetDevice(),
+        VkResult AcquireResult = VK_SUCCESS;
+
+        if (!AcquireFrameImage(DebugInterface, ImageIndex, AcquireResult))
+        {
+            return;
+        }
+
+        const VkCommandBuffer CommandBuffer = RecordFrameCommands(
+            FrameIndex, ImageIndex, SceneData, DebugInterface, bResetSolverState);
+        const VkSemaphore SignalSemaphore = SubmitFrameCommands(CommandBuffer, ImageIndex);
+        const bool bRecreateSwapchain = PresentFrameImage(ImageIndex, AcquireResult, SignalSemaphore);
+
+        FinalizeFrameBenchmark(FrameIndex, SceneData, DebugInterface);
+        FrameContext.AdvanceFrame();
+
+        if (bRecreateSwapchain)
+        {
+            FLogger::Debug("TRenderer", "Presentation requires swapchain recreation.");
+            RecreateSwapchain(DebugInterface);
+        }
+    }
+
+#pragma endregion
+
+// ============================================================
+// 01.01. Frame Execution Details
+// ============================================================
+#pragma region 01_01_Frame_Execution_Details
+// 프레임 자원 회수부터 Vulkan 명령 기록·제출·표시까지의 세부 단계를 구현한다.
+
+    void FRenderer::CompletePreviousFrame(std::uint32_t FrameIndex, const FDebugUI& DebugInterface)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
+        auto CpuStageStart = FClock::now();
+        FrameContext.WaitForCurrentFrame();
+
+        if (DebugInterface.GetViewportCount() > MaterialViewportCapacity)
+        {
+            if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+                throw std::runtime_error("Failed to wait for GPU before growing viewport uniforms.");
+            MaterialViewportCapacity = std::max(DebugInterface.GetViewportCount(), MaterialViewportCapacity * 2U);
+
+            if (MaterialUniformStride * (MaterialViewportCapacity - 1U) > std::numeric_limits<std::uint32_t>::max())
+                throw std::runtime_error("Too many viewports for dynamic material uniform offsets.");
+            CreateMaterialDescriptorResources();
+        }
+
+        ProfilingStats.FrameFenceWaitCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
+
+        if (TexelInspector)
+            TexelInspector->CompleteFrame(FrameIndex);
+        if (OverlaySides)
+        {
+            const auto Activity = OverlaySides->CompleteFrame(FrameIndex);
+            ProfilingStats.OverlayActiveTopTriangles = Activity.Active;
+            ProfilingStats.OverlayTotalTopTriangles = Activity.Total;
+        }
+
+        if (MudLayerGeometry)
+        {
+            const auto Activity = MudLayerGeometry->CompleteOccupancyFrame(FrameIndex);
+            ProfilingStats.OverlayActiveTiles = Activity.Active;
+            ProfilingStats.OverlayTotalTiles = Activity.Total;
+        }
+
+        CollectCompletedFrameTimings(FrameIndex);
+    }
+
+    bool FRenderer::AcquireFrameImage(FDebugUI& DebugInterface, std::uint32_t& ImageIndex, VkResult& AcquireResult)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
+
+        auto CpuStageStart = FClock::now();
+        AcquireResult = vkAcquireNextImageKHR(Context.GetDevice(),
                                                              SwapchainData.GetHandle(),
                                                              std::numeric_limits<std::uint64_t>::max(),
                                                              FrameContext.GetImageAvailableSemaphore(),
                                                              VK_NULL_HANDLE,
                                                              &ImageIndex);
-        ProfilingStats.AcquireCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.AcquireCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
 
         if (AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            TLogger::Debug("TRenderer", "TSwapchain became out of date while acquiring; recreating it.");
+            FLogger::Debug("TRenderer", "TSwapchain became out of date while acquiring; recreating it.");
             RecreateSwapchain(DebugInterface);
-            return;
+            return false;
         }
+
         if (AcquireResult != VK_SUCCESS && AcquireResult != VK_SUBOPTIMAL_KHR)
         {
             throw std::runtime_error("Failed to acquire a Vulkan swapchain image.");
         }
 
+        return true;
+    }
+
+    VkCommandBuffer FRenderer::RecordFrameCommands(std::uint32_t FrameIndex,
+                                                   std::uint32_t ImageIndex,
+                                                   const FScene& SceneData,
+                                                   FDebugUI& DebugInterface,
+                                                   bool bResetSolverState)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
+
         FrameContext.ResetCurrentFence();
 
         const VkCommandBuffer CommandBuffer = FrameContext.GetCurrentCommandBuffer();
+
         if (vkResetCommandBuffer(CommandBuffer, 0) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to reset Vulkan command buffer.");
@@ -487,6 +508,7 @@ namespace MDSS::Rendering
         const auto& SimulationSteps = FrameCoordinator.GetSteps();
         ProfilingStats.SimulationSteps = FrameCoordinator.GetStepCount();
         ProfilingStats.SimulatedThisFrameSeconds = 0.0F;
+
         for (const float StepSeconds : SimulationSteps)
             ProfilingStats.SimulatedThisFrameSeconds += StepSeconds;
         ProfilingStats.PendingSimulationSeconds = static_cast<float>(FrameCoordinator.GetPendingSeconds());
@@ -497,6 +519,7 @@ namespace MDSS::Rendering
         ProfilingStats.SurfaceTexelMeshResolution = SurfaceTexelMeshResolution;
         ProfilingStats.OverlayTexelMeshResolution = OverlayTexelMeshResolution;
         const auto& GPUResources = SurfaceStateSystem.GetGPUResources();
+
         for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
         {
             if (GPUResources.GetInstanceDescriptors(Instance) == nullptr)
@@ -504,35 +527,49 @@ namespace MDSS::Rendering
             ProfilingStats.SimulationTexels += GPUResources.GetInstanceTexelCount(Instance);
             ProfilingStats.StateChannels = static_cast<std::uint32_t>(GPUResources.GetInstanceChannelCount(Instance));
         }
+
         if (SimulationSteps.empty())
             LastSolverGpuMilliseconds = LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = 0.0F;
-        CpuStageStart = TClock::now();
+        auto CpuStageStart = FClock::now();
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, SimulationSteps);
         OverlayDisplayModesSubmitted[FrameIndex] = OverlayDisplayMode;
-        ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             bTimestampQueriesSubmitted[FrameIndex] = true;
             SolverTimestampStepsSubmitted[FrameIndex] = FrameCoordinator.GetStepCount();
-            if (bBenchmarkCaptureEnabled)
+
+            if (Benchmark.bBenchmarkCaptureEnabled)
             {
-                BenchmarkSubmissions[FrameIndex] = {NextBenchmarkFrameIndex++,
-                                                    FrameCoordinator.GetStepCount(),
-                                                    ProfilingStats.SimulationResolution,
-                                                    ProfilingStats.SurfaceTexelMeshResolution,
-                                                    ProfilingStats.OverlayTexelMeshResolution,
-                                                    ProfilingStats.SimulationInstances,
-                                                    ProfilingStats.StateChannels,
-                                                    ProfilingStats.SimulationTexels,
-                                                    ProfilingStats.SimulatedThisFrameSeconds};
+                Benchmark.BenchmarkSubmissions[FrameIndex] = {Benchmark.NextBenchmarkFrameIndex++,
+                                                              FrameCoordinator.GetStepCount(),
+                                                              ProfilingStats.SimulationResolution,
+                                                              ProfilingStats.SurfaceTexelMeshResolution,
+                                                              ProfilingStats.OverlayTexelMeshResolution,
+                                                              ProfilingStats.SimulationInstances,
+                                                              ProfilingStats.StateChannels,
+                                                              ProfilingStats.SimulationTexels,
+                                                              ProfilingStats.SimulatedThisFrameSeconds};
             }
         }
 
+        return CommandBuffer;
+    }
+
+    VkSemaphore FRenderer::SubmitFrameCommands(VkCommandBuffer CommandBuffer, std::uint32_t ImageIndex)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
+
         const VkSemaphore WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
+
         if (ImageIndex >= RenderFinishedSemaphores.size())
         {
             throw std::runtime_error("Acquired swapchain image has no render-finished semaphore.");
         }
+
         const VkSemaphore          SignalSemaphore = RenderFinishedSemaphores[ImageIndex];
         const VkPipelineStageFlags WaitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -546,13 +583,24 @@ namespace MDSS::Rendering
         SubmitInfo.signalSemaphoreCount = 1;
         SubmitInfo.pSignalSemaphores = &SignalSemaphore;
 
-        CpuStageStart = TClock::now();
+        const auto CpuStageStart = FClock::now();
+
         if (vkQueueSubmit(Context.GetQueues().GetGraphics(), 1, &SubmitInfo, FrameContext.GetInFlightFence()) !=
             VK_SUCCESS)
         {
             throw std::runtime_error("Failed to submit Vulkan draw command buffer.");
         }
-        ProfilingStats.QueueSubmitCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+
+        ProfilingStats.QueueSubmitCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
+
+        return SignalSemaphore;
+    }
+
+    bool FRenderer::PresentFrameImage(std::uint32_t ImageIndex, VkResult AcquireResult, VkSemaphore SignalSemaphore)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
 
         const VkSwapchainKHR SwapchainHandle = SwapchainData.GetHandle();
         VkPresentInfoKHR     PresentInfo{};
@@ -563,9 +611,9 @@ namespace MDSS::Rendering
         PresentInfo.pSwapchains = &SwapchainHandle;
         PresentInfo.pImageIndices = &ImageIndex;
 
-        CpuStageStart = TClock::now();
+        const auto CpuStageStart = FClock::now();
         const VkResult PresentResult = vkQueuePresentKHR(Context.GetQueues().GetPresent(), &PresentInfo);
-        ProfilingStats.PresentCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.PresentCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
         const bool bSwapchainNeedsRecreation =
             AcquireResult == VK_SUBOPTIMAL_KHR || PresentResult == VK_ERROR_OUT_OF_DATE_KHR ||
             PresentResult == VK_SUBOPTIMAL_KHR || TargetWindow.WasFramebufferResized();
@@ -576,116 +624,136 @@ namespace MDSS::Rendering
             throw std::runtime_error("Failed to present Vulkan swapchain image.");
         }
 
-        if (bBenchmarkCaptureEnabled)
-        {
-            BenchmarkSubmissions[FrameIndex].CpuMilliseconds = {ProfilingStats.FrameFenceWaitCpuMilliseconds,
-                                                                ProfilingStats.AcquireCpuMilliseconds,
-                                                                ProfilingStats.CommandRecordCpuMilliseconds,
-                                                                ProfilingStats.QueueSubmitCpuMilliseconds,
-                                                                ProfilingStats.PresentCpuMilliseconds};
-            if (!bBenchmarkMetadataWritten && NextBenchmarkFrameIndex > BenchmarkWarmupFrames)
-                WriteBenchmarkMetadata(SceneData, DebugInterface);
-        }
-        FrameContext.AdvanceFrame();
+        return bSwapchainNeedsRecreation;
+    }
 
-        if (bSwapchainNeedsRecreation)
+    void FRenderer::FinalizeFrameBenchmark(std::uint32_t FrameIndex,
+                                           const FScene& SceneData,
+                                           const FDebugUI& DebugInterface)
+    {
+        if (Benchmark.bBenchmarkCaptureEnabled)
         {
-            TLogger::Debug("TRenderer", "Presentation requires swapchain recreation.");
-            RecreateSwapchain(DebugInterface);
+            Benchmark.BenchmarkSubmissions[FrameIndex].CpuMilliseconds = {ProfilingStats.FrameFenceWaitCpuMilliseconds,
+                                                                          ProfilingStats.AcquireCpuMilliseconds,
+                                                                          ProfilingStats.CommandRecordCpuMilliseconds,
+                                                                          ProfilingStats.QueueSubmitCpuMilliseconds,
+                                                                          ProfilingStats.PresentCpuMilliseconds};
+            if (!Benchmark.bBenchmarkMetadataWritten &&
+                Benchmark.NextBenchmarkFrameIndex > Benchmark.BenchmarkWarmupFrames)
+                WriteBenchmarkMetadata(SceneData, DebugInterface);
+            if (Benchmark.AuthoringScreenshot)
+                WriteAuthoringCheckpoint(SceneData);
         }
     }
 
 #pragma endregion
-#pragma region Scene_Resource_Replacement
 
-    void TRenderer::ReloadSceneResources(const TScene& Scene, bool bResetStateSettings)
+// ============================================================
+// 02. Scene Resource Replacement
+// ============================================================
+#pragma region 02_Scene_Resource_Replacement
+// 이전 GPU 사용이 끝난 뒤 새 Scene에 대응하는 표시 자원을 구성한다.
+
+    void FRenderer::ReloadSceneResources(const FScene& Scene, bool bResetStateSettings)
     {
-        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
-        }
-        // Scene loading can append new MTL materials to AssetManager. Rebuild their
-        // descriptors before command recording; otherwise new sections are skipped.
-        if (MaterialResources.size() != Assets.GetMaterialCount())
-        {
-            CreateMaterialDescriptorResources();
-        }
+        // GPU 정지 → 새 리소스 준비 → Registry 복구 가능 구간 → 리소스 교체 순서로 수행한다.
+        WaitForSceneReloadAndUpdateMaterials();
+
         auto&               ReusePool = SurfaceStateSystem.GetReusableBufferPool();
         const std::uint64_t ReuseCountBefore = ReusePool.GetReuseCount();
         const VkDeviceSize  ReusedBytesBefore = ReusePool.GetReusedBytes();
         auto PreviousRegistry = SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
-        std::unique_ptr<SurfaceState::TSurfaceStateSystem>     Replacement;
-        std::unique_ptr<GPU::TGraphicsPipeline>                ReplacementDebugPipeline;
-        std::unique_ptr<SurfaceState::TTexelInspector>         ReplacementInspector;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   ReplacementGeometryPreview;
-        std::unique_ptr<GPU::TGraphicsPipeline>                ReplacementGeometryPipeline;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementLitPipelines;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
-        std::unique_ptr<TRenderStateTexture>                   ReplacementRenderStateTexture;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   ReplacementMudGeometry;
-        std::unique_ptr<THeightFieldSmoothing>                 ReplacementHeightFieldSmoothing;
-        std::unique_ptr<TAccumulationOverlaySides>             ReplacementOverlaySides;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudTopPipelines;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudSidePipelines;
+        FSceneReplacementResources Resources;
         try
         {
-            Replacement =
-                std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene, &ReusePool);
-            Replacement->SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
-            Replacement->SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
-            Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
-            Replacement->SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
-            Replacement->SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
-            Replacement->SetCompactScratchStorageEnabled(SurfaceStateSystem.IsCompactScratchStorageEnabled());
-            Replacement->SetRuntimeSolverFlagsEnabled(SurfaceStateSystem.IsRuntimeSolverFlagsEnabled());
-            Replacement->SetAdaptiveGeometryEnabled(SurfaceStateSystem.IsAdaptiveGeometryEnabled());
-            Replacement->SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
-            Replacement->SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
-            Replacement->SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
-            Replacement->SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
-            Replacement->SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
-            for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
-            {
-                Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::TSurfaceSolverTerm>(Index),
-                                                       DebugSolverSettings.Enabled[Index]);
-            }
-            if (!bResetStateSettings)
-            {
-                for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
-                {
-                    Replacement->SetDebugProfileParameters(Key.first, Key.second, Parameters);
-                }
-            }
-            if (const SurfaceState::TSurfaceStateDescriptorResources* Descriptors =
+            BuildSceneReplacement(Scene, bResetStateSettings, Resources);
+        }
+        catch (...)
+        {
+            SurfaceData.ExchangeSurfaceStateRegistry(std::move(PreviousRegistry));
+            throw;
+        }
+
+        ReleaseSceneRenderObjects();
+        SurfaceStateSystem.ReplaceSceneResources(std::move(*Resources.Replacement));
+        FLogger::Info("TRenderer",
+                      "Surface GPU buffer reuse: " + std::to_string(ReusePool.GetReuseCount() - ReuseCountBefore) +
+                          " buffer(s), " +
+                          std::to_string((ReusePool.GetReusedBytes() - ReusedBytesBefore) / (1024U * 1024U)) +
+                          " MiB; retained " + std::to_string(ReusePool.GetRetainedBytes() / (1024U * 1024U)) + " MiB.");
+        FrameCoordinator.ResetClock();
+        CommitSceneReplacement(Resources);
+        SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
+
+        if (bResetStateSettings)
+        {
+            DebugProfileParameterOverrides.clear();
+            DebugStateChannel = 0;
+        }
+
+        ResetSceneGpuProfiling();
+    }
+
+    void FRenderer::BuildSceneReplacement(const FScene& Scene,
+                                          bool bResetStateSettings,
+                                          FSceneReplacementResources& Resources)
+    {
+        // 기존 설정을 복제한 Solver와 종속 renderer 자원을 먼저 생성한다.
+        auto& ReusePool = SurfaceStateSystem.GetReusableBufferPool();
+        auto& Replacement = Resources.Replacement;
+        Replacement =
+                std::make_unique<SurfaceState::FSurfaceStateSystem>(Context, Assets, SurfaceData, Scene, &ReusePool);
+        ConfigureReplacementSolver(*Replacement, bResetStateSettings);
+        BuildSceneRenderPipelines(Scene, Resources);
+    }
+
+    void FRenderer::BuildSceneRenderPipelines(const FScene& Scene,
+                                              FSceneReplacementResources& Resources)
+    {
+        // Surface State descriptors에 의존하는 debug·lighting·overlay pipelines를 생성한다.
+        auto& Replacement = Resources.Replacement;
+        auto& ReplacementDebugPipeline = Resources.ReplacementDebugPipeline;
+        auto& ReplacementInspector = Resources.ReplacementInspector;
+        auto& ReplacementGeometryPreview = Resources.ReplacementGeometryPreview;
+        auto& ReplacementGeometryPipeline = Resources.ReplacementGeometryPipeline;
+        auto& ReplacementLitPipelines = Resources.ReplacementLitPipelines;
+        auto& ReplacementBaseLitPipelines = Resources.ReplacementBaseLitPipelines;
+        auto& ReplacementRenderStateTexture = Resources.ReplacementRenderStateTexture;
+        auto& ReplacementMudGeometry = Resources.ReplacementMudGeometry;
+        auto& ReplacementHeightFieldSmoothing = Resources.ReplacementHeightFieldSmoothing;
+        auto& ReplacementOverlaySides = Resources.ReplacementOverlaySides;
+        auto& ReplacementMudTopPipelines = Resources.ReplacementMudTopPipelines;
+        auto& ReplacementMudSidePipelines = Resources.ReplacementMudSidePipelines;
+            if (const SurfaceState::FSurfaceStateDescriptorResources* Descriptors =
                     Replacement->GetGPUResources().GetAnyInstanceDescriptors())
             {
-                ReplacementDebugPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+                ReplacementDebugPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
                 ReplacementInspector =
-                    std::make_unique<SurfaceState::TTexelInspector>(Context.GetPhysicalDevice(),
+                    std::make_unique<SurfaceState::FTexelInspector>(Context.GetPhysicalDevice(),
                                                                     Context.GetDevice(),
                                                                     Descriptors->GetLayout(),
-                                                                    TRenderContext::MaxFramesInFlight);
+                                                                    FRenderContext::MaxFramesInFlight);
                 ReplacementGeometryPreview =
-                    std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                    std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
                                                                           Descriptors->GetLayout(),
                                                                           Scene.GetStaticMeshInstances().size());
-                ReplacementGeometryPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+                ReplacementGeometryPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
                                                      Descriptors->GetLayout(),
                                                      ReplacementGeometryPreview->GetOutputLayout()));
-                ReplacementRenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+                ReplacementRenderStateTexture = std::make_unique<FRenderStateTexture>(Context.GetPhysicalDevice(),
                                                                                       Context.GetDevice(),
                                                                                       Descriptors->GetLayout(),
                                                                                       Replacement->GetGPUResources());
                 for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
                 {
-                    ReplacementLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -693,7 +761,7 @@ namespace MDSS::Rendering
                                                       VK_NULL_HANDLE,
                                                       ReplacementRenderStateTexture->GetLayout(),
                                                       Mode));
-                    ReplacementBaseLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementBaseLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -702,8 +770,9 @@ namespace MDSS::Rendering
                                                           ReplacementRenderStateTexture->GetLayout(),
                                                           Mode));
                 }
+
                 ReplacementMudGeometry =
-                    std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                    std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
                                                                           Descriptors->GetLayout(),
                                                                           Scene.GetStaticMeshInstances().size(),
@@ -711,20 +780,20 @@ namespace MDSS::Rendering
                 ReplacementMudGeometry->SetOccupancyTileSize(static_cast<std::uint32_t>(OverlayOccupancyTileSize));
                 ReplacementMudGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
                 ReplacementHeightFieldSmoothing =
-                    std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
+                    std::make_unique<FHeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                             Context.GetDevice(),
                                                             Descriptors->GetLayout(),
                                                             ReplacementMudGeometry->GetOutputLayout(),
                                                             Scene.GetStaticMeshInstances().size());
                 ReplacementOverlaySides =
-                    std::make_unique<TAccumulationOverlaySides>(Context.GetPhysicalDevice(),
+                    std::make_unique<FAccumulationOverlaySides>(Context.GetPhysicalDevice(),
                                                                 Context.GetDevice(),
                                                                 Descriptors->GetLayout(),
                                                                 ReplacementMudGeometry->GetOutputLayout(),
                                                                 Scene.GetStaticMeshInstances().size());
                 for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
                 {
-                    ReplacementMudTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementMudTopPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -735,7 +804,7 @@ namespace MDSS::Rendering
                                                    true,
                                                    ReplacementRenderStateTexture->GetLayout(),
                                                    Mode));
-                    ReplacementMudSidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementMudSidePipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -748,36 +817,23 @@ namespace MDSS::Rendering
                                                    Mode));
                 }
             }
-        }
-        catch (...)
-        {
-            SurfaceData.ExchangeSurfaceStateRegistry(std::move(PreviousRegistry));
-            throw;
-        }
-        SurfaceDebugPipeline.reset();
-        for (auto& Pipeline : SurfaceLitPipelines)
-            Pipeline.reset();
-        for (auto& Pipeline : BaseSurfaceLitPipelines)
-            Pipeline.reset();
-        RenderStateTexture.reset();
-        for (auto& Pipeline : MudOverlayTopPipelines)
-            Pipeline.reset();
-        for (auto& Pipeline : MudOverlaySidePipelines)
-            Pipeline.reset();
-        TexelGeometryPipeline.reset();
-        TexelGeometryPreview.reset();
-        OverlaySides.reset();
-        HeightFieldSmoothing.reset();
-        MudLayerGeometry.reset();
-        TexelInspector.reset();
-        InspectedTexel.reset();
-        SurfaceStateSystem.ReplaceSceneResources(std::move(*Replacement));
-        TLogger::Info("TRenderer",
-                      "Surface GPU buffer reuse: " + std::to_string(ReusePool.GetReuseCount() - ReuseCountBefore) +
-                          " buffer(s), " +
-                          std::to_string((ReusePool.GetReusedBytes() - ReusedBytesBefore) / (1024U * 1024U)) +
-                          " MiB; retained " + std::to_string(ReusePool.GetRetainedBytes() / (1024U * 1024U)) + " MiB.");
-        FrameCoordinator.ResetClock();
+    }
+
+    void FRenderer::CommitSceneReplacement(FSceneReplacementResources& Resources)
+    {
+        // 준비가 끝난 GPU 객체 소유권을 Renderer로 이전한다.
+        auto& ReplacementDebugPipeline = Resources.ReplacementDebugPipeline;
+        auto& ReplacementInspector = Resources.ReplacementInspector;
+        auto& ReplacementGeometryPreview = Resources.ReplacementGeometryPreview;
+        auto& ReplacementGeometryPipeline = Resources.ReplacementGeometryPipeline;
+        auto& ReplacementLitPipelines = Resources.ReplacementLitPipelines;
+        auto& ReplacementBaseLitPipelines = Resources.ReplacementBaseLitPipelines;
+        auto& ReplacementRenderStateTexture = Resources.ReplacementRenderStateTexture;
+        auto& ReplacementMudGeometry = Resources.ReplacementMudGeometry;
+        auto& ReplacementHeightFieldSmoothing = Resources.ReplacementHeightFieldSmoothing;
+        auto& ReplacementOverlaySides = Resources.ReplacementOverlaySides;
+        auto& ReplacementMudTopPipelines = Resources.ReplacementMudTopPipelines;
+        auto& ReplacementMudSidePipelines = Resources.ReplacementMudSidePipelines;
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
         TexelInspector = std::move(ReplacementInspector);
         TexelGeometryPreview = std::move(ReplacementGeometryPreview);
@@ -790,12 +846,84 @@ namespace MDSS::Rendering
         OverlaySides = std::move(ReplacementOverlaySides);
         MudOverlayTopPipelines = std::move(ReplacementMudTopPipelines);
         MudOverlaySidePipelines = std::move(ReplacementMudSidePipelines);
-        SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
-        if (bResetStateSettings)
+    }
+
+    void FRenderer::WaitForSceneReloadAndUpdateMaterials()
+    {
+        // 기존 GPU 명령이 끝난 뒤 새 MTL material을 포함하도록 descriptor 리소스를 갱신한다.
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
         {
-            DebugProfileParameterOverrides.clear();
-            DebugStateChannel = 0;
+            throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
+
+        // Scene loading can append new MTL materials to AssetManager. Rebuild their
+        // descriptors before command recording; otherwise new sections are skipped.
+        if (MaterialResources.size() != Assets.GetMaterialCount())
+        {
+            CreateMaterialDescriptorResources();
+        }
+    }
+
+    void FRenderer::ConfigureReplacementSolver(SurfaceState::FSurfaceStateSystem& Replacement,
+                                               bool bResetStateSettings)
+    {
+        // 이전 Solver 옵션과 필요한 런타임 override만 새 Solver로 이관한다.
+            Replacement.SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
+            Replacement.SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
+            Replacement.SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
+            Replacement.SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
+            Replacement.SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
+            Replacement.SetCompactScratchStorageEnabled(SurfaceStateSystem.IsCompactScratchStorageEnabled());
+            Replacement.SetRuntimeSolverFlagsEnabled(SurfaceStateSystem.IsRuntimeSolverFlagsEnabled());
+            Replacement.SetAdaptiveGeometryEnabled(SurfaceStateSystem.IsAdaptiveGeometryEnabled());
+            Replacement.SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
+            Replacement.SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
+            Replacement.SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
+            Replacement.SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
+            Replacement.SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
+
+            for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
+            {
+                Replacement.SetDebugSolverTermEnabled(static_cast<SurfaceState::ESurfaceSolverTerm>(Index),
+                                                       DebugSolverSettings.Enabled[Index]);
+            }
+
+            if (!bResetStateSettings)
+            {
+                for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
+                {
+                    Replacement.SetDebugProfileParameters(Key.first, Key.second, Parameters);
+                }
+            }
+    }
+
+    void FRenderer::ReleaseSceneRenderObjects()
+    {
+        // 이전 파이프라인과 연결 자원을 참조 순서에 맞게 해제한다.
+        SurfaceDebugPipeline.reset();
+
+        for (auto& Pipeline : SurfaceLitPipelines)
+            Pipeline.reset();
+        for (auto& Pipeline : BaseSurfaceLitPipelines)
+            Pipeline.reset();
+        RenderStateTexture.reset();
+
+        for (auto& Pipeline : MudOverlayTopPipelines)
+            Pipeline.reset();
+        for (auto& Pipeline : MudOverlaySidePipelines)
+            Pipeline.reset();
+        TexelGeometryPipeline.reset();
+        TexelGeometryPreview.reset();
+        OverlaySides.reset();
+        HeightFieldSmoothing.reset();
+        MudLayerGeometry.reset();
+        TexelInspector.reset();
+        InspectedTexel.reset();
+    }
+
+    void FRenderer::ResetSceneGpuProfiling()
+    {
+        // Scene 교체 뒤 타임스탬프 쿼리와 누적 계측값을 새로 시작한다.
         CreateTimestampQueryPool(SurfaceStateSystem.GetSolverInstanceCount());
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
@@ -803,33 +931,42 @@ namespace MDSS::Rendering
         LastSolverPass2GpuMilliseconds = -1.0F;
     }
 
-    void TRenderer::RestartSimulationState()
+    void FRenderer::RestartSimulationState()
     {
         FrameCoordinator.RestartState();
+
         if (TexelInspector)
             TexelInspector->Invalidate();
     }
 
 #pragma endregion
-#pragma region Resolution_and_Swapchain
+// ============================================================
+// 03. Resolution and Swapchain
+// ============================================================
+#pragma region 03_Resolution_and_Swapchain
+// 해상도·창 크기 변경 시 관련 attachment와 렌더 자원을 재구성한다.
 
-    std::uint32_t TRenderer::GetSimulationResolution() const noexcept
+    std::uint32_t FRenderer::GetSimulationResolution() const noexcept
     {
         return SurfaceData.GetSimulationResolution();
     }
 
-    void TRenderer::TrimRenderResolutionCaches()
+    void FRenderer::TrimRenderResolutionCaches()
     {
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
             throw std::runtime_error("Failed to wait before trimming render mesh caches.");
-        if (OverlaySides) OverlaySides->ReleaseOutputs();
-        if (HeightFieldSmoothing) HeightFieldSmoothing->ReleaseOutputs();
-        if (MudLayerGeometry) MudLayerGeometry->ReleaseOutputs();
-        if (TexelGeometryPreview) TexelGeometryPreview->ReleaseOutputs();
+        if (OverlaySides)
+            OverlaySides->ReleaseOutputs();
+        if (HeightFieldSmoothing)
+            HeightFieldSmoothing->ReleaseOutputs();
+        if (MudLayerGeometry)
+            MudLayerGeometry->ReleaseOutputs();
+        if (TexelGeometryPreview)
+            TexelGeometryPreview->ReleaseOutputs();
         SurfaceStateSystem.TrimRenderMeshVariants(SurfaceTexelMeshResolution, OverlayTexelMeshResolution);
     }
 
-    void TRenderer::SetSurfaceTexelMeshResolution(std::uint32_t Resolution)
+    void FRenderer::SetSurfaceTexelMeshResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceRenderMeshResolution(Resolution))
             throw std::invalid_argument("Surface Texel Mesh resolution must be 64, 128, 256 or 512.");
@@ -840,7 +977,7 @@ namespace MDSS::Rendering
         LastRenderGpuMilliseconds = -1.0F;
     }
 
-    void TRenderer::SetOverlayTexelMeshResolution(std::uint32_t Resolution)
+    void FRenderer::SetOverlayTexelMeshResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceRenderMeshResolution(Resolution))
             throw std::invalid_argument("Overlay Texel Mesh resolution must be 64, 128, 256 or 512.");
@@ -851,7 +988,7 @@ namespace MDSS::Rendering
         LastRenderGpuMilliseconds = -1.0F;
     }
 
-    void TRenderer::SetSimulationResolution(TScene& Scene, std::uint32_t Resolution)
+    void FRenderer::SetSimulationResolution(FScene& Scene, std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
@@ -860,8 +997,9 @@ namespace MDSS::Rendering
 
         const std::uint32_t                                  PreviousResolution = Scene.GetSimulationResolution();
         auto&                                                Instances = Scene.GetStaticMeshInstances();
-        std::vector<SurfaceState::TSurfaceRuntimeDataHandle> PreviousHandles;
+        std::vector<SurfaceState::FSurfaceRuntimeDataHandle> PreviousHandles;
         PreviousHandles.reserve(Instances.size());
+
         for (const auto& Instance : Instances)
             PreviousHandles.push_back(Instance.GetSurfaceData());
         auto ReplacementHandles = PreviousHandles;
@@ -873,29 +1011,34 @@ namespace MDSS::Rendering
                     ReplacementHandles[Index] =
                         SurfaceData.LoadSurfaceDataAtResolution(PreviousHandles[Index], Resolution);
             }
+
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
                 Instances[Index].SetSurfaceData(ReplacementHandles[Index]);
             Scene.SetSimulationResolution(Resolution);
+
             // The solver must keep referencing the persistent Scene, rather than a temporary copy.
             ReloadSceneResources(Scene, false);
         }
         catch (...)
         {
             Scene.SetSimulationResolution(PreviousResolution);
+
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
                 Instances[Index].SetSurfaceData(PreviousHandles[Index]);
             SurfaceData.ReleaseUnusedSurfaceData(PreviousHandles);
             throw;
         }
+
         SurfaceData.ReleaseUnusedSurfaceData(ReplacementHandles);
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Simulation resolution changed to " + std::to_string(Resolution) + " x " +
                           std::to_string(Resolution) + "; State reset.");
     }
 
-    void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
+    void FRenderer::RecreateSwapchain(FDebugUI& DebugInterface)
     {
         TargetWindow.WaitForNonZeroFramebuffer();
+
         if (TargetWindow.ShouldClose())
         {
             return;
@@ -905,7 +1048,7 @@ namespace MDSS::Rendering
         std::uint32_t FramebufferHeight = 0;
         TargetWindow.GetFramebufferSize(FramebufferWidth, FramebufferHeight);
 
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Recreating swapchain for framebuffer " + std::to_string(FramebufferWidth) + "x" +
                           std::to_string(FramebufferHeight) + ".");
 
@@ -947,45 +1090,49 @@ namespace MDSS::Rendering
         DebugInterface.OnSwapchainRecreated(Context, *this);
 
         const VkExtent2D NewExtent = SwapchainData.GetExtent();
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "TSwapchain recreation complete: " + std::to_string(NewExtent.width) + "x" +
                           std::to_string(NewExtent.height) + ".");
     }
 
 #pragma endregion
-#pragma region Renderer_Accessors
+// ============================================================
+// 04. Renderer Accessors
+// ============================================================
+#pragma region 04_Renderer_Accessors
+// 현재 Scene·표시·진단 소비자가 사용할 Renderer 상태를 제공한다.
 
-    const GPU::TSwapchain& TRenderer::GetSwapchain() const noexcept
+    const GPU::FSwapchain& FRenderer::GetSwapchain() const noexcept
     {
         return SwapchainData;
     }
 
-    VkRenderPass TRenderer::GetRenderPassHandle() const noexcept
+    VkRenderPass FRenderer::GetRenderPassHandle() const noexcept
     {
         return MainRenderPass.GetHandle();
     }
 
-    const SurfaceState::TSurfaceGPUResourceManager& TRenderer::GetSurfaceGPUResources() const noexcept
+    const SurfaceState::FSurfaceGPUResourceManager& FRenderer::GetSurfaceGPUResources() const noexcept
     {
         return SurfaceStateSystem.GetGPUResources();
     }
 
-    float TRenderer::GetLastSolverGpuMilliseconds() const noexcept
+    float FRenderer::GetLastSolverGpuMilliseconds() const noexcept
     {
         return LastSolverGpuMilliseconds;
     }
 
-    float TRenderer::GetLastRenderGpuMilliseconds() const noexcept
+    float FRenderer::GetLastRenderGpuMilliseconds() const noexcept
     {
         return LastRenderGpuMilliseconds;
     }
 
-    float TRenderer::GetLastSolverPass1GpuMilliseconds() const noexcept
+    float FRenderer::GetLastSolverPass1GpuMilliseconds() const noexcept
     {
         return LastSolverPass1GpuMilliseconds;
     }
 
-    float TRenderer::GetLastSolverPass2GpuMilliseconds() const noexcept
+    float FRenderer::GetLastSolverPass2GpuMilliseconds() const noexcept
     {
         return LastSolverPass2GpuMilliseconds;
     }

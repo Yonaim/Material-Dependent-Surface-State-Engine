@@ -1,8 +1,15 @@
+// RenderStateTexture.comp — Surface State를 렌더 샘플링용 다중 채널 texture로 변환한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
 #define SURFACE_DEBUG_SET 0
 #include "Rendering/Surface/StateTexture/StateSampling.glsl"
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+// #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba16f, set = 1, binding = 0) uniform writeonly image2DArray RenderStates;
@@ -10,28 +17,46 @@ layout(push_constant) uniform TConversionPush
 {
     uvec4 DemoChannels;
     uint ChannelCount;
-} Push;
+}
+
+Push;
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+// Surface State를 렌더 샘플링용 다중 채널 texture로 변환한다.
 
 void main()
 {
     uint Surface = gl_GlobalInvocationID.z;
     uvec4 Range = SurfaceRanges.Values[Surface];
     uvec2 XY = gl_GlobalInvocationID.xy;
-    if (XY.x >= Range.y || XY.y >= Range.z) return;
+
+    if (XY.x >= Range.y || XY.y >= Range.z)
+    {
+        return;
+    }
+
     uint Texel = Range.x + XY.y * Range.y + XY.x;
     vec4 Values = vec4(0.0);
+
     // 구멍 texel은 invalid Profile을 가질 수 있다. Release에서도 범위를 확인한다.
-    if (Push.ChannelCount != 0u &&
-        Texel < uint(TexelSurfaceIndices.Values.length()) &&
-        TexelSurfaceIndices.Values[Texel] == Surface &&
-        Texel < uint(TexelProfileIndices.Values.length()) &&
+    if (Push.ChannelCount != 0u && Texel < uint(TexelSurfaceIndices.Values.length()) &&
+        TexelSurfaceIndices.Values[Texel] == Surface && Texel < uint(TexelProfileIndices.Values.length()) &&
         TexelProfileIndices.Values[Texel] < uint(ProfileSupported.Values.length()) / Push.ChannelCount &&
         TexelProfileIndices.Values[Texel] < SurfaceProfileRecordCount() / Push.ChannelCount &&
-        Texel < uint(CurrentState.Values.length()) / Push.ChannelCount &&
-        Texel < uint(WorldTexelAreas.Values.length()))
+        Texel < uint(CurrentState.Values.length()) / Push.ChannelCount && Texel < uint(WorldTexelAreas.Values.length()))
     {
         for (uint Index = 0u; Index < 4u; ++Index)
+        {
             Values[Index] = StateSaturation(Texel, Push.DemoChannels[Index], Push.ChannelCount, Surface);
+        }
     }
+
     imageStore(RenderStates, ivec3(ivec2(XY), int(Surface)), Values);
 }
+
+// #endregion

@@ -1,0 +1,47 @@
+{
+  "backtraceGraph": {
+    "commands": [
+      "add_test"
+    ],
+    "files": [
+      "C:/Users/yonai/Documents/MDSS_Engine/CMakeLists.txt"
+    ],
+    "nodes": [
+      {
+        "file": 0
+      },
+      {
+        "command": 0,
+        "file": 0,
+        "line": 317,
+        "parent": 0
+      }
+    ]
+  },
+  "kind": "ctestInfo",
+  "tests": [
+    {
+      "backtrace": 1,
+      "command": [
+        "C:/Users/yonai/Documents/MDSS_Engine/Build/Release/MDSS_SceneResourceTests.exe",
+        "--scratch-layout-only"
+      ],
+      "config": "Release",
+      "name": "MDSS_ScratchDescriptorLifetime",
+      "properties": [
+        {
+          "name": "SKIP_RETURN_CODE",
+          "value": 77
+        },
+        {
+          "name": "WORKING_DIRECTORY",
+          "value": "C:/Users/yonai/Documents/MDSS_Engine/Build"
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 1,
+    "minor": 0
+  }
+}

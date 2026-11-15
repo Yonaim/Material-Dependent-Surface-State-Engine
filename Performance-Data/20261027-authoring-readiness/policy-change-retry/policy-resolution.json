@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-10-27T13:40:50.582840+09:00",
+  "basis": "User reported Smart App Control disabled; same previously blocked binaries now launch. CPU test passed; GPU validation failure is tracked separately.",
+  "authorization": "retry-authorization.json",
+  "resolved_executable_hashes": [
+    "31270a4f4c7a2af6de920d2f9ce686f1a6f13006eea934a9a5ac9c63a0a592b1",
+    "bf3bf397a156caae18f370ae98c36fe53c645f0435b47cce7681386bfc97748f"
+  ],
+  "agent_modified_windows_policy": false,
+  "prior_failure_records_preserved": true,
+  "removed_from_active_block_registry_after_confirmed_native_launch": true
+}

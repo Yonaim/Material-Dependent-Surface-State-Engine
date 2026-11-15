@@ -1,0 +1,835 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-26T20:38:49.245241+09:00",
+  "status": "frozen_before_first_run",
+  "conditions": [
+    {
+      "id": "smoke-A",
+      "case": "plate",
+      "variant": "A",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "smoke-B",
+      "case": "plate",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "smoke-C",
+      "case": "plate",
+      "variant": "C",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "smoke-D",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "smoke-E",
+      "case": "plate",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "smoke-F",
+      "case": "plate",
+      "variant": "F",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "smoke-D-ledger-off",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 1,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": false,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-A",
+      "case": "plate",
+      "variant": "A",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-B",
+      "case": "plate",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-C",
+      "case": "plate",
+      "variant": "C",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-D",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-E",
+      "case": "plate",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-F",
+      "case": "plate",
+      "variant": "F",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-120-A",
+      "case": "plate",
+      "variant": "A",
+      "resolution": 128,
+      "hz": 120,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-120-B",
+      "case": "plate",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 120,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-120-C",
+      "case": "plate",
+      "variant": "C",
+      "resolution": 128,
+      "hz": 120,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-120-D",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 120,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-120-E",
+      "case": "plate",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 120,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-120-F",
+      "case": "plate",
+      "variant": "F",
+      "resolution": 128,
+      "hz": 120,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-240-A",
+      "case": "plate",
+      "variant": "A",
+      "resolution": 128,
+      "hz": 240,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-240-B",
+      "case": "plate",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 240,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-240-C",
+      "case": "plate",
+      "variant": "C",
+      "resolution": 128,
+      "hz": 240,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-240-D",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 240,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-240-E",
+      "case": "plate",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 240,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-240-F",
+      "case": "plate",
+      "variant": "F",
+      "resolution": 128,
+      "hz": 240,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-256-60-A",
+      "case": "plate",
+      "variant": "A",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-256-60-B",
+      "case": "plate",
+      "variant": "B",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-256-60-C",
+      "case": "plate",
+      "variant": "C",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-256-60-D",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-256-60-E",
+      "case": "plate",
+      "variant": "E",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-256-60-F",
+      "case": "plate",
+      "variant": "F",
+      "resolution": 256,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-D-repeat",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "plate-128-60-D-dirty",
+      "case": "plate",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": false
+    },
+    {
+      "id": "bunny-128-60-A",
+      "case": "bunny",
+      "variant": "A",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/StanfordBunny/StanfordBunny.obj",
+      "scale": [
+        6.42264883,
+        6.42264883,
+        6.42264883
+      ],
+      "rotation_x_degrees": 90,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "bunny-128-60-B",
+      "case": "bunny",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/StanfordBunny/StanfordBunny.obj",
+      "scale": [
+        6.42264883,
+        6.42264883,
+        6.42264883
+      ],
+      "rotation_x_degrees": 90,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "bunny-128-60-C",
+      "case": "bunny",
+      "variant": "C",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/StanfordBunny/StanfordBunny.obj",
+      "scale": [
+        6.42264883,
+        6.42264883,
+        6.42264883
+      ],
+      "rotation_x_degrees": 90,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "bunny-128-60-D",
+      "case": "bunny",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/StanfordBunny/StanfordBunny.obj",
+      "scale": [
+        6.42264883,
+        6.42264883,
+        6.42264883
+      ],
+      "rotation_x_degrees": 90,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "bunny-128-60-E",
+      "case": "bunny",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/StanfordBunny/StanfordBunny.obj",
+      "scale": [
+        6.42264883,
+        6.42264883,
+        6.42264883
+      ],
+      "rotation_x_degrees": 90,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "bunny-128-60-F",
+      "case": "bunny",
+      "variant": "F",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/StanfordBunny/StanfordBunny.obj",
+      "scale": [
+        6.42264883,
+        6.42264883,
+        6.42264883
+      ],
+      "rotation_x_degrees": 90,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "mud-128-60-A",
+      "case": "mud",
+      "variant": "A",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "mud-128-60-B",
+      "case": "mud",
+      "variant": "B",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "mud-128-60-C",
+      "case": "mud",
+      "variant": "C",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "mud-128-60-D",
+      "case": "mud",
+      "variant": "D",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "mud-128-60-E",
+      "case": "mud",
+      "variant": "E",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    },
+    {
+      "id": "mud-128-60-F",
+      "case": "mud",
+      "variant": "F",
+      "resolution": 128,
+      "hz": 60,
+      "seconds": 14,
+      "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+      "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+      "scale": [
+        1.65,
+        2.2,
+        0.22
+      ],
+      "rotation_x_degrees": 8,
+      "ledger": true,
+      "full_geometry": true
+    }
+  ],
+  "source_commit": "880af1ebcffe601f0bac27413cad94055ce92812",
+  "development_budget": "one fixed field design; no coefficient search; failed cases retained",
+  "scope": "H1 mechanism and exploratory H2 transfer; no modular-baseline superiority claim",
+  "inputs": "ice density 3.5 exp(-(u/.30)^4-(v/.10)^4); heat .2 gaussian(-.08,.02,.16,.14), water .15 gaussian(0,.30,.18,.08) at t=0,.25,...,11.75",
+  "downstream": "v < -0.1 over whole mesh; deposition patch top-facing normals; normalized coordinates for bunny",
+  "accuracy_gate": {
+    "relative_ice_water_budget": 1e-05,
+    "invalid_counts": 0,
+    "frozen_changes": 0
+  },
+  "effect_rule": "Report effect alongside dt and resolution sensitivity; no physical truth or statistical significance claim",
+  "timing": "one diagnostic trajectory per condition; timestamps descriptive, not repeated application performance",
+  "deviations": [
+    "Headless production solver bypasses GUI benchmark and its forced coupling/drain behavior",
+    "Direct area-scaled analytic fields replace contact rasterization to define S0 and identical timed inputs",
+    "No normal-map meso geometry in this study",
+    "No rendered image quality or author productivity measurement"
+  ]
+}

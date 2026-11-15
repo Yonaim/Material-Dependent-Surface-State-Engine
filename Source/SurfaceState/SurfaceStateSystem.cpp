@@ -30,44 +30,58 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Lifecycle
+// ============================================================
+// 00. Lifecycle
+// ============================================================
+#pragma region 00_Lifecycle
+// 객체 초기화와 종료에서 소유 자원·참조의 유효 기간을 맞춘다.
 
-    TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
-                                             const Asset::TAssetManager& Assets,
-                                             const TSurfaceDataManager&  SurfaceData,
-                                             const TScene&               Scene,
-                                             TSurfaceGPUBufferPool*      ReusePool)
+    FSurfaceStateSystem::FSurfaceStateSystem(const GPU::FVulkanContext&  Context,
+                                             const Asset::FAssetManager& Assets,
+                                             const FSurfaceDataManager&  SurfaceData,
+                                             const FScene&               Scene,
+                                             FSurfaceGPUBufferPool*      ReusePool)
         : Context(Context), Assets(Assets), SurfaceData(SurfaceData), Scene(Scene)
     {
-        GPUResources = std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene, ReusePool,
-            TSurfaceScratchStorageFormat{bRawFluxCacheEnabled, bHalfRawFluxCacheEnabled,
-                                        bHalfDynamicWeightsEnabled, bCompactScratchStorageEnabled});
+        GPUResources = std::make_unique<FSurfaceGPUResourceManager>(
+            Context,
+            Assets,
+            SurfaceData,
+            Scene,
+            ReusePool,
+            FSurfaceScratchStorageFormat{Execution.bRawFluxCacheEnabled,
+                                         Execution.bHalfRawFluxCacheEnabled,
+                                         Execution.bHalfDynamicWeightsEnabled,
+                                         Execution.bCompactScratchStorageEnabled});
         PrepareScratchStorage();
-        if (const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
+
+        if (const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
         {
-            Solver = std::make_unique<TSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
+            Solver = std::make_unique<FSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
         }
+
         // Dynamic geometry buffers start empty.  The first state-driven solver step performs one
         // force-full bootstrap before Pass 1, then normal steps use Solver -> Height -> Geometry -> Weights.
-        bForceFullGeometryOnNextStep = true;
-        bSeedPersistentActivityOnNextStep = true;
-        PendingInputActivation.assign(GPUResources->GetSceneInstanceCount(), false);
+        Execution.bForceFullGeometryOnNextStep = true;
+        Execution.bSeedPersistentActivityOnNextStep = true;
+        Execution.PendingInputActivation.assign(GPUResources->GetSceneInstanceCount(), false);
         QueueInitialContacts();
     }
 
-    void TSurfaceStateSystem::QueueInitialContacts()
+    void FSurfaceStateSystem::QueueInitialContacts()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
-        for (const TSceneInitialContact& Initial : Scene.GetInitialContacts())
+
+        for (const FSceneInitialContact& Initial : Scene.GetInitialContacts())
         {
             const auto Target =
                 std::find_if(Instances.begin(),
                              Instances.end(),
-                             [&](const TStaticMeshInstance& Instance) { return Instance.GetId() == Initial.Target; });
+                             [&](const FStaticMeshInstance& Instance) { return Instance.GetId() == Initial.Target; });
             if (Target == Instances.end())
                 throw std::invalid_argument("Initial contact target is not in Scene: " + Initial.Target);
-            TSurfaceContactInput Contact;
-            Contact.TargetInstance = static_cast<TSurfaceInstanceID>(std::distance(Instances.begin(), Target));
+            FSurfaceContactInput Contact;
+            Contact.TargetInstance = static_cast<FSurfaceInstanceID>(std::distance(Instances.begin(), Target));
             Contact.State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Initial.State);
             Contact.WorldPosition = Initial.WorldPosition;
             Contact.Radius = Initial.Radius;
@@ -77,9 +91,9 @@ namespace MDSS::SurfaceState
         }
     }
 
-    TSurfaceStateSystem::~TSurfaceStateSystem() = default;
+    FSurfaceStateSystem::~FSurfaceStateSystem() = default;
 
-    void TSurfaceStateSystem::ReplaceSceneResources(TSurfaceStateSystem&& Replacement)
+    void FSurfaceStateSystem::ReplaceSceneResources(FSurfaceStateSystem&& Replacement)
     {
         if (&Context != &Replacement.Context || &Assets != &Replacement.Assets || &Scene != &Replacement.Scene)
         {
@@ -87,64 +101,72 @@ namespace MDSS::SurfaceState
         }
 
         Solver = std::move(Replacement.Solver);
+
         if (GPUResources)
             GPUResources->RetireBuffers(BufferPool);
         GPUResources = std::move(Replacement.GPUResources);
         PendingContacts = std::move(Replacement.PendingContacts);
-        PendingInputActivation = std::move(Replacement.PendingInputActivation);
-        DebugSolverSettings = Replacement.DebugSolverSettings;
-        bTransferWeightSettingsDirty = Replacement.bTransferWeightSettingsDirty;
-        bForceFullGeometryOnNextStep = Replacement.bForceFullGeometryOnNextStep;
-        bSeedPersistentActivityOnNextStep = Replacement.bSeedPersistentActivityOnNextStep;
-        bStableDeltaTimeDirty = Replacement.bStableDeltaTimeDirty;
-        CachedMaximumStableDeltaTime = Replacement.CachedMaximumStableDeltaTime;
-        StableDeltaTimeModelMatrices = std::move(Replacement.StableDeltaTimeModelMatrices);
+        Execution.PendingInputActivation = std::move(Replacement.Execution.PendingInputActivation);
+        Execution.DebugSolverSettings = Replacement.Execution.DebugSolverSettings;
+        Execution.bTransferWeightSettingsDirty = Replacement.Execution.bTransferWeightSettingsDirty;
+        Execution.bForceFullGeometryOnNextStep = Replacement.Execution.bForceFullGeometryOnNextStep;
+        Execution.bSeedPersistentActivityOnNextStep = Replacement.Execution.bSeedPersistentActivityOnNextStep;
+        Execution.bStableDeltaTimeDirty = Replacement.Execution.bStableDeltaTimeDirty;
+        Execution.CachedMaximumStableDeltaTime = Replacement.Execution.CachedMaximumStableDeltaTime;
+        Execution.StableDeltaTimeModelMatrices = std::move(Replacement.Execution.StableDeltaTimeModelMatrices);
         RuntimeProfileOverrides = std::move(Replacement.RuntimeProfileOverrides);
     }
 #pragma endregion
 
-#pragma region State_and_Contact_Management
+// ============================================================
+// 01. State and Contact Management
+// ============================================================
+#pragma region 01_State_and_Contact_Management
+// 접촉 입력을 대기열에 넣고 State 리셋·재시작 경계를 관리한다.
 
-    void TSurfaceStateSystem::SubmitContact(TSurfaceContactInput Contact)
+    void FSurfaceStateSystem::SubmitContact(FSurfaceContactInput Contact)
     {
         PendingContacts.push_back(std::move(Contact));
     }
 
-    void TSurfaceStateSystem::ResetState()
+    void FSurfaceStateSystem::ResetState()
     {
         if (vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to wait for the graphics queue before resetting Surface State.");
         }
+
         PendingContacts.clear();
         GPUResources->ResetStates();
+
         // Resetting State invalidates the derived simulation geometry.  Rebuild it before the next
         // state-driven solver step rather than tracking a separate revision/cache key.
-        bForceFullGeometryOnNextStep = true;
-        bSeedPersistentActivityOnNextStep = true;
-        std::fill(PendingInputActivation.begin(), PendingInputActivation.end(), false);
+        Execution.bForceFullGeometryOnNextStep = true;
+        Execution.bSeedPersistentActivityOnNextStep = true;
+        std::fill(Execution.PendingInputActivation.begin(), Execution.PendingInputActivation.end(), false);
     }
 
-    void TSurfaceStateSystem::RestartState()
+    void FSurfaceStateSystem::RestartState()
     {
         ResetState();
         QueueInitialContacts();
-        bStableDeltaTimeDirty = true;
-        bForceFullGeometryOnNextStep = true;
+        Execution.bStableDeltaTimeDirty = true;
+        Execution.bForceFullGeometryOnNextStep = true;
     }
 
-    void TSurfaceStateSystem::SetDebugProfileParameters(Asset::TSRProfileAssetHandle   Profile,
-                                                        TStateId                       State,
-                                                        const TSurfaceStateParameters& Parameters,
+    void FSurfaceStateSystem::SetDebugProfileParameters(Asset::FSRProfileAssetHandle   Profile,
+                                                        FStateId                       State,
+                                                        const FSurfaceStateParameters& Parameters,
                                                         bool                           bKeepRuntimeOverride)
     {
-        const TSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
+        const FSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
+
         if (State >= Registry.GetStateCount())
         {
             throw std::out_of_range("Debug Profile override State is outside the Registry.");
         }
 
-        TSurfaceResponseProfileData ValidationData;
+        FSurfaceResponseProfileData ValidationData;
         ValidationData.States.emplace(Registry.GetStateName(State), Parameters);
         ValidateSurfaceResponseProfileData(ValidationData);
 
@@ -152,16 +174,19 @@ namespace MDSS::SurfaceState
         {
             throw std::runtime_error("Failed to wait for the graphics queue before updating Profile parameters.");
         }
+
         if (!GPUResources->UpdateProfileParameters(Profile, State, Parameters))
         {
             throw std::invalid_argument("Debug Profile override does not belong to the current Scene.");
         }
 
-        bStableDeltaTimeDirty = true;
+        Execution.bStableDeltaTimeDirty = true;
+
         // Accumulation factors/capacity can change the State -> Height mapping.  A one-shot full
         // rebuild on the next solver step keeps derived data authoritative without a revision cache.
-        bForceFullGeometryOnNextStep = true;
+        Execution.bForceFullGeometryOnNextStep = true;
         const auto Key = std::make_pair(Profile, State);
+
         if (bKeepRuntimeOverride)
         {
             RuntimeProfileOverrides[Key] = Parameters;
@@ -174,97 +199,109 @@ namespace MDSS::SurfaceState
 
 #pragma endregion
 
-#pragma region Debug_and_Accessors
+// ============================================================
+// 02. Debug and Accessors
+// ============================================================
+#pragma region 02_Debug_and_Accessors
+// 진단 설정과 현재 State·자원 조회를 외부 소비자에 제공한다.
 
-    std::size_t TSurfaceStateSystem::GetSolverInstanceCount() const noexcept
+    std::size_t FSurfaceStateSystem::GetSolverInstanceCount() const noexcept
     {
         if (!GPUResources)
             return 0U;
         std::size_t InstanceCount = 0U;
+
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             InstanceCount += GPUResources->GetInstanceDescriptors(SceneIndex) != nullptr ? 1U : 0U;
         }
+
         return InstanceCount;
     }
 
-    void TSurfaceStateSystem::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
     {
-        if (bHalfDynamicWeightsEnabled == bEnabled)
+        if (Execution.bHalfDynamicWeightsEnabled == bEnabled)
             return;
-        bHalfDynamicWeightsEnabled = bEnabled;
+        Execution.bHalfDynamicWeightsEnabled = bEnabled;
+
         // Static weights must be re-uploaded in the selected representation; dynamic state-driven geometry then
         // rebuilds from it.
-        bTransferWeightSettingsDirty = true;
-        bForceFullGeometryOnNextStep = true;
-        bStableDeltaTimeDirty = true;
+        Execution.bTransferWeightSettingsDirty = true;
+        Execution.bForceFullGeometryOnNextStep = true;
+        Execution.bStableDeltaTimeDirty = true;
     }
 
-    void TSurfaceStateSystem::SetSparseSolverEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetSparseSolverEnabled(bool bEnabled) noexcept
     {
-        if (bSparseSolverEnabled == bEnabled)
+        if (Execution.bSparseSolverEnabled == bEnabled)
             return;
-        bSparseSolverEnabled = bEnabled;
+        Execution.bSparseSolverEnabled = bEnabled;
+
         if (bEnabled)
-            bSeedPersistentActivityOnNextStep = true;
+            Execution.bSeedPersistentActivityOnNextStep = true;
     }
 
-    void TSurfaceStateSystem::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
     {
-        if (bActiveChannelMaskEnabled == bEnabled)
+        if (Execution.bActiveChannelMaskEnabled == bEnabled)
             return;
-        bActiveChannelMaskEnabled = bEnabled;
+        Execution.bActiveChannelMaskEnabled = bEnabled;
+
         if (bEnabled)
-            bSeedPersistentActivityOnNextStep = true;
+            Execution.bSeedPersistentActivityOnNextStep = true;
     }
 
-    void TSurfaceStateSystem::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
     {
-        if (bPerWorkgroupChannelMaskEnabled == bEnabled)
+        if (Execution.bPerWorkgroupChannelMaskEnabled == bEnabled)
             return;
-        bPerWorkgroupChannelMaskEnabled = bEnabled;
+        Execution.bPerWorkgroupChannelMaskEnabled = bEnabled;
+
         if (bEnabled)
-            bSeedPersistentActivityOnNextStep = true;
+            Execution.bSeedPersistentActivityOnNextStep = true;
     }
 
-    const TSurfaceSolverDebugSettings& TSurfaceStateSystem::GetDebugSolverSettings() const noexcept
+    const FSurfaceSolverDebugSettings& FSurfaceStateSystem::GetDebugSolverSettings() const noexcept
     {
-        return DebugSolverSettings;
+        return Execution.DebugSolverSettings;
     }
 
-    void TSurfaceStateSystem::SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept
     {
-        if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled != bEnabled)
-            bTransferWeightSettingsDirty = true;
-        DebugSolverSettings.bStateDrivenGeometryUpdateEnabled = bEnabled;
+        if (Execution.DebugSolverSettings.bStateDrivenGeometryUpdateEnabled != bEnabled)
+            Execution.bTransferWeightSettingsDirty = true;
+        Execution.DebugSolverSettings.bStateDrivenGeometryUpdateEnabled = bEnabled;
     }
 
-    void TSurfaceStateSystem::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetDebugSolverTermEnabled(ESurfaceSolverTerm Term, bool bEnabled) noexcept
     {
-        if (DebugSolverSettings.IsEnabled(Term) == bEnabled)
+        if (Execution.DebugSolverSettings.IsEnabled(Term) == bEnabled)
         {
             return;
         }
-        DebugSolverSettings.SetEnabled(Term, bEnabled);
-        bStableDeltaTimeDirty = true;
-        if (Term == TSurfaceSolverTerm::DistanceWeight || Term == TSurfaceSolverTerm::NormalWeight ||
-            Term == TSurfaceSolverTerm::ProfileBoundaryWeight)
+
+        Execution.DebugSolverSettings.SetEnabled(Term, bEnabled);
+        Execution.bStableDeltaTimeDirty = true;
+
+        if (Term == ESurfaceSolverTerm::DistanceWeight || Term == ESurfaceSolverTerm::NormalWeight ||
+            Term == ESurfaceSolverTerm::ProfileBoundaryWeight)
         {
-            bTransferWeightSettingsDirty = true;
+            Execution.bTransferWeightSettingsDirty = true;
         }
     }
 
-    void TSurfaceStateSystem::SetDebugGeometryDriveEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetDebugGeometryDriveEnabled(bool bEnabled) noexcept
     {
-        SetDebugSolverTermEnabled(TSurfaceSolverTerm::GeometryDrive, bEnabled);
+        SetDebugSolverTermEnabled(ESurfaceSolverTerm::GeometryDrive, bEnabled);
     }
 
-    void TSurfaceStateSystem::SetDebugNormalWeightEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetDebugNormalWeightEnabled(bool bEnabled) noexcept
     {
-        SetDebugSolverTermEnabled(TSurfaceSolverTerm::NormalWeight, bEnabled);
+        SetDebugSolverTermEnabled(ESurfaceSolverTerm::NormalWeight, bEnabled);
     }
 
-    const TSurfaceGPUResourceManager& TSurfaceStateSystem::GetGPUResources() const noexcept
+    const FSurfaceGPUResourceManager& FSurfaceStateSystem::GetGPUResources() const noexcept
     {
         return *GPUResources;
     }

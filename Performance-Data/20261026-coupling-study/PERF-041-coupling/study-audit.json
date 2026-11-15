@@ -1,0 +1,496 @@
+{
+  "created_at": "2026-10-27T05:44:20.465290+09:00",
+  "selected_conditions": 20,
+  "remaining_selected": [],
+  "attempt_status_counts": {
+    "failed": 1,
+    "completed": 31,
+    "interrupted": 1
+  },
+  "completed_attempts": 31,
+  "audited_steps": 25740,
+  "audit_failures": 0,
+  "max_relative_mass_residual": 1.684913362864759e-07,
+  "records": [
+    {
+      "id": "smoke-A",
+      "attempt": 2,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 7.840845666332129e-10,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "f7e79d4c6705c9d81b6042c79591532d74f768d2ddeaaa4a718fcd6df046edd1",
+      "series_sha256": "2bd89e91ed4fd5256601ee0aa1f33f7750f5b9c97aa0e60ec567cb933b23a3a0"
+    },
+    {
+      "id": "smoke-B",
+      "attempt": 1,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 7.187574258344003e-09,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "94dd5c04b616fd63cf33ec6bcd1282af02d540ede39ac773fa9c4a3490a9aaef",
+      "series_sha256": "f93526d691d62eb3cb8d92f064e9ffb0aecdfac7904f0d0acd438222d802faf5"
+    },
+    {
+      "id": "smoke-C",
+      "attempt": 1,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 4.25263872494415e-10,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "b913f5c71f4b89d9e613187f043d23afb0b127080443dec4d81e4339a2e9bd3a",
+      "series_sha256": "047c44ab3c046ec9b9eb72c06ebc83e29104424c5b80a07ddb1ae5f66d8f902d"
+    },
+    {
+      "id": "smoke-D",
+      "attempt": 1,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 7.51228718232613e-09,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "series_sha256": "c60c3d14359a3264af5d0efd06388d1f058dc0539d45b1b5f494b6e0793ba7fe"
+    },
+    {
+      "id": "smoke-E",
+      "attempt": 1,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 6.98412124398024e-09,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "7e9d7c6592f743f08eb3e57614f1f42f6f31bf540422edcc8dcda6f59047ec9c",
+      "series_sha256": "840ccd8e7193e1c78908eebd8b71daee537c6d1c60d4306e80a1f55776bc10a4"
+    },
+    {
+      "id": "smoke-F",
+      "attempt": 1,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 7.501707513819838e-09,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "c75c6da40040ac77fbe9332d389801f7e2745c36c371a4227a485ff3d8d9bc9e",
+      "series_sha256": "969d750eddb8f873f900853d6717d29761030b1e848afc6ac82991092bb78d63"
+    },
+    {
+      "id": "smoke-D-ledger-off",
+      "attempt": 1,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 7.51228718232613e-09,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "series_sha256": "77cebf12179d59e5e32d623db93083c7b080ef394c94feee6c2f268f54c5c6b3"
+    },
+    {
+      "id": "plate-128-60-A",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 1.1269884236444328e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "8d3c05ffa070c2f9502efa468fb3535fd2e863269dabfe456c423d9a23c97eca",
+      "series_sha256": "ed046a28f17b92ca61e99a1084c1153ce4192729124be3bc33c12a96c03c7cb3"
+    },
+    {
+      "id": "plate-128-60-B",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 2.3400349759785953e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "ce531abb1ae4ebe4547bdddefa93a1c8901d7b2ee5e7024339126ddd03124828",
+      "series_sha256": "13433cd43a0d7a0f3bc73486e05b99491a2e2079db722350a7dac6d8e71077dd"
+    },
+    {
+      "id": "plate-128-60-C",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 1.3811219798445573e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "b0224236b309c1598e61a572753f007251655ea72521d13f0c2c59f97f7a0aa3",
+      "series_sha256": "b3e3513a6bd84b26f1e9c10a281ebe6fc94f1ec1b89b6a094457db61d3891c3a"
+    },
+    {
+      "id": "plate-128-60-D",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 4.944955526510253e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "3ecabda68ec326ebd00860bc62359a4146b9255457f17cbbe4fd514e4ae28db7",
+      "series_sha256": "af6e25f41e9b7678d1de9a900b3cca85adf0b147f8c163eaeff18b88361b5c1c"
+    },
+    {
+      "id": "plate-128-60-E",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 6.968635378831689e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "0832bb89cefe34554c4472cee586a1bfc9867a7a067e7b322a7653104738561c",
+      "series_sha256": "f2428b6aa1542144be8dc463bd55678ede2cbefc601e29e612ca5dfa1e21aa14"
+    },
+    {
+      "id": "smoke-D",
+      "attempt": 2,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 7.51228718232613e-09,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "0f7c4b2d0642fb4702a3d729c9ea5925fb99c9e929f65a997b2fd17057a814a8",
+      "series_sha256": "fce1729983c1140707b6141296e1531161ebd3d7bd9e72a8b9f7c50393517e77"
+    },
+    {
+      "id": "smoke-E",
+      "attempt": 2,
+      "steps": 60,
+      "failures": [],
+      "relative_mass_residual": 6.98412124398024e-09,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "7e9d7c6592f743f08eb3e57614f1f42f6f31bf540422edcc8dcda6f59047ec9c",
+      "series_sha256": "11d41b052e14656d38963d7fac9af0ae2526de08f15b9463bc66d4551def5d81"
+    },
+    {
+      "id": "plate-128-60-D",
+      "attempt": 2,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 4.944955526510253e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "3ecabda68ec326ebd00860bc62359a4146b9255457f17cbbe4fd514e4ae28db7",
+      "series_sha256": "242612eb3842fe3c497ebc0698435b8e78df81baceba9cdbe9feccef8c679678"
+    },
+    {
+      "id": "plate-128-60-E",
+      "attempt": 2,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 6.968635378831689e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "0832bb89cefe34554c4472cee586a1bfc9867a7a067e7b322a7653104738561c",
+      "series_sha256": "af27227107dc128cdb015a76a8ff2ede0569345982df9395b539a6cd7e08407b"
+    },
+    {
+      "id": "plate-128-60-F",
+      "attempt": 2,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 3.088334243074885e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "f00c09f488da2b5629e729549c97bdb478937ccb75b14140c30bd0c49130de34",
+      "series_sha256": "b6cf51366fca72066afe7d3d3fe156546d8780f401ea1c061ed31681c63ef28e"
+    },
+    {
+      "id": "plate-128-120-D",
+      "attempt": 1,
+      "steps": 1680,
+      "failures": [],
+      "relative_mass_residual": 1.0630090527382204e-07,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "4fafa0cf08738aae463b58b0762218d2bbe1e054c6f79b5926f0269615dd4ac3",
+      "series_sha256": "0204798e1afd94f2d468ac1c3f7f8054da83a8cd16ae8ddefb7d952529298ace"
+    },
+    {
+      "id": "plate-128-120-E",
+      "attempt": 1,
+      "steps": 1680,
+      "failures": [],
+      "relative_mass_residual": 6.373145088510715e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "3863d6b71bbba4d1cc9836ca80eebe609cedac31f264c3a6c074c8b5bfba5eef",
+      "series_sha256": "6e369e4fcd953475a2f14ab98f4ac6dc1eb1bcd080190c1aac9fee0cca8de7a3"
+    },
+    {
+      "id": "plate-128-240-D",
+      "attempt": 1,
+      "steps": 3360,
+      "failures": [],
+      "relative_mass_residual": 1.684913362864759e-07,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "af2dc7fd7d5fc5759c3c066de7bf46487254caeeb9fbc804c12f0222e344f05b",
+      "series_sha256": "ed6c0ef3963ef1a7510a0097424043c4d06874c4cfa2a8f5ea7f5e054ea2a1e2"
+    },
+    {
+      "id": "plate-128-240-E",
+      "attempt": 1,
+      "steps": 3360,
+      "failures": [],
+      "relative_mass_residual": 7.289100137745451e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "d7caa7c0c6349d0ca380683f60a6df546a10e16c7405f00bf09d00edd75999d8",
+      "series_sha256": "66bcfbad753b2631e7f3a1aa2e39bee9874043048967f0fd5342d38a8241d71a"
+    },
+    {
+      "id": "plate-256-60-D",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 9.860571908344234e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "66163eca330539127f751576c003e255feaeaf5d030b45aa92d9e1d2b6512cdb",
+      "series_sha256": "9863f3c49263baf2705c8bd3f9bef2e0a80db19eaa7af771f3eb8c1af87205b7"
+    },
+    {
+      "id": "plate-256-60-E",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 8.472839602623132e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "d6758f5172d7a8e84cd9a072b08caa94173482cb46705ff2caf5f0c0cb68c3bc",
+      "series_sha256": "8eab6f041e979139377511e4f8d1528940b59dc9eb6d93f91776b680a232ec3f"
+    },
+    {
+      "id": "plate-128-60-D-repeat",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 4.944955526510253e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "3ecabda68ec326ebd00860bc62359a4146b9255457f17cbbe4fd514e4ae28db7",
+      "series_sha256": "04b1c0de0263b6471f4773fd48a77324bc05c87f897b9af9837c2c3535966e7d"
+    },
+    {
+      "id": "plate-128-60-D-dirty",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 4.915722247904853e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "723854a01cda5f524470b2c0b9d62ea26ef8855f04f3f2d00bb8a54ebb5eecb2",
+      "series_sha256": "8940af20b1cec59984884ed6dcdcf43ed18ba6ba6f9e9bd74f3a7ff6763d6ac7"
+    },
+    {
+      "id": "bunny-128-60-B",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 9.326371269085476e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/StanfordBunny/StanfordBunny.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "8ab3968a606f656b4804b675f9ef23d805526019f10fe016cec4c663f38704a6",
+      "series_sha256": "447d5fb993fd408cd178775f754db7ab213eeffcc3cf08f8eae3955a3b456ef5"
+    },
+    {
+      "id": "bunny-128-60-D",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 5.9349868724042476e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/StanfordBunny/StanfordBunny.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "6e956d8a7435f7b47f577d0eb51604c6aa536dc0ee8a13fc36744541f1c1d5bb",
+      "series_sha256": "41ce064fee8359d02c78d45ef35993263feeaabb6adefc13fd186f08b548639f"
+    },
+    {
+      "id": "bunny-128-60-E",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 7.327544428503049e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/StanfordBunny/StanfordBunny.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "2bd4c80bd8b17363c8a31726702da24217a63c22ba471ddef4a0479454ea0ee1",
+      "series_sha256": "2f1262c1b3601997f5a254a05e150f6bdd71568767739bf98b9c8457bba2bb8e"
+    },
+    {
+      "id": "mud-128-60-B",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 2.3400349759785953e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "f6731a075b6bad75697b09cbea80314c4e76fcdd2b2e56e92ca8b46b2608ce2d",
+      "series_sha256": "90f42a2746a4057032d779384bd8daecc8df00bc492243ea71ee4fa69fbed70b"
+    },
+    {
+      "id": "mud-128-60-D",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 5.38020961586621e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "570199f6ed41584a12a4a1618909ce23f9fe600c29570c3ce05507ba0729bd84",
+      "series_sha256": "0c28e804a46e6e0654a8a0aa77ed558df7f43ddb77a076f6c7b170b1338b8c6c"
+    },
+    {
+      "id": "mud-128-60-E",
+      "attempt": 1,
+      "steps": 840,
+      "failures": [],
+      "relative_mass_residual": 6.74535660635742e-08,
+      "assets_unchanged": {
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": true,
+        "Assets/SurfaceProfiles/IceReactionLab.SRProfile": true,
+        "Assets/SurfaceProfiles/DemoMud.SRProfile": true
+      },
+      "final_sha256": "ade5ae8eeef7244ab318a4f61fc1bb0b600c4cefc8f8bb3bf5c53a041aad1d6a",
+      "series_sha256": "f17efbac2cada22d89d64100e109c7cd97138aa0fa8d0d63fd500e846d394a05"
+    }
+  ],
+  "mapping": {
+    "plate-128": {
+      "valid_texels": 98304,
+      "allocated_texels": 98304,
+      "warning_count": 0,
+      "no_texel_centers": 0,
+      "seam_no_candidates": 0,
+      "dropped_link_messages": [],
+      "note": "Mapping warnings are scientific limitations, distinct from runtime/budget failures"
+    },
+    "plate-256": {
+      "valid_texels": 393216,
+      "allocated_texels": 393216,
+      "warning_count": 0,
+      "no_texel_centers": 0,
+      "seam_no_candidates": 0,
+      "dropped_link_messages": [],
+      "note": "Mapping warnings are scientific limitations, distinct from runtime/budget failures"
+    },
+    "bunny-128": {
+      "valid_texels": 6598,
+      "allocated_texels": 16384,
+      "warning_count": 67282,
+      "no_texel_centers": 64447,
+      "seam_no_candidates": 2834,
+      "dropped_link_messages": [
+        "UV seam texel links were dropped: 94 bidirectional links could not fit within the eight-neighbor limit."
+      ],
+      "note": "Mapping warnings are scientific limitations, distinct from runtime/budget failures"
+    },
+    "mud-128": {
+      "valid_texels": 98304,
+      "allocated_texels": 98304,
+      "warning_count": 0,
+      "no_texel_centers": 0,
+      "seam_no_candidates": 0,
+      "dropped_link_messages": [],
+      "note": "Mapping warnings are scientific limitations, distinct from runtime/budget failures"
+    }
+  },
+  "limitations": [
+    "No hardware-independent ground truth; no pixel/appearance assessment",
+    "Ledger-disabled control excludes per-rule extent validation",
+    "Original harness executables before the archive were hashed but not preserved",
+    "Raw captures are local git-ignored artifacts"
+  ]
+}

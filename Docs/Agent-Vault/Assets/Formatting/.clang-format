@@ -1,0 +1,36 @@
+# 기본 스타일 및 줄 길이
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 120
+
+# 네임스페이스 및 중괄호 스타일
+NamespaceIndentation: All
+BreakBeforeBraces: Allman
+
+# 연속 선언문의 수직 정렬
+AlignConsecutiveDeclarations: true
+
+# Include 정렬 및 블록 병합 (카테고리별 분리는 Regroup)
+SortIncludes: true
+IncludeBlocks: Merge
+
+# 템플릿 선언과 실제 선언을 서로 다른 줄에 배치
+BreakTemplateDeclarations: Yes
+
+# 전처리 지시문의 기존 들여쓰기 유지
+IndentPPDirectives: Leave
+
+# 함수 선언·정의의 파라미터를 길어질 경우 한 줄에 하나씩 배치
+BinPackParameters: OnePerLine
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# 함수 호출의 인자가 줄바꿈되면 한 줄에 하나씩 배치
+BinPackArguments: false
+AllowAllArgumentsOnNextLine: false
+
+# 짧은 함수와 빈 생성자도 한 줄로 합치지 않는다
+AllowShortFunctionsOnASingleLine: None
+
+# 생성자 멤버 초기화 목록의 줄바꿈
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: Never

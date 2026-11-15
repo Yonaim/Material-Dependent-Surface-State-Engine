@@ -1,0 +1,367 @@
+{
+  "created_at": "2026-10-27T09:15:27.501539+09:00",
+  "coverage": [
+    {
+      "archive": "Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\inputs\\128962e21cb7",
+      "files": 324,
+      "production_spirv_files": 137,
+      "runs": [
+        "gpu-brick-replay-128-D",
+        "gpu-brick-ls-replay-128-D"
+      ]
+    },
+    {
+      "archive": "Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\inputs\\bc1637d5c18f",
+      "files": 126,
+      "production_spirv_files": 0,
+      "runs": [
+        "gpu-brick-passthrough-128-D"
+      ]
+    },
+    {
+      "archive": "Performance-Data\\20261027-meso-study\\PERF-043-meso\\raw\\inputs\\cbe136795147",
+      "files": 125,
+      "production_spirv_files": 0,
+      "runs": [
+        "cpu-analytic-64",
+        "cpu-png-64",
+        "cpu-brick-64",
+        "cpu-analytic-128",
+        "cpu-png-128",
+        "cpu-brick-128",
+        "cpu-analytic-256",
+        "cpu-png-256",
+        "cpu-brick-256",
+        "cpu-brick-128-x0.5",
+        "cpu-brick-128-x2",
+        "cpu-flat8-128",
+        "legacy-smoke-D",
+        "gpu-flat-128-D",
+        "gpu-analytic-128-D",
+        "gpu-analytic-ls-128-D",
+        "gpu-png-128-D",
+        "gpu-png-ls-128-D",
+        "gpu-brick-128-D",
+        "gpu-brick-ls-128-D",
+        "gpu-analytic-truth-128-D",
+        "gpu-brick-128-x0.5-D",
+        "gpu-brick-128-x2-D",
+        "gpu-png-128-E",
+        "gpu-brick-128-E",
+        "gpu-brick-128-120-D",
+        "gpu-brick-64-D",
+        "gpu-brick-256-D",
+        "gpu-brick-ls-256-D",
+        "gpu-brick-cavity-128-D",
+        "gpu-brick-cavity-128-E",
+        "gpu-brick-cavity-ls-128-D"
+      ]
+    }
+  ],
+  "archived_file_errors": [],
+  "numerical_core_unchanged_across_run_archives": true,
+  "missing_pre_run_production_spirv_ids": [
+    "cpu-analytic-64",
+    "cpu-png-64",
+    "cpu-brick-64",
+    "cpu-analytic-128",
+    "cpu-png-128",
+    "cpu-brick-128",
+    "cpu-analytic-256",
+    "cpu-png-256",
+    "cpu-brick-256",
+    "cpu-brick-128-x0.5",
+    "cpu-brick-128-x2",
+    "cpu-flat8-128",
+    "legacy-smoke-D",
+    "gpu-flat-128-D",
+    "gpu-analytic-128-D",
+    "gpu-analytic-ls-128-D",
+    "gpu-png-128-D",
+    "gpu-png-ls-128-D",
+    "gpu-brick-128-D",
+    "gpu-brick-ls-128-D",
+    "gpu-analytic-truth-128-D",
+    "gpu-brick-128-x0.5-D",
+    "gpu-brick-128-x2-D",
+    "gpu-png-128-E",
+    "gpu-brick-128-E",
+    "gpu-brick-128-120-D",
+    "gpu-brick-64-D",
+    "gpu-brick-256-D",
+    "gpu-brick-ls-256-D",
+    "gpu-brick-cavity-128-D",
+    "gpu-brick-cavity-128-E",
+    "gpu-brick-cavity-ls-128-D",
+    "gpu-brick-passthrough-128-D"
+  ],
+  "replay_arrays": {
+    "all_bit_equal": true,
+    "arrays": [
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "state-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "geometry-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "weights-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "concavity-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "state-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "geometry-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "weights-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "concavity-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "flux-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "alpha-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "state-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "geometry-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "weights-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "concavity-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "flux-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "alpha-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "state-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "geometry-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "weights-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "concavity-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "flux-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-128-D",
+        "b": "gpu-brick-replay-128-D",
+        "file": "alpha-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "state-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "geometry-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "weights-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "concavity-0.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "state-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "geometry-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "weights-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "concavity-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "flux-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "alpha-1.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "state-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "geometry-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "weights-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "concavity-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "flux-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "alpha-2.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "state-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "geometry-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "weights-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "concavity-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "flux-4.f32",
+        "bit_equal": true
+      },
+      {
+        "a": "gpu-brick-ls-128-D",
+        "b": "gpu-brick-ls-replay-128-D",
+        "file": "alpha-4.f32",
+        "bit_equal": true
+      }
+    ]
+  }
+}

@@ -16,7 +16,18 @@ This directory stores generated performance experiment data. Read the linked exp
 | `20261022` workload supplement | 357 completed runs adding workloads to the optimization study. | [comparison summary](20261022-workload-supplement/comparisons.md), [manifest](20261022-workload-supplement/manifest.json) |
 | `20261025` optimization round | Baseline and seven completed experiment folders: PERF007, PERF028, PERF036, PERF036-formats, PERF037, PERF037-lowmesh, and PERF038. | [baseline](20261025-optimization-round/baseline/comparisons.md), [PERF007](20261025-optimization-round/PERF007/comparisons.md), [PERF028](20261025-optimization-round/PERF028/comparisons.md), [PERF036](20261025-optimization-round/PERF036/comparisons.md), [PERF036-formats](20261025-optimization-round/PERF036-formats/comparisons.md), [PERF037](20261025-optimization-round/PERF037/comparisons.md), [PERF037-lowmesh](20261025-optimization-round/PERF037-lowmesh/comparisons.md), [PERF038](20261025-optimization-round/PERF038/comparisons.md), [study audit](20261025-optimization-round/study-audit.json) |
 
-The interpretation and adoption decision for performance work is recorded in [Performance Measurements](../Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md). The storage and ignore rules are described in [Raw Archive](00_Raw-Archive.md).
+The interpretation and adoption decision for performance work is recorded in [Performance Measurements](../Docs/Agent-Vault/05_Experiments/02_Performance-Measurements.md). The storage and ignore rules are described in [Raw Archive](00_Raw-Archive.md).
+
+## Restored historical studies
+
+The following tracked records were restored from `af8085be762bdf3a17d487ee6fe4a1d563f219a0` on 2026-11-10. This restores archived evidence, not a new measurement; locally ignored raw captures are not included in that commit.
+
+| Study | Entry point |
+|---|---|
+| State and geometry coupling | [20261026 study](20261026-coupling-study/study.json) |
+| Authoring readiness | [20261027 study](20261027-authoring-readiness/study.json) |
+| Meso reconstruction | [20261027 study](20261027-meso-study/study.json) |
+| Reaction comparison and Sparse Solver defaults | [20261108 study](20261108-reaction-transition-fps/study.json) |
 
 ## Layout for new studies
 

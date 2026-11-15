@@ -1,0 +1,647 @@
+{
+  "created_at": "2026-10-27T14:09:19.827050+09:00",
+  "scope": "Post-fix rendered correctness validation, not performance or human authoring study",
+  "runs": [
+    {
+      "id": "base",
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\base\\capture.jsonl",
+      "simulation_step_serial": 362,
+      "runtime_error_count": 0,
+      "first_runtime_error": null,
+      "submitted_frames": 362,
+      "sampled_frame_index": 359,
+      "sampled_frame_simulated_seconds": 0.01666666753590107,
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "totals": {
+        "heat": 116282.95175214234,
+        "ice": 877088.2744138241,
+        "waterfilm": 941580.4541478212
+      },
+      "instances": [
+        {
+          "instance": 0,
+          "state_sums": {
+            "heat": 16920.038872473822,
+            "ice": 391926.6452488899,
+            "waterfilm": 77351.61942020987
+          }
+        },
+        {
+          "instance": 2,
+          "state_sums": {
+            "heat": 62602.370005361816,
+            "ice": 176201.66519117355,
+            "waterfilm": 293076.60162272403
+          }
+        },
+        {
+          "instance": 4,
+          "state_sums": {
+            "heat": 36760.542874306695,
+            "ice": 308959.9639737606,
+            "waterfilm": 571152.2331048873
+          }
+        }
+      ],
+      "warning_lines": 20,
+      "camera": [
+        {
+          "camera_position": [
+            0.1142829954624176,
+            -6.899999618530273,
+            5.899999618530273
+          ],
+          "camera_target": [
+            0.0,
+            0.0,
+            0.11999999731779099
+          ],
+          "fov_degrees": 43.0,
+          "normalized_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "view_mode": 0
+        }
+      ],
+      "screenshot_sha256": "eec3af859cf6576ba569ff4a313a480c2609c4e48d0f2d5bbe70724a9c36b452"
+    },
+    {
+      "id": "threshold",
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\threshold\\capture.jsonl",
+      "simulation_step_serial": 362,
+      "runtime_error_count": 0,
+      "first_runtime_error": null,
+      "submitted_frames": 362,
+      "sampled_frame_index": 359,
+      "sampled_frame_simulated_seconds": 0.01666666753590107,
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "totals": {
+        "heat": 166494.53274797523,
+        "ice": 1022845.3972139359,
+        "waterfilm": 795823.3253669117
+      },
+      "instances": [
+        {
+          "instance": 0,
+          "state_sums": {
+            "heat": 48328.995046638716,
+            "ice": 436204.3573269844,
+            "waterfilm": 33073.9082011492
+          }
+        },
+        {
+          "instance": 2,
+          "state_sums": {
+            "heat": 75201.80578915852,
+            "ice": 217319.89465999603,
+            "waterfilm": 251958.35543864573
+          }
+        },
+        {
+          "instance": 4,
+          "state_sums": {
+            "heat": 42963.731912177995,
+            "ice": 369321.1452269554,
+            "waterfilm": 510791.0617271168
+          }
+        }
+      ],
+      "warning_lines": 20,
+      "camera": [
+        {
+          "camera_position": [
+            0.1142829954624176,
+            -6.899999618530273,
+            5.899999618530273
+          ],
+          "camera_target": [
+            0.0,
+            0.0,
+            0.11999999731779099
+          ],
+          "fov_degrees": 43.0,
+          "normalized_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "view_mode": 0
+        }
+      ],
+      "screenshot_sha256": "4cc0982be09c4f9900ebc74d747c003af01c62234b7af0a60d9bdf66961ade61"
+    },
+    {
+      "id": "wetness",
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\wetness\\capture.jsonl",
+      "simulation_step_serial": 362,
+      "runtime_error_count": 0,
+      "first_runtime_error": null,
+      "submitted_frames": 362,
+      "sampled_frame_index": 359,
+      "sampled_frame_simulated_seconds": 0.01666666753590107,
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm",
+        "wetness"
+      ],
+      "totals": {
+        "heat": 119102.42705799494,
+        "ice": 865551.4979817867,
+        "waterfilm": 896127.6690269747,
+        "wetness": 56989.57458049771
+      },
+      "instances": [
+        {
+          "instance": 0,
+          "state_sums": {
+            "heat": 17079.277088634095,
+            "ice": 391889.32220697403,
+            "waterfilm": 76048.58703416579,
+            "wetness": 1340.358484694044
+          }
+        },
+        {
+          "instance": 2,
+          "state_sums": {
+            "heat": 63267.018921516974,
+            "ice": 175808.50266838074,
+            "waterfilm": 288981.6451556321,
+            "wetness": 4488.111243135256
+          }
+        },
+        {
+          "instance": 4,
+          "state_sums": {
+            "heat": 38756.131047843875,
+            "ice": 297853.67310643196,
+            "waterfilm": 531097.4368371768,
+            "wetness": 51161.10485266841
+          }
+        }
+      ],
+      "warning_lines": 20,
+      "camera": [
+        {
+          "camera_position": [
+            0.1142829954624176,
+            -6.899999618530273,
+            5.899999618530273
+          ],
+          "camera_target": [
+            0.0,
+            0.0,
+            0.11999999731779099
+          ],
+          "fov_degrees": 43.0,
+          "normalized_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "view_mode": 0
+        }
+      ],
+      "screenshot_sha256": "39bbb479aaf81d5f825d74b982a648558f584a6fec42acba9b7f2a5e8b739716"
+    },
+    {
+      "id": "absorbedwetness",
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\absorbedwetness\\capture.jsonl",
+      "simulation_step_serial": 362,
+      "runtime_error_count": 0,
+      "first_runtime_error": null,
+      "submitted_frames": 362,
+      "sampled_frame_index": 359,
+      "sampled_frame_simulated_seconds": 0.01666666753590107,
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "totals": {
+        "absorbedwetness": 56989.57458049771,
+        "heat": 119102.42705799494,
+        "ice": 865551.4979817867,
+        "waterfilm": 896127.6690269747
+      },
+      "instances": [
+        {
+          "instance": 0,
+          "state_sums": {
+            "absorbedwetness": 1340.358484694044,
+            "heat": 17079.277088634095,
+            "ice": 391889.32220697403,
+            "waterfilm": 76048.58703416579
+          }
+        },
+        {
+          "instance": 2,
+          "state_sums": {
+            "absorbedwetness": 4488.111243135256,
+            "heat": 63267.018921516974,
+            "ice": 175808.50266838074,
+            "waterfilm": 288981.6451556321
+          }
+        },
+        {
+          "instance": 4,
+          "state_sums": {
+            "absorbedwetness": 51161.10485266841,
+            "heat": 38756.131047843875,
+            "ice": 297853.67310643196,
+            "waterfilm": 531097.4368371768
+          }
+        }
+      ],
+      "warning_lines": 20,
+      "camera": [
+        {
+          "camera_position": [
+            0.1142829954624176,
+            -6.899999618530273,
+            5.899999618530273
+          ],
+          "camera_target": [
+            0.0,
+            0.0,
+            0.11999999731779099
+          ],
+          "fov_degrees": 43.0,
+          "normalized_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "view_mode": 0
+        }
+      ],
+      "screenshot_sha256": "c52603473ed7c7bddc35791b44ebd77d27745c1164415adcead2b35e046bc33e"
+    },
+    {
+      "id": "reuse20",
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\reuse20\\capture.jsonl",
+      "simulation_step_serial": 362,
+      "runtime_error_count": 0,
+      "first_runtime_error": null,
+      "submitted_frames": 362,
+      "sampled_frame_index": 359,
+      "sampled_frame_simulated_seconds": 0.01666666753590107,
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "totals": {
+        "absorbedwetness": 76945.89259708874,
+        "heat": 120969.3444823111,
+        "ice": 888831.5806894302,
+        "waterfilm": 897325.7706578049
+      },
+      "instances": [
+        {
+          "instance": 0,
+          "state_sums": {
+            "absorbedwetness": 3070.0880715863477,
+            "heat": 17439.17716108565,
+            "ice": 401424.4550395012,
+            "waterfilm": 76746.86556505992
+          }
+        },
+        {
+          "instance": 2,
+          "state_sums": {
+            "absorbedwetness": 10396.980376737862,
+            "heat": 64237.927342498806,
+            "ice": 181750.29360342026,
+            "waterfilm": 289094.12430735666
+          }
+        },
+        {
+          "instance": 4,
+          "state_sums": {
+            "absorbedwetness": 63478.82414876452,
+            "heat": 39292.23997872664,
+            "ice": 305656.8320465088,
+            "waterfilm": 531484.7807853883
+          }
+        }
+      ],
+      "warning_lines": 20,
+      "camera": [
+        {
+          "camera_position": [
+            0.1142829954624176,
+            -6.899999618530273,
+            5.899999618530273
+          ],
+          "camera_target": [
+            0.0,
+            0.0,
+            0.11999999731779099
+          ],
+          "fov_degrees": 43.0,
+          "normalized_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "view_mode": 0
+        }
+      ],
+      "screenshot_sha256": "d2c2b08fe1910b2a095062e37c1963c4accfef298c4770e57a323b0442e82eb2"
+    },
+    {
+      "id": "absorbedwetness-repeat",
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\layout-lifetime-fix\\render\\raw\\absorbedwetness-repeat\\capture.jsonl",
+      "simulation_step_serial": 362,
+      "runtime_error_count": 0,
+      "first_runtime_error": null,
+      "submitted_frames": 362,
+      "sampled_frame_index": 359,
+      "sampled_frame_simulated_seconds": 0.01666666753590107,
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "totals": {
+        "absorbedwetness": 56989.57458049771,
+        "heat": 119102.42705799494,
+        "ice": 865551.4979817867,
+        "waterfilm": 896127.6690269747
+      },
+      "instances": [
+        {
+          "instance": 0,
+          "state_sums": {
+            "absorbedwetness": 1340.358484694044,
+            "heat": 17079.277088634095,
+            "ice": 391889.32220697403,
+            "waterfilm": 76048.58703416579
+          }
+        },
+        {
+          "instance": 2,
+          "state_sums": {
+            "absorbedwetness": 4488.111243135256,
+            "heat": 63267.018921516974,
+            "ice": 175808.50266838074,
+            "waterfilm": 288981.6451556321
+          }
+        },
+        {
+          "instance": 4,
+          "state_sums": {
+            "absorbedwetness": 51161.10485266841,
+            "heat": 38756.131047843875,
+            "ice": 297853.67310643196,
+            "waterfilm": 531097.4368371768
+          }
+        }
+      ],
+      "warning_lines": 20,
+      "camera": [
+        {
+          "camera_position": [
+            0.1142829954624176,
+            -6.899999618530273,
+            5.899999618530273
+          ],
+          "camera_target": [
+            0.0,
+            0.0,
+            0.11999999731779099
+          ],
+          "fov_degrees": 43.0,
+          "normalized_rect": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "view_mode": 0
+        }
+      ],
+      "screenshot_sha256": "0107238543dc41f25b9065ff345bafef0f43ecad1c98947251e8e95e683a707b"
+    }
+  ],
+  "comparisons": [
+    {
+      "a": "base",
+      "b": "threshold",
+      "named_states": {
+        "heat": {
+          "l1": 50214.68936270367,
+          "max_absolute": 3.4355324506759644,
+          "bit_equal": false
+        },
+        "ice": {
+          "l1": 145757.12280011177,
+          "max_absolute": 8.780250549316406,
+          "bit_equal": false
+        },
+        "waterfilm": {
+          "l1": 145823.42238194862,
+          "max_absolute": 9.416378021240234,
+          "bit_equal": false
+        }
+      },
+      "all_named_states_bit_equal": false,
+      "pixels_equal": false,
+      "changed_pixels": 33828,
+      "mean_absolute_rgb_8bit": 0.21194914641203705,
+      "max_absolute_rgb_8bit": 74,
+      "caution": "Whole-frame pixel difference is descriptive, not a quality metric or a matched-state-time causal proof"
+    },
+    {
+      "a": "wetness",
+      "b": "absorbedwetness",
+      "named_states": {
+        "heat": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        },
+        "ice": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        },
+        "waterfilm": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        },
+        "wetness": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        }
+      },
+      "all_named_states_bit_equal": true,
+      "pixels_equal": false,
+      "changed_pixels": 1331,
+      "mean_absolute_rgb_8bit": 0.003591579861111111,
+      "max_absolute_rgb_8bit": 58,
+      "caution": "Whole-frame pixel difference is descriptive, not a quality metric or a matched-state-time causal proof"
+    },
+    {
+      "a": "absorbedwetness",
+      "b": "absorbedwetness-repeat",
+      "named_states": {
+        "absorbedwetness": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        },
+        "heat": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        },
+        "ice": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        },
+        "waterfilm": {
+          "l1": 0.0,
+          "max_absolute": 0.0,
+          "bit_equal": true
+        }
+      },
+      "all_named_states_bit_equal": true,
+      "pixels_equal": false,
+      "changed_pixels": 187,
+      "mean_absolute_rgb_8bit": 0.000984519675925926,
+      "max_absolute_rgb_8bit": 89,
+      "caution": "Whole-frame pixel difference is descriptive, not a quality metric or a matched-state-time causal proof"
+    },
+    {
+      "a": "absorbedwetness",
+      "b": "reuse20",
+      "named_states": {
+        "absorbedwetness": {
+          "l1": 21238.14120730334,
+          "max_absolute": 2.6015345603227615,
+          "bit_equal": false
+        },
+        "heat": {
+          "l1": 9867.327308255302,
+          "max_absolute": 13.188570022583008,
+          "bit_equal": false
+        },
+        "ice": {
+          "l1": 46612.309579372406,
+          "max_absolute": 21.23426628112793,
+          "bit_equal": false
+        },
+        "waterfilm": {
+          "l1": 37445.32677894004,
+          "max_absolute": 15.25260591506958,
+          "bit_equal": false
+        }
+      },
+      "all_named_states_bit_equal": false,
+      "pixels_equal": false,
+      "changed_pixels": 98373,
+      "mean_absolute_rgb_8bit": 3.164669777199074,
+      "max_absolute_rgb_8bit": 158,
+      "caution": "Whole-frame pixel difference is descriptive, not a quality metric or a matched-state-time causal proof"
+    }
+  ],
+  "archive_audit": [
+    {
+      "kind": "geometry",
+      "files": 399,
+      "mismatch": []
+    },
+    {
+      "kind": "render",
+      "files": 427,
+      "mismatch": []
+    }
+  ],
+  "path_rebasing_checks": [
+    {
+      "id": "base",
+      "same_resolved_assets": true,
+      "same_scene_except_paths": true,
+      "same_profile_map_settings": true
+    },
+    {
+      "id": "threshold",
+      "same_resolved_assets": true,
+      "same_scene_except_paths": true,
+      "same_profile_map_settings": true
+    },
+    {
+      "id": "wetness",
+      "same_resolved_assets": true,
+      "same_scene_except_paths": true,
+      "same_profile_map_settings": true
+    },
+    {
+      "id": "absorbedwetness",
+      "same_resolved_assets": true,
+      "same_scene_except_paths": true,
+      "same_profile_map_settings": true
+    },
+    {
+      "id": "reuse20",
+      "same_resolved_assets": true,
+      "same_scene_except_paths": true,
+      "same_profile_map_settings": true
+    },
+    {
+      "id": "absorbedwetness-repeat",
+      "same_resolved_assets": true,
+      "same_scene_except_paths": true,
+      "same_profile_map_settings": true
+    }
+  ],
+  "audit_errors": [],
+  "capture_selection": null,
+  "changed_production_inputs_since_blocked_attempt": [
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\DescriptorResources.h",
+    "Source\\SurfaceState\\GPU\\Resources\\SurfaceGPUResourceManager.cpp"
+  ],
+  "acceptance": "passed",
+  "closeup_figure": {
+    "file": "figures/wetness-binding-comparison.png",
+    "crop_xyxy": [
+      225,
+      250,
+      1055,
+      555
+    ],
+    "scope": "Identical fixed crop for display only, no color/difference amplification; full frames retained"
+  },
+  "human_sessions": 0,
+  "human_productivity": "not_measured",
+  "independent_quality_gate": "not_validated",
+  "full_material_ledger": "not_exported_by_this_app_capture; final sums do not prove conservation",
+  "image_state_time_limit": "After two timestamp-drain frames, not exactly the screenshot step",
+  "reaction_diagnostic_limit": "Exported reaction flags describe the final scratch buffer, not a step-by-step audit of the full run",
+  "performance": "Single captured frame per condition is not a performance measurement",
+  "temporal_scope": "Approximately six seconds of demo playback; not the full fourteen-second sequence"
+}

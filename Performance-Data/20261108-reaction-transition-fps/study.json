@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "study_id": "20261108-reaction-transition-fps",
+  "question": "Can simulating only the visible plate top restore interactive FPS in ReactionTransitionComparison without changing the demonstration?",
+  "status": "completed",
+  "created_at": "2026-11-08T05:07:44+09:00",
+  "updated_at": "2026-11-08T05:27:07+09:00",
+  "experiments": [
+    {
+      "id": "PERF-044-plate-top-only",
+      "status": "completed",
+      "question": "What is the frame and Pass 2 cost of replacing three six-surface simulated cubes with simulated top planes and render-only sides?",
+      "path": "PERF-044-plate-top-only/"
+    },
+    {
+      "id": "PERF-045-editor-sparse-default",
+      "status": "completed",
+      "question": "How much does enabling sparse solver scheduling change the comparison scene's editor-mode frame time?",
+      "path": "PERF-045-editor-sparse-default/"
+    }
+  ],
+  "report": "../../Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md"
+}

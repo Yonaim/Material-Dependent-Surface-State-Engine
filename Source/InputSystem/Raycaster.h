@@ -11,17 +11,17 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 
 namespace MDSS
 {
 
-    class TScene;
+    class FScene;
 
-    struct TSurfaceRayHit
+    struct FSurfaceRayHit
     {
-        bool          Hit = false;
+        bool          bHit = false;
         std::size_t   InstanceIndex = 0;
         std::uint32_t TriangleID = 0;
         glm::vec3     Barycentric{0.0F};
@@ -31,11 +31,11 @@ namespace MDSS
         float         Distance = 0.0F;
     };
 
-    class TRaycaster final
+    class FRaycaster final
     {
     public:
         /** @brief Return the nearest front-facing mesh triangle hit by a normalized world-space ray. */
-        [[nodiscard]] static TSurfaceRayHit
-        Cast(const TScene& Scene, const Asset::TAssetManager& Assets, glm::vec3 WorldOrigin, glm::vec3 WorldDirection);
+        [[nodiscard]] static FSurfaceRayHit
+        Cast(const FScene& Scene, const Asset::FAssetManager& Assets, glm::vec3 WorldOrigin, glm::vec3 WorldDirection);
     };
 } // namespace MDSS

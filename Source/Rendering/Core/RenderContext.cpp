@@ -13,9 +13,13 @@
 
 namespace MDSS::Rendering
 {
-#pragma region Render_Context_Lifecycle
+// ============================================================
+// 00. Render Context Lifecycle
+// ============================================================
+#pragma region 00_Render_Context_Lifecycle
+// 여러 in-flight frame의 동기화·명령 자원을 생성하고 해제한다.
 
-    TRenderContext::TRenderContext(const GPU::TVulkanContext& Context)
+    FRenderContext::FRenderContext(const GPU::FVulkanContext& Context)
         : Device(Context.GetDevice()), CommandPool(Context.GetCommands().GetPool()),
           CommandBuffers(Context.GetCommands().AllocatePrimary(static_cast<std::uint32_t>(MaxFramesInFlight)))
     {
@@ -37,6 +41,7 @@ namespace MDSS::Rendering
                     {
                         vkDestroySemaphore(Device, ImageAvailableSemaphores[Created], nullptr);
                     }
+
                     if (InFlightFences[Created] != VK_NULL_HANDLE)
                     {
                         vkDestroyFence(Device, InFlightFences[Created], nullptr);
@@ -50,12 +55,12 @@ namespace MDSS::Rendering
             }
         }
 
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Frame synchronization initialized with " + std::to_string(MaxFramesInFlight) +
                           " frames in flight.");
     }
 
-    TRenderContext::~TRenderContext()
+    FRenderContext::~FRenderContext()
     {
         for (std::size_t Index = 0; Index < MaxFramesInFlight; ++Index)
         {
@@ -63,6 +68,7 @@ namespace MDSS::Rendering
             {
                 vkDestroySemaphore(Device, ImageAvailableSemaphores[Index], nullptr);
             }
+
             if (InFlightFences[Index] != VK_NULL_HANDLE)
             {
                 vkDestroyFence(Device, InFlightFences[Index], nullptr);
@@ -79,9 +85,13 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Frame_Synchronization
+// ============================================================
+// 01. Frame Synchronization
+// ============================================================
+#pragma region 01_Frame_Synchronization
+// frame 자원 재사용 전에 완료 fence와 semaphore 순서를 맞춘다.
 
-    void TRenderContext::WaitForCurrentFrame() const
+    void FRenderContext::WaitForCurrentFrame() const
     {
         if (vkWaitForFences(
                 Device, 1, &InFlightFences[CurrentFrame], VK_TRUE, std::numeric_limits<std::uint64_t>::max()) !=
@@ -91,7 +101,7 @@ namespace MDSS::Rendering
         }
     }
 
-    void TRenderContext::ResetCurrentFence() const
+    void FRenderContext::ResetCurrentFence() const
     {
         if (vkResetFences(Device, 1, &InFlightFences[CurrentFrame]) != VK_SUCCESS)
         {
@@ -99,31 +109,35 @@ namespace MDSS::Rendering
         }
     }
 
-    void TRenderContext::AdvanceFrame() noexcept
+    void FRenderContext::AdvanceFrame() noexcept
     {
         CurrentFrame = (CurrentFrame + 1) % static_cast<std::uint32_t>(MaxFramesInFlight);
     }
 
 #pragma endregion
 
-#pragma region Frame_Resource_Access
+// ============================================================
+// 02. Frame Resource Access
+// ============================================================
+#pragma region 02_Frame_Resource_Access
+// 현재 in-flight slot에 대응하는 command·동기화 자원을 제공한다.
 
-    std::uint32_t TRenderContext::GetCurrentFrameIndex() const noexcept
+    std::uint32_t FRenderContext::GetCurrentFrameIndex() const noexcept
     {
         return CurrentFrame;
     }
 
-    VkCommandBuffer TRenderContext::GetCurrentCommandBuffer() const noexcept
+    VkCommandBuffer FRenderContext::GetCurrentCommandBuffer() const noexcept
     {
         return CommandBuffers[CurrentFrame];
     }
 
-    VkSemaphore TRenderContext::GetImageAvailableSemaphore() const noexcept
+    VkSemaphore FRenderContext::GetImageAvailableSemaphore() const noexcept
     {
         return ImageAvailableSemaphores[CurrentFrame];
     }
 
-    VkFence TRenderContext::GetInFlightFence() const noexcept
+    VkFence FRenderContext::GetInFlightFence() const noexcept
     {
         return InFlightFences[CurrentFrame];
     }

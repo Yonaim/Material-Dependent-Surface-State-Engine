@@ -15,35 +15,35 @@
 
 namespace MDSS::SurfaceState
 {
-    struct TRegisteredSurfaceStateTransition
+    struct FRegisteredSurfaceStateTransition
     {
-        TStateId Source = InvalidStateId;
-        TStateId Target = InvalidStateId;
+        FStateId Source = InvalidStateId;
+        FStateId Target = InvalidStateId;
         float    Threshold = 0.0F;
         float    TransitionRate = 0.0F;
     };
 
-    struct TRegisteredSurfaceResponseProfileData
+    struct FRegisteredSurfaceResponseProfileData
     {
-        std::vector<std::optional<TSurfaceStateParameters>> States;
-        std::vector<TRegisteredSurfaceStateTransition>      Transitions;
+        std::vector<std::optional<FSurfaceStateParameters>> States;
+        std::vector<FRegisteredSurfaceStateTransition>      Transitions;
     };
 
-    class TSurfaceStateRegistry final
+    class FSurfaceStateRegistry final
     {
     public:
         // Registry construction
-        explicit TSurfaceStateRegistry(const std::vector<TSurfaceResponseProfileData>& Profiles);
+        explicit FSurfaceStateRegistry(const std::vector<FSurfaceResponseProfileData>& Profiles);
 
         // State lookup and profile resolution
         [[nodiscard]] std::size_t        GetStateCount() const noexcept;
-        [[nodiscard]] TStateId           GetStateId(std::string_view Name) const;
-        [[nodiscard]] const std::string& GetStateName(TStateId ID) const;
-        [[nodiscard]] TRegisteredSurfaceResponseProfileData
-        ResolveProfile(const TSurfaceResponseProfileData& Profile) const;
+        [[nodiscard]] FStateId           GetStateId(std::string_view Name) const;
+        [[nodiscard]] const std::string& GetStateName(FStateId ID) const;
+        [[nodiscard]] FRegisteredSurfaceResponseProfileData
+        ResolveProfile(const FSurfaceResponseProfileData& Profile) const;
 
     private:
         std::vector<std::string>                  Names;
-        std::unordered_map<std::string, TStateId> IDs;
+        std::unordered_map<std::string, FStateId> IDs;
     };
 } // namespace MDSS::SurfaceState

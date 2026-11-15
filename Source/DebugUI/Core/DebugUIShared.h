@@ -1,12 +1,20 @@
-#pragma once
 /**
- * @file DebugUI.cpp
- * @brief ImGui 기반 카메라·렌더 설정과 로그 진단 UI.
+ * @file DebugUIShared.h
+ * @brief Debug UI translation unit이 공유하는 의존성과 widget·표시 helper를 제공한다.
  */
+
+#pragma once
 
 #include "Application/EngineConfig.h"
 #include "Application/SceneFileDialog.h"
+// ============================================================
+// 00. Shared UI Dependencies
+// ============================================================
+#pragma region 00_Shared_UI_Dependencies
+// UI translation unit들이 공유하는 자원·widget 형식을 포함한다.
+
 #include "Application/Window.h"
+#include "DebugUI/Panels/RenderViewDescriptions.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "DebugUI/Core/DebugUI.h"
 #include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
@@ -50,36 +58,45 @@
 #include <string_view>
 #include <vector>
 
+#pragma endregion
+
+// ============================================================
+// 01. UI Widgets and Display Helpers
+// ============================================================
+#pragma region 01_UI_Widgets_and_Display_Helpers
+// 표시 형식과 반복 widget 동작을 여러 패널에서 재사용한다.
+
 namespace MDSS
 {
     namespace
     {
-        ImVec4 GetLogColor(TLogLevel Level)
+        ImVec4 GetLogColor(ELogLevel Level)
         {
             switch (Level)
             {
-                case TLogLevel::Verbose:
+                case ELogLevel::Verbose:
                     return {0.55F, 0.55F, 0.55F, 1.0F}; // 회색
-                case TLogLevel::Debug:
+                case ELogLevel::Debug:
                     return {1.00F, 1.00F, 1.00F, 1.0F}; // 흰색
-                case TLogLevel::Info:
+                case ELogLevel::Info:
                     return {0.28F, 0.52F, 0.86F, 1.0F}; // 파랑
-                case TLogLevel::Warning:
+                case ELogLevel::Warning:
                     return {1.00F, 0.84F, 0.25F, 1.0F}; // 노랑
-                case TLogLevel::Error:
+                case ELogLevel::Error:
                     return {1.00F, 0.30F, 0.30F, 1.0F}; // 빨강
-                case TLogLevel::Count:
+                case ELogLevel::Count:
                     break;
             }
+
             return {1.0F, 1.0F, 1.0F, 1.0F};
         }
 
-        constexpr std::array<TLogLevel, 5> DisplayedLevels = {
-            TLogLevel::Verbose,
-            TLogLevel::Debug,
-            TLogLevel::Info,
-            TLogLevel::Warning,
-            TLogLevel::Error,
+        constexpr std::array<ELogLevel, 5> DisplayedLevels = {
+            ELogLevel::Verbose,
+            ELogLevel::Debug,
+            ELogLevel::Info,
+            ELogLevel::Warning,
+            ELogLevel::Error,
         };
 
         constexpr std::array<std::array<float, 2>, 9> CameraViewPresetPitchYawDegrees = {{
@@ -148,22 +165,26 @@ namespace MDSS
             {
                 SetDescriptionTooltip(Tooltip);
             }
+
             ImGui::SameLine(0.0F, 4.0F);
             ImGui::TextUnformatted(Label);
+
             if (Tooltip != nullptr && ImGui::IsItemHovered())
             {
                 SetDescriptionTooltip(Tooltip);
             }
+
             ImGui::PopID();
             ImGui::SameLine(0.0F, 10.0F);
         }
 
         constexpr float LabeledControlColumnWidth = 140.0F;
 
-        void DollyCamera(TCamera& CameraData, float Steps)
+        void DollyCamera(FCamera& CameraData, float Steps)
         {
             const glm::vec3 ViewDirection = CameraData.GetTarget() - CameraData.GetPosition();
             const float     Distance = glm::length(ViewDirection);
+
             if (Distance <= 1.0e-6F)
             {
                 return;
@@ -202,12 +223,14 @@ namespace MDSS
                 ImGui::IsMouseHoveringRect(Position, ImVec2(Position.x + Size.x, Position.y + Size.y));
             ImGuiIO&   IO = ImGui::GetIO();
             const bool bWasControlDown = IO.KeyCtrl;
+
             if (bDoubleClicked)
             {
                 // Dear ImGui's slider input mode is normally entered with Ctrl+click.
                 // Route a double-click through that built-in path for this widget only.
                 IO.KeyCtrl = true;
             }
+
             const bool bChanged = ImGui::SliderFloat(Label, Value, Minimum, Maximum, Format, Flags);
             IO.KeyCtrl = bWasControlDown;
             return bChanged;
@@ -227,10 +250,12 @@ namespace MDSS
                 ImGui::IsMouseHoveringRect(Position, ImVec2(Position.x + Size.x, Position.y + Size.y));
             ImGuiIO&   IO = ImGui::GetIO();
             const bool bWasControlDown = IO.KeyCtrl;
+
             if (bDoubleClicked)
             {
                 IO.KeyCtrl = true;
             }
+
             const bool bChanged = ImGui::SliderInt(Label, Value, Minimum, Maximum, Format, Flags);
             IO.KeyCtrl = bWasControlDown;
             return bChanged;
@@ -243,6 +268,7 @@ namespace MDSS
             ImGui::SetNextItemWidth(-1.0F);
             const bool bChanged = SliderFloatWithDoubleClickInput("##Value", Value, Minimum, Maximum, Format);
             ImGui::PopID();
+
             return bChanged;
         }
 
@@ -269,6 +295,7 @@ namespace MDSS
             const auto ToValue = [&](float Position)
             { return std::clamp((Position - TrackMinimum) / TrackWidth, 0.0F, 1.0F); };
             bool bChanged = false;
+
             if (ImGui::IsItemClicked())
             {
                 const float MouseX = ImGui::GetIO().MousePos.x;
@@ -277,9 +304,11 @@ namespace MDSS
                                                                                                                  : 1;
                 Storage->SetInt(WidgetID, ActiveHandle);
             }
+
             if (ImGui::IsItemActive())
             {
                 const float NewValue = ToValue(ImGui::GetIO().MousePos.x);
+
                 if (ActiveHandle == 0)
                 {
                     const float UpdatedValue = std::min(NewValue, *MaximumValue - MinimumGap);
@@ -313,6 +342,7 @@ namespace MDSS
             DrawList->AddCircleFilled({ToPosition(*MinimumValue), TrackY}, HandleRadius, HandleColor);
             DrawList->AddCircleFilled({ToPosition(*MaximumValue), TrackY}, HandleRadius, HandleColor);
             ImGui::PopID();
+
             return bChanged;
         }
 
@@ -329,6 +359,7 @@ namespace MDSS
             ImGui::SetNextItemWidth(-1.0F);
             const bool bChanged = ImGui::DragFloat("##Value", Value, Speed, Minimum, Maximum, Format, Flags);
             ImGui::PopID();
+
             return bChanged;
         }
 
@@ -339,6 +370,7 @@ namespace MDSS
             ImGui::SetNextItemWidth(-1.0F);
             const bool bChanged = ImGui::DragFloat2("##Value", Value, Speed);
             ImGui::PopID();
+
             return bChanged;
         }
 
@@ -349,6 +381,7 @@ namespace MDSS
             ImGui::SetNextItemWidth(-1.0F);
             const bool bChanged = ImGui::DragFloat3("##Value", Value, Speed);
             ImGui::PopID();
+
             return bChanged;
         }
 
@@ -360,10 +393,12 @@ namespace MDSS
             ImGui::PushID(Label);
             BeginLabeledControlRow(Label);
             ImGui::SetNextItemWidth(Width > 0.0F ? Width : -1.0F);
+
             if (ImGui::BeginCombo("##Value", Preview, Flags))
             {
                 return true;
             }
+
             ImGui::PopID();
             return false;
         }
@@ -377,9 +412,11 @@ namespace MDSS
         bool ProjectToScreen(glm::vec3 World, const glm::mat4& VP, ImVec2 Size, ImVec2& Screen, float* Depth = nullptr)
         {
             const glm::vec4 Clip = VP * glm::vec4(World, 1.0F);
+
             if (Clip.w <= 1.0e-5F)
                 return false;
             const glm::vec3 NDC = glm::vec3(Clip) / Clip.w;
+
             if (Depth != nullptr)
                 *Depth = NDC.z;
             Screen = {((NDC.x + 1.0F) * 0.5F) * Size.x, ((NDC.y + 1.0F) * 0.5F) * Size.y};
@@ -390,11 +427,13 @@ namespace MDSS
         {
             const float DX = B.x - A.x, DY = B.y - A.y;
             const float Denominator = DX * DX + DY * DY;
+
             if (Denominator < 1.0e-6F)
             {
                 Along = 0.0F;
                 return std::hypot(P.x - A.x, P.y - A.y);
             }
+
             Along = std::clamp(((P.x - A.x) * DX + (P.y - A.y) * DY) / Denominator, 0.0F, 1.0F);
             return std::hypot(P.x - A.x - Along * DX, P.y - A.y - Along * DY);
         }
@@ -405,6 +444,7 @@ namespace MDSS
             {
                 return true;
             }
+
             return std::search(Text.begin(),
                                Text.end(),
                                Search.begin(),
@@ -416,7 +456,7 @@ namespace MDSS
                                }) != Text.end();
         }
 
-        struct TPerformanceMemoryEstimate
+        struct FPerformanceMemoryEstimate
         {
             double RawFluxCacheBytes = 0.0;
             double RawFluxSavingsBytes = 0.0;
@@ -428,10 +468,11 @@ namespace MDSS
             double SparseSimulationGeometryBytes = 0.0;
         };
 
-        TPerformanceMemoryEstimate
-        EstimatePerformanceMemory(const SurfaceState::TSurfaceGPUResourceManager& GPUResources)
+        FPerformanceMemoryEstimate
+        EstimatePerformanceMemory(const SurfaceState::FSurfaceGPUResourceManager& GPUResources)
         {
-            TPerformanceMemoryEstimate Estimate;
+            FPerformanceMemoryEstimate Estimate;
+
             for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
             {
                 if (GPUResources.GetInstanceDescriptors(Instance) == nullptr)
@@ -439,12 +480,16 @@ namespace MDSS
                 const double Texels = static_cast<double>(GPUResources.GetInstanceTexelCount(Instance));
                 const double Channels = static_cast<double>(GPUResources.GetInstanceChannelCount(Instance));
                 const double Workgroups = std::ceil(Texels / 64.0);
+
                 // The RawOutgoing allocation always reserves eight float values per state scalar for the cache.
                 Estimate.RawFluxCacheBytes += Texels * Channels * 8.0 * sizeof(float);
+
                 // Compact FP16 storage would halve the eight directional flux values.
                 Estimate.RawFluxSavingsBytes += Texels * Channels * 8.0 * sizeof(float) * 0.5;
+
                 // Eight float TransferWeights become four packed uint words per texel.
                 Estimate.DynamicWeightSavingsBytes += Texels * 16.0;
+
                 // These are disjoint regions inside the always-reserved AccumulationHeight metadata buffer.
                 Estimate.SparseSolverWorkgroupBytes += (6.0 + 4.0 * Workgroups) * sizeof(std::uint32_t);
                 Estimate.ActiveChannelMaskBytes += 2.0 * sizeof(std::uint32_t);
@@ -452,6 +497,7 @@ namespace MDSS
                 Estimate.SparseAccumulationHeightBytes += (3.0 + 2.0 * Workgroups) * sizeof(std::uint32_t);
                 Estimate.SparseSimulationGeometryBytes += (3.0 + 2.0 * Workgroups) * sizeof(std::uint32_t);
             }
+
             return Estimate;
         }
 
@@ -460,6 +506,7 @@ namespace MDSS
             constexpr double KiB = 1024.0;
             constexpr double MiB = KiB * KiB;
             char             Buffer[64];
+
             if (Bytes >= MiB)
                 std::snprintf(Buffer, sizeof(Buffer), "%.2f MiB", Bytes / MiB);
             else if (Bytes >= KiB)
@@ -471,3 +518,5 @@ namespace MDSS
     } // 내부 네임스페이스
 
 }
+
+#pragma endregion

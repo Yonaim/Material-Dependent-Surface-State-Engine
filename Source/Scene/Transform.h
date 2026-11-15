@@ -10,7 +10,7 @@
 
 namespace MDSS
 {
-    struct TTransform
+    struct FTransform
     {
         glm::vec3 Position{0.0F, 0.0F, 0.0F};
         glm::vec3 RotationDegrees{0.0F, 0.0F, 0.0F};
@@ -24,6 +24,7 @@ namespace MDSS
             Matrix = glm::rotate(Matrix, glm::radians(RotationDegrees.y), glm::vec3(0.0F, 1.0F, 0.0F));
             Matrix = glm::rotate(Matrix, glm::radians(RotationDegrees.z), glm::vec3(0.0F, 0.0F, 1.0F));
             Matrix = glm::scale(Matrix, Scale);
+
             return Matrix;
         }
     };

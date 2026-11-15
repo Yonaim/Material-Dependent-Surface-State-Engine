@@ -10,38 +10,39 @@
 
 #include <array>
 #include <map>
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
 namespace MDSS::Rendering
 {
     /** @brief Detects walls and packs only active segments for indirect drawing. */
-    class TAccumulationOverlaySides final
+    class FAccumulationOverlaySides final
     {
     public:
         // Overlay resource lifecycle
-        struct TTriangleActivity
+        struct FTriangleActivity
         {
             std::uint64_t Active = 0;
             std::uint64_t Total = 0;
         };
 
-        TAccumulationOverlaySides(VkPhysicalDevice      PhysicalDevice,
+        FAccumulationOverlaySides(VkPhysicalDevice      PhysicalDevice,
                                   VkDevice              Device,
                                   VkDescriptorSetLayout SurfaceLayout,
                                   VkDescriptorSetLayout ComputedLayout,
                                   std::size_t           MaxInstances);
-        ~TAccumulationOverlaySides();
-        TAccumulationOverlaySides(const TAccumulationOverlaySides&) = delete;
-        TAccumulationOverlaySides& operator=(const TAccumulationOverlaySides&) = delete;
+        ~FAccumulationOverlaySides();
+        FAccumulationOverlaySides(const FAccumulationOverlaySides&) = delete;
+        FAccumulationOverlaySides& operator=(const FAccumulationOverlaySides&) = delete;
 
         // Overlay draw buffers and frame readback
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept
         {
             return OutputLayout;
         }
+
         [[nodiscard]] VkDescriptorSet
         GetSet(std::size_t Instance, std::uint32_t Channel, std::uint32_t MeshResolution) const;
         [[nodiscard]] std::uint32_t
@@ -55,29 +56,31 @@ namespace MDSS::Rendering
         [[nodiscard]] VkDeviceSize
         GetTopIndexOffset(std::size_t Instance, std::uint32_t Channel, std::uint32_t MeshResolution) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
-        [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
+        [[nodiscard]] FTriangleActivity CompleteFrame(std::size_t FrameIndex);
+
         // Overlay command recording
-        void Record(VkCommandBuffer                                         Command,
-                    std::size_t                                             Instance,
-                    std::uint32_t                                           Channel,
-                    std::uint32_t                                           Channels,
-                    std::uint32_t                                           MeshResolution,
-                    const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
-                    const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
-                    VkDescriptorSet                                         ComputedSet,
-                    const GPU::TGPUBuffer&                                  GeometryCacheBuffer,
-                    bool                                                    bStateAB,
-                    std::size_t                                             FrameIndex = 0,
-                    VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
-                    std::uint32_t                                           FirstSideTimestampQuery = 0,
-                    std::uint32_t                                           OccupancyTileSize = 16U,
-                    bool                                                    bSmoothCoverage = false,
-                    bool                                                    bUseOpaqueBase = false,
-                    float                                                   HeightDisplayScale = 1.0F,
-                    std::array<std::uint32_t, 3> MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU},
-                    std::uint32_t                ActiveMaterialMask = 0x7U,
-                    bool                         bSharedCoverageHalo = false,
-                    float                        LavaThreshold = 0.1F);
+        void
+        Record(VkCommandBuffer                                         Command,
+               std::size_t                                             Instance,
+               std::uint32_t                                           Channel,
+               std::uint32_t                                           Channels,
+               std::uint32_t                                           MeshResolution,
+               const SurfaceState::FSurfaceSharedGeometryGPUResources& Geometry,
+               const SurfaceState::FSurfaceStateDescriptorResources&   StateDescriptors,
+               VkDescriptorSet                                         ComputedSet,
+               const GPU::FGPUBuffer&                                  GeometryCacheBuffer,
+               bool                                                    bStateAB,
+               std::size_t                                             FrameIndex = 0,
+               VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
+               std::uint32_t                                           FirstSideTimestampQuery = 0,
+               std::uint32_t                                           OccupancyTileSize = 16U,
+               bool                                                    bSmoothCoverage = false,
+               bool                                                    bUseOpaqueBase = false,
+               float                                                   HeightDisplayScale = 1.0F,
+               std::array<std::uint32_t, 4> MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU},
+               std::uint32_t                ActiveMaterialMask = 0x7U,
+               bool                         bSharedCoverageHalo = false,
+               float                        LavaThreshold = 0.1F);
 
         // Call only after GPU completion; descriptors and their buffers are released together.
         void ReleaseOutputs()
@@ -85,18 +88,19 @@ namespace MDSS::Rendering
             Outputs.clear();
             CoveragePages.clear();
             CoveragePageUsed.clear();
+
             if (vkResetDescriptorPool(Device, Pool, 0) != VK_SUCCESS)
                 throw std::runtime_error("Cannot reset render output descriptors.");
         }
 
     private:
-        struct TOutput
+        struct FOutput
         {
-            std::unique_ptr<GPU::TGPUBuffer>                                                Segments;
-            std::unique_ptr<GPU::TGPUBuffer>                                                DrawCommands;
-            std::unique_ptr<GPU::TGPUBuffer>                                                TopDrawCommands;
-            std::array<std::unique_ptr<GPU::TGPUBuffer>, TRenderContext::MaxFramesInFlight> ActivityReadbacks;
-            std::array<bool, TRenderContext::MaxFramesInFlight>                             ActivityPending{};
+            std::unique_ptr<GPU::FGPUBuffer>                                                Segments;
+            std::unique_ptr<GPU::FGPUBuffer>                                                DrawCommands;
+            std::unique_ptr<GPU::FGPUBuffer>                                                TopDrawCommands;
+            std::array<std::unique_ptr<GPU::FGPUBuffer>, FRenderContext::MaxFramesInFlight> ActivityReadbacks;
+            std::array<bool, FRenderContext::MaxFramesInFlight>                             ActivityPending{};
             VkDescriptorSet                                                                 Set = VK_NULL_HANDLE;
             std::size_t                                                                     CoveragePage = 0;
             VkDeviceSize                                                                    CoverageOffset = 0;
@@ -106,7 +110,7 @@ namespace MDSS::Rendering
             std::uint32_t                                                                   BoundaryCount = 0;
             std::uint32_t                                                                   SurfaceCount = 0;
             std::uint32_t                                                                   LastTileSize = 0;
-            std::array<std::uint32_t, 3>                                                    LastMaterialChannels{};
+            std::array<std::uint32_t, 4>                                                    LastMaterialChannels{};
             std::uint32_t                                                                   LastMaterialMask = 0;
             std::array<std::uint64_t, 6>                                                    LastGeometryRevisions{};
             std::uint64_t                                                                   LastProfileRevision = 0;
@@ -126,8 +130,8 @@ namespace MDSS::Rendering
         VkPipeline                                                               DrawResetPipeline = VK_NULL_HANDLE;
         VkPipeline                                                               BoundaryPipeline = VK_NULL_HANDLE;
         VkDescriptorPool                                                         Pool = VK_NULL_HANDLE;
-        std::vector<std::unique_ptr<GPU::TGPUBuffer>>                            CoveragePages;
+        std::vector<std::unique_ptr<GPU::FGPUBuffer>>                            CoveragePages;
         std::vector<VkDeviceSize>                                                CoveragePageUsed;
-        std::map<std::tuple<std::size_t, std::uint32_t, std::uint32_t>, TOutput> Outputs;
+        std::map<std::tuple<std::size_t, std::uint32_t, std::uint32_t>, FOutput> Outputs;
     };
 }

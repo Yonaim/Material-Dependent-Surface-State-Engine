@@ -1,0 +1,427 @@
+{
+  "experiment_id": "PERF-044-plate-top-only",
+  "status": "completed",
+  "code_commit": "9fb712fb352e3faf7074acb68fc21c6aefa485d0",
+  "code_note": "Same Debug executable and shaders before/after. Demo asset/script changes are uncommitted; input snapshots preserve both phases.",
+  "executable": "Build/bin/Debug/MDSS.exe",
+  "executable_sha256": "e20a8a7b49d258794967bb2f96fbb1ef76ab0cc37b09a9ca55eba9ad474ec6e7",
+  "environment": {
+    "os": "Windows",
+    "gpu": "AMD Radeon RX 6700 XT",
+    "vulkan_api": "1.4.315",
+    "vulkan_validation": "enabled",
+    "present_mode": 0,
+    "swapchain": [
+      1280,
+      720
+    ],
+    "time_zone": "Asia/Seoul"
+  },
+  "command_template": "MDSS.exe --benchmark-scene Assets/Scenes/ReactionTransitionComparison.Scene --benchmark-resolution 128 --benchmark-warmup-frames 180 --benchmark-measure-frames 60 --benchmark-output raw/{phase}/run-{number}.jsonl",
+  "settings": "raw/settings.json",
+  "plan": "plan.json",
+  "phases": {
+    "baseline": {
+      "status": "completed",
+      "runs": [
+        {
+          "id": "baseline-1",
+          "status": "completed",
+          "completed_at": "2026-11-08T05:08:55.194511+09:00",
+          "frames": 60,
+          "simulation_step_serial": 242,
+          "texels": 294912,
+          "state_channels": 4,
+          "outputs": {
+            "frames": "raw/baseline/run-1.jsonl",
+            "log": "raw/baseline/run-1.jsonl.log",
+            "settings": "raw/baseline/run-1.jsonl.settings.json",
+            "validation": "raw/baseline/run-1.jsonl.validation.json"
+          },
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 36.31637954711914,
+              "p95_ms": 38.96910858154297
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 30.788954734802246,
+              "p95_ms": 32.80752182006836
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 27.99631977081299,
+              "p95_ms": 29.388160705566406
+            },
+            "render_gpu_ms": {
+              "median_ms": 5.437700033187866,
+              "p95_ms": 7.151519298553467
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 32.14739990234375,
+              "p95_ms": 35.46120071411133
+            }
+          },
+          "state_sums": {
+            "0": [
+              0.0,
+              93969.55209207535,
+              268159.0089211464,
+              0.0
+            ],
+            "1": [
+              88581.76333618164,
+              93969.55097651482,
+              268159.00173711777,
+              0.0
+            ],
+            "2": [
+              0.0,
+              65175.99865579605,
+              185891.71432983875,
+              82266.22652821832
+            ]
+          },
+          "validation_errors": 0
+        },
+        {
+          "id": "baseline-2",
+          "status": "completed",
+          "completed_at": "2026-11-08T05:09:17.011128+09:00",
+          "frames": 60,
+          "simulation_step_serial": 242,
+          "texels": 294912,
+          "state_channels": 4,
+          "outputs": {
+            "frames": "raw/baseline/run-2.jsonl",
+            "log": "raw/baseline/run-2.jsonl.log",
+            "settings": "raw/baseline/run-2.jsonl.settings.json",
+            "validation": "raw/baseline/run-2.jsonl.validation.json"
+          },
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 37.49563980102539,
+              "p95_ms": 41.556209564208984
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 31.82967472076416,
+              "p95_ms": 35.950408935546875
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 29.02929973602295,
+              "p95_ms": 32.43476104736328
+            },
+            "render_gpu_ms": {
+              "median_ms": 5.406499862670898,
+              "p95_ms": 5.980839729309082
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 33.25754928588867,
+              "p95_ms": 37.48500061035156
+            }
+          },
+          "state_sums": {
+            "0": [
+              0.0,
+              93969.55209207535,
+              268159.0089211464,
+              0.0
+            ],
+            "1": [
+              88581.76333618164,
+              93969.55097651482,
+              268159.00173711777,
+              0.0
+            ],
+            "2": [
+              0.0,
+              65175.99865579605,
+              185891.71432983875,
+              82266.22652821832
+            ]
+          },
+          "validation_errors": 0
+        },
+        {
+          "id": "baseline-3",
+          "status": "completed",
+          "completed_at": "2026-11-08T05:09:38.683969+09:00",
+          "frames": 60,
+          "simulation_step_serial": 242,
+          "texels": 294912,
+          "state_channels": 4,
+          "outputs": {
+            "frames": "raw/baseline/run-3.jsonl",
+            "log": "raw/baseline/run-3.jsonl.log",
+            "settings": "raw/baseline/run-3.jsonl.settings.json",
+            "validation": "raw/baseline/run-3.jsonl.validation.json"
+          },
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 36.117008209228516,
+              "p95_ms": 39.2978401184082
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 30.825045585632324,
+              "p95_ms": 33.8708381652832
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 27.91413974761963,
+              "p95_ms": 30.611839294433594
+            },
+            "render_gpu_ms": {
+              "median_ms": 5.231379985809326,
+              "p95_ms": 6.374360084533691
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 31.55739974975586,
+              "p95_ms": 34.78369903564453
+            }
+          },
+          "state_sums": {
+            "0": [
+              0.0,
+              93969.55209207535,
+              268159.0089211464,
+              0.0
+            ],
+            "1": [
+              88581.76333618164,
+              93969.55097651482,
+              268159.00173711777,
+              0.0
+            ],
+            "2": [
+              0.0,
+              65175.99865579605,
+              185891.71432983875,
+              82266.22652821832
+            ]
+          },
+          "validation_errors": 0
+        }
+      ],
+      "input_sha256": {
+        "Assets/Animations/ReactionTransitionComparison.DemoAnim": "a7facd8b64635bca56c9a0027c7e036c98bb0c5677947151140a2787b94556a8",
+        "Assets/Meshes/MarbleCube/MarbleCube.mtl": "44a3eeba1457b6329f3aa43d63094e04bc8c4d050362d2e269698fb43e60aa21",
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/Meshes/MarbleCube/MarbleCubeAlbedo.png": "589eaa53e069abf15ef066a7d871048a513cc7f16e6d5d634083bc76fa918cfb",
+        "Assets/Meshes/ReactionLab/Lab.mtl": "5695ce95a88e8c082b0a46f24a8846faa8ccde36624f852a60b100bad2f79da3",
+        "Assets/Meshes/ReactionLab/ReactionTransitionLabels.obj": "2d49f8f637b7006907fb3f18f41c03456f9310f0ae8ff74f4173b9041df187be",
+        "Assets/Meshes/ReactionLab/Stage.obj": "d5aaaae7be280648e38da0412b60e9d8c81befc64cf0e176678a664576c0ec33",
+        "Assets/Scenes/ReactionTransitionComparison.Scene": "242ce2b49f5ebb881d74677cfa8e9bf590ec1eb01d1e955e1964c017927bb2b9",
+        "Assets/SurfaceProfileMaps/ReactionTransitionConsume.SurfaceProfileMap": "a377dd754abd40ec0bb7d2bdcb0f3a0a5c7842ed5ed9f909359d4abafb5c394a",
+        "Assets/SurfaceProfileMaps/ReactionTransitionControl.SurfaceProfileMap": "802314434907dd9a2593e2d61c9ee98e5769da1ee0ee343d4695155ebf637df0",
+        "Assets/SurfaceProfileMaps/ReactionTransitionLegacy.SurfaceProfileMap": "30952dfb684663bf5d01bcae8fef481285b5b4e667bee5609643a2078ef891d0",
+        "Assets/SurfaceProfiles/ReactionTransitionConsume.SRProfile": "594564ed5bc1d6331b84a21f301730d3b89992a2a39c9e57852b62e1ef61c5fd",
+        "Assets/SurfaceProfiles/ReactionTransitionControl.SRProfile": "c74b641850d356a8a8d1c60ad4fa79a9535341ed99a7c1a53928d447d6a38e09",
+        "Assets/SurfaceProfiles/ReactionTransitionLegacy.SRProfile": "b456f011abd88cf252de72a72ee6835be8fae858d328ccaad659ba6cdf32ba52",
+        "Scripts/build_reaction_transition_demo.py": "776693ca662b8af5ef32ec7b5e071955b01c783ee21c70d248d0daa2d35615fa"
+      }
+    },
+    "optimized": {
+      "status": "completed",
+      "runs": [
+        {
+          "id": "optimized-1",
+          "status": "completed",
+          "completed_at": "2026-11-08T05:10:18.526138+09:00",
+          "frames": 60,
+          "simulation_step_serial": 242,
+          "texels": 49152,
+          "state_channels": 4,
+          "outputs": {
+            "frames": "raw/optimized/run-1.jsonl",
+            "log": "raw/optimized/run-1.jsonl.log",
+            "settings": "raw/optimized/run-1.jsonl.settings.json",
+            "validation": "raw/optimized/run-1.jsonl.validation.json"
+          },
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 7.398469924926758,
+              "p95_ms": 8.108599662780762
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 5.603339910507202,
+              "p95_ms": 6.294400215148926
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 4.276059865951538,
+              "p95_ms": 4.657120227813721
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.745140016078949,
+              "p95_ms": 2.0755200386047363
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 2.7092000246047974,
+              "p95_ms": 4.169899940490723
+            }
+          },
+          "state_sums": {
+            "0": [
+              0.0,
+              93969.55209207535,
+              143492.815117836,
+              0.0
+            ],
+            "2": [
+              88581.76333618164,
+              93969.55097651482,
+              143492.81090784073,
+              0.0
+            ],
+            "4": [
+              0.0,
+              65175.99865579605,
+              61225.52052652836,
+              82266.22652821832
+            ]
+          },
+          "validation_errors": 0
+        },
+        {
+          "id": "optimized-2",
+          "status": "completed",
+          "completed_at": "2026-11-08T05:10:57.051104+09:00",
+          "frames": 60,
+          "simulation_step_serial": 242,
+          "texels": 49152,
+          "state_channels": 4,
+          "outputs": {
+            "frames": "raw/optimized/run-2.jsonl",
+            "log": "raw/optimized/run-2.jsonl.log",
+            "settings": "raw/optimized/run-2.jsonl.settings.json",
+            "validation": "raw/optimized/run-2.jsonl.validation.json"
+          },
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 8.145659923553467,
+              "p95_ms": 9.675040245056152
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 6.270940065383911,
+              "p95_ms": 7.476920127868652
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 4.746739864349365,
+              "p95_ms": 5.606319904327393
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.8801999688148499,
+              "p95_ms": 2.365679979324341
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 3.1192500591278076,
+              "p95_ms": 4.981400012969971
+            }
+          },
+          "state_sums": {
+            "0": [
+              0.0,
+              93969.55209207535,
+              143492.815117836,
+              0.0
+            ],
+            "2": [
+              88581.76333618164,
+              93969.55097651482,
+              143492.81090784073,
+              0.0
+            ],
+            "4": [
+              0.0,
+              65175.99865579605,
+              61225.52052652836,
+              82266.22652821832
+            ]
+          },
+          "validation_errors": 0
+        },
+        {
+          "id": "optimized-3",
+          "status": "completed",
+          "completed_at": "2026-11-08T05:11:01.462181+09:00",
+          "frames": 60,
+          "simulation_step_serial": 242,
+          "texels": 49152,
+          "state_channels": 4,
+          "outputs": {
+            "frames": "raw/optimized/run-3.jsonl",
+            "log": "raw/optimized/run-3.jsonl.log",
+            "settings": "raw/optimized/run-3.jsonl.settings.json",
+            "validation": "raw/optimized/run-3.jsonl.validation.json"
+          },
+          "metrics": {
+            "frame_gpu_elapsed_ms": {
+              "median_ms": 7.459019899368286,
+              "p95_ms": 8.018939971923828
+            },
+            "simulation_gpu_elapsed_ms": {
+              "median_ms": 5.638020038604736,
+              "p95_ms": 6.084839820861816
+            },
+            "pass2_gpu_ms": {
+              "median_ms": 4.258260011672974,
+              "p95_ms": 4.59168004989624
+            },
+            "render_gpu_ms": {
+              "median_ms": 1.745799958705902,
+              "p95_ms": 2.075590133666992
+            },
+            "fence_wait_cpu_ms": {
+              "median_ms": 2.7228000164031982,
+              "p95_ms": 3.6958999633789062
+            }
+          },
+          "state_sums": {
+            "0": [
+              0.0,
+              93969.55209207535,
+              143492.815117836,
+              0.0
+            ],
+            "2": [
+              88581.76333618164,
+              93969.55097651482,
+              143492.81090784073,
+              0.0
+            ],
+            "4": [
+              0.0,
+              65175.99865579605,
+              61225.52052652836,
+              82266.22652821832
+            ]
+          },
+          "validation_errors": 0
+        }
+      ],
+      "input_sha256": {
+        "Assets/Animations/ReactionTransitionComparison.DemoAnim": "a7facd8b64635bca56c9a0027c7e036c98bb0c5677947151140a2787b94556a8",
+        "Assets/Meshes/MarbleCube/MarbleCube.mtl": "44a3eeba1457b6329f3aa43d63094e04bc8c4d050362d2e269698fb43e60aa21",
+        "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+        "Assets/Meshes/MarbleCube/MarbleCubeAlbedo.png": "589eaa53e069abf15ef066a7d871048a513cc7f16e6d5d634083bc76fa918cfb",
+        "Assets/Meshes/MarbleCube/ReactionTransitionPlateSides.obj": "263997ae335acb4e405a1226670e4c683c12cd35c62853c5a0eb1ca47a7c0a7c",
+        "Assets/Meshes/MarbleCube/ReactionTransitionPlateTop.obj": "7ab960b0eb3c20b6c954e11db21d571bcff6d6d2da0b3ab4b672a3af617f4056",
+        "Assets/Meshes/ReactionLab/Lab.mtl": "5695ce95a88e8c082b0a46f24a8846faa8ccde36624f852a60b100bad2f79da3",
+        "Assets/Meshes/ReactionLab/ReactionTransitionLabels.obj": "2d49f8f637b7006907fb3f18f41c03456f9310f0ae8ff74f4173b9041df187be",
+        "Assets/Meshes/ReactionLab/Stage.obj": "d5aaaae7be280648e38da0412b60e9d8c81befc64cf0e176678a664576c0ec33",
+        "Assets/Scenes/ReactionTransitionComparison.Scene": "4a367586c7bd6fc180e8379e1fdcc97cfa0b2656bbf3585ed7a5912d50fa55c4",
+        "Assets/SurfaceProfileMaps/ReactionTransitionConsume.SurfaceProfileMap": "d9e5bbde016ec71bec8a4895a3a8a66bb4dba02f0efbd63169ba9dc1bffe0344",
+        "Assets/SurfaceProfileMaps/ReactionTransitionControl.SurfaceProfileMap": "5cc0bc987b08059246e581107dbc2f32c119bdf1cc074899942eda5879770fee",
+        "Assets/SurfaceProfileMaps/ReactionTransitionLegacy.SurfaceProfileMap": "f2d72b7b0f105241172a6bca9fb8a536be540c814d0d5bec7646485d6d26ed11",
+        "Assets/SurfaceProfiles/ReactionTransitionConsume.SRProfile": "594564ed5bc1d6331b84a21f301730d3b89992a2a39c9e57852b62e1ef61c5fd",
+        "Assets/SurfaceProfiles/ReactionTransitionControl.SRProfile": "c74b641850d356a8a8d1c60ad4fa79a9535341ed99a7c1a53928d447d6a38e09",
+        "Assets/SurfaceProfiles/ReactionTransitionLegacy.SRProfile": "b456f011abd88cf252de72a72ee6835be8fae858d328ccaad659ba6cdf32ba52",
+        "Scripts/build_reaction_transition_demo.py": "dc5d71ef4b8a1f2e8cde3f5ee1ffc8067b665df06392bef9404bd080eb68765b"
+      }
+    }
+  },
+  "visual_capture": {
+    "same_camera_step": 723,
+    "changed_rgb_bytes": 2299,
+    "total_rgb_bytes": 2764800,
+    "mean_absolute_rgb_byte_difference": 0.0013216145833333333,
+    "baseline": "raw/baseline/visual.jsonl.ppm",
+    "optimized": "raw/optimized/visual.jsonl.ppm"
+  }
+}

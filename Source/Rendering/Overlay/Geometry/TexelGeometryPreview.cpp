@@ -24,9 +24,13 @@ namespace MDSS::SurfaceState
         }
     }
 
-#pragma region Preview_Resource_Lifecycle
+// ============================================================
+// 00. Preview Resource Lifecycle
+// ============================================================
+#pragma region 00_Preview_Resource_Lifecycle
+// texel geometry 미리보기의 GPU 자원과 variant를 관리한다.
 
-    TTexelGeometryPreview::TTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
+    FTexelGeometryPreview::FTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
                                                  VkDescriptorSetLayout SurfaceLayout,
                                                  std::size_t           MaxInstances,
@@ -34,13 +38,15 @@ namespace MDSS::SurfaceState
         : PhysicalDevice(PhysicalDevice), Device(Device), bEnableOccupancyScan(bEnableOccupancyScan)
     {
         constexpr std::size_t OutputSlots = 3U;
+
         if (!SurfaceLayout || MaxInstances == 0 ||
             MaxInstances > std::numeric_limits<std::uint32_t>::max() / (OutputSlots * 2U))
             throw std::invalid_argument("Texel geometry preview requires Surface resources and instance slots.");
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
         Limits = Properties.limits;
-        constexpr auto DescriptorCount = static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::Count) + 2U;
+        constexpr auto DescriptorCount = static_cast<std::uint32_t>(ESurfaceGPUDescriptorBinding::Count) + 2U;
+
         if (Limits.maxPerStageDescriptorStorageBuffers < DescriptorCount ||
             Limits.maxDescriptorSetStorageBuffers < DescriptorCount || Limits.maxComputeWorkGroupSize[0] < 64 ||
             Limits.maxComputeWorkGroupInvocations < 64)
@@ -72,14 +78,17 @@ namespace MDSS::SurfaceState
             const auto CreatePipeline = [&](Shaders::EShader Shader, VkPipeline& Destination)
             {
                 std::ifstream File(Shaders::Path(Shader), std::ios::binary | std::ios::ate);
+
                 if (!File)
                     throw std::runtime_error("Cannot open texel geometry preview shader.");
                 const auto Size = File.tellg();
+
                 if (Size <= 0 || Size % 4 != 0)
                     throw std::runtime_error("Invalid texel geometry preview SPIR-V.");
                 std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
                 File.seekg(0);
                 File.read(reinterpret_cast<char*>(Code.data()), Size);
+
                 if (!File)
                     throw std::runtime_error("Cannot read texel geometry preview shader.");
                 VkShaderModuleCreateInfo ModuleInfo{};
@@ -103,6 +112,7 @@ namespace MDSS::SurfaceState
             CreatePipeline(Shaders::EShader::Rendering_Overlay_Geometry_TexelGeometryHeight_comp, HeightPipeline);
             CreatePipeline(Shaders::EShader::Rendering_Overlay_Geometry_TexelGeometryBaseline_comp, BaselinePipeline);
             CreatePipeline(Shaders::EShader::Rendering_Overlay_Geometry_TexelGeometry_comp, Pipeline);
+
             if (bEnableOccupancyScan)
                 CreatePipeline(Shaders::EShader::Rendering_Overlay_Coverage_OverlayOccupancyScan_comp,
                                OccupancyPipeline);
@@ -124,11 +134,12 @@ namespace MDSS::SurfaceState
         }
     }
 
-    TTexelGeometryPreview::~TTexelGeometryPreview()
+    FTexelGeometryPreview::~FTexelGeometryPreview()
     {
         Destroy();
     }
-    void TTexelGeometryPreview::Destroy() noexcept
+
+    void FTexelGeometryPreview::Destroy() noexcept
     {
         if (Pipeline)
             vkDestroyPipeline(Device, Pipeline, nullptr);
@@ -143,35 +154,44 @@ namespace MDSS::SurfaceState
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
         Outputs.clear();
+
         if (OutputLayout)
             vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
     }
 #pragma endregion
 
-#pragma region Preview_Accessors_and_Settings
+// ============================================================
+// 01. Preview Accessors and Settings
+// ============================================================
+#pragma region 01_Preview_Accessors_and_Settings
+// 미리보기 설정과 준비된 출력 자원을 조회·변경한다.
 
-    VkDescriptorSet TTexelGeometryPreview::GetOutputSet(std::size_t Instance, std::size_t OutputSlot) const
+    VkDescriptorSet FTexelGeometryPreview::GetOutputSet(std::size_t Instance, std::size_t OutputSlot) const
     {
         return Outputs.at({Instance, OutputSlot}).Set;
     }
-    const GPU::TGPUBuffer& TTexelGeometryPreview::GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot) const
+
+    const GPU::FGPUBuffer& FTexelGeometryPreview::GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot) const
     {
         return *Outputs.at({Instance, OutputSlot}).Buffer;
     }
-    const GPU::TGPUBuffer& TTexelGeometryPreview::GetGeometryCacheBuffer(std::size_t Instance,
+
+    const GPU::FGPUBuffer& FTexelGeometryPreview::GetGeometryCacheBuffer(std::size_t Instance,
                                                                          std::size_t OutputSlot) const
     {
         return *Outputs.at({Instance, OutputSlot}).GeometryCache;
     }
 
-    TTexelGeometryPreview::TTileActivity TTexelGeometryPreview::CompleteOccupancyFrame(std::size_t FrameIndex)
+    FTexelGeometryPreview::FTileActivity FTexelGeometryPreview::CompleteOccupancyFrame(std::size_t FrameIndex)
     {
-        if (FrameIndex >= Rendering::TRenderContext::MaxFramesInFlight)
+        if (FrameIndex >= Rendering::FRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Occupancy frame slot is invalid.");
-        TTileActivity Activity;
+        FTileActivity Activity;
+
         for (auto& [Instance, Output] : Outputs)
         {
             (void)Instance;
+
             if (!Output.OccupancyPending[FrameIndex])
                 continue;
             std::uint32_t Active = 0;
@@ -180,15 +200,18 @@ namespace MDSS::SurfaceState
             Activity.Total += Output.OccupancyTotalTiles;
             Output.OccupancyPending[FrameIndex] = false;
         }
+
         return Activity;
     }
-    void TTexelGeometryPreview::SetOccupancyTileSize(std::uint32_t TileSize)
+
+    void FTexelGeometryPreview::SetOccupancyTileSize(std::uint32_t TileSize)
     {
         if (TileSize != 8U && TileSize != 16U && TileSize != 32U)
             throw std::invalid_argument("Overlay occupancy tile size must be 8, 16, or 32.");
         if (OccupancyTileSize == TileSize)
             return;
         OccupancyTileSize = TileSize;
+
         // Packed tile flags are indexed by the selected tile size, so changing the size invalidates
         // both the history bits and the compact dispatch list. The next Record performs a full sparse init.
         for (auto& [Instance, Output] : Outputs)
@@ -199,7 +222,7 @@ namespace MDSS::SurfaceState
         }
     }
 
-    void TTexelGeometryPreview::SetLowAmountHeightFade(float Saturation)
+    void FTexelGeometryPreview::SetLowAmountHeightFade(float Saturation)
     {
         if (!std::isfinite(Saturation) || Saturation < 0.0F || Saturation > 0.5F)
             throw std::invalid_argument("Low amount height fade must be between 0 and 0.5.");
@@ -209,7 +232,7 @@ namespace MDSS::SurfaceState
         InvalidateSparseOutput();
     }
 
-    void TTexelGeometryPreview::InvalidateSparseOutput() noexcept
+    void FTexelGeometryPreview::InvalidateSparseOutput() noexcept
     {
         // This changes only derived display geometry. Rebuild the sparse render schedule once,
         // without changing simulation state or simulation state-driven geometry.
@@ -221,11 +244,15 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Preview_Command_Recording
+// ============================================================
+// 02. Preview Command Recording
+// ============================================================
+#pragma region 02_Preview_Command_Recording
+// 미리보기 geometry를 갱신할 pass와 barrier를 기록한다.
 
-    void TTexelGeometryPreview::Record(VkCommandBuffer                         Command,
+    void FTexelGeometryPreview::Record(VkCommandBuffer                         Command,
                                        std::size_t                             Instance,
-                                       const TSurfaceStateDescriptorResources& Descriptors,
+                                       const FSurfaceStateDescriptorResources& Descriptors,
                                        std::uint32_t                           TexelCount,
                                        std::uint32_t                           Channel,
                                        std::uint32_t                           Channels,
@@ -238,14 +265,14 @@ namespace MDSS::SurfaceState
                                        std::uint32_t                           HeightCompleteQuery,
                                        bool                                    bTotalHeight,
                                        std::size_t                             FrameIndex,
-                                       std::array<std::uint32_t, 3>            MaterialChannels,
+                                       std::array<std::uint32_t, 4>            MaterialChannels,
                                        std::uint32_t                           ActiveMaterialMask,
                                        std::size_t                             OutputSlot)
     {
-        if (FrameIndex >= Rendering::TRenderContext::MaxFramesInFlight)
+        if (FrameIndex >= Rendering::FRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Occupancy frame slot is invalid.");
         const auto Bytes =
-            GetSurfaceGPUBufferByteSize(TexelCount, sizeof(TTexelGeometryVertex), Limits.maxStorageBufferRange);
+            GetSurfaceGPUBufferByteSize(TexelCount, sizeof(FTexelGeometryVertex), Limits.maxStorageBufferRange);
         const auto BaseCacheBytes =
             GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
 
@@ -265,6 +292,7 @@ namespace MDSS::SurfaceState
         const auto  CountTiles = [&SurfaceRanges](std::uint32_t TileSize)
         {
             std::size_t Count = 0;
+
             for (const auto& Range : SurfaceRanges)
                 Count += ((static_cast<std::size_t>(Range.Width) + TileSize - 1U) / TileSize) *
                          ((static_cast<std::size_t>(Range.Height) + TileSize - 1U) / TileSize);
@@ -272,6 +300,7 @@ namespace MDSS::SurfaceState
         };
         const auto MaxTileCount = CountTiles(8U);
         const auto SelectedTileCount = CountTiles(OccupancyTileSize);
+
         if (MaxTileCount == 0 || MaxTileCount > Limits.maxComputeWorkGroupCount[0] ||
             MaxTileCount > std::numeric_limits<std::uint32_t>::max())
             throw std::overflow_error("Overlay tile capacity exceeds Vulkan workgroup limits.");
@@ -295,32 +324,33 @@ namespace MDSS::SurfaceState
 
         const auto OutputKey = std::pair{Instance, OutputSlot};
         auto       It = Outputs.find(OutputKey);
+
         if (It == Outputs.end())
         {
-            TOutput Output;
+            FOutput Output;
             Output.Buffer =
-                std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                   Device,
                                                   Bytes,
                                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                  GPU::TGPUBufferMemoryCategory::Debug);
-            Output.GeometryCache = std::make_unique<GPU::TGPUBuffer>(
+                                                  GPU::EGPUBufferMemoryCategory::Debug);
+            Output.GeometryCache = std::make_unique<GPU::FGPUBuffer>(
                 PhysicalDevice,
                 Device,
                 CacheBytes,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                GPU::TGPUBufferMemoryCategory::Debug);
+                GPU::EGPUBufferMemoryCategory::Debug);
             for (auto& Readback : Output.OccupancyReadbacks)
-                Readback = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                Readback = std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                              Device,
                                                              sizeof(std::uint32_t),
                                                              VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                             GPU::TGPUBufferMemoryCategory::Debug);
+                                                             GPU::EGPUBufferMemoryCategory::Debug);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;
@@ -330,6 +360,7 @@ namespace MDSS::SurfaceState
             const std::array<VkDescriptorBufferInfo, 2> DescriptorBuffers{
                 {{Output.Buffer->GetHandle(), 0, Bytes}, {Output.GeometryCache->GetHandle(), 0, CacheBytes}}};
             std::array<VkWriteDescriptorSet, 2> Writes{};
+
             for (std::uint32_t Binding = 0; Binding < Writes.size(); ++Binding)
             {
                 Writes[Binding].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -339,21 +370,25 @@ namespace MDSS::SurfaceState
                 Writes[Binding].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                 Writes[Binding].pBufferInfo = &DescriptorBuffers[Binding];
             }
+
             vkUpdateDescriptorSets(Device, static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
             It = Outputs.emplace(OutputKey, std::move(Output)).first;
         }
+
         if (It->second.Buffer->GetSize() != Bytes || It->second.GeometryCache->GetSize() != CacheBytes)
             throw std::logic_error("Texel geometry size changed without rebuilding Scene resources.");
 
         const std::uint32_t GroupCount = (TexelCount - 1U) / 64U + 1U;
         const std::uint32_t GroupsX = std::min(GroupCount, Limits.maxComputeWorkGroupCount[0]);
         const std::uint32_t GroupsY = (GroupCount - 1U) / GroupsX + 1U;
+
         if (GroupsY > Limits.maxComputeWorkGroupCount[1])
             throw std::overflow_error("Texel geometry dispatch exceeds Vulkan workgroup limits.");
 
         const std::uint32_t TileGroupCount = static_cast<std::uint32_t>(SelectedTileCount);
         const std::uint32_t TileGroupsX = std::min(TileGroupCount, Limits.maxComputeWorkGroupCount[0]);
         const std::uint32_t TileGroupsY = (TileGroupCount - 1U) / TileGroupsX + 1U;
+
         if (TileGroupsY > Limits.maxComputeWorkGroupCount[1])
             throw std::overflow_error("Overlay occupancy dispatch exceeds Vulkan workgroup limits.");
 
@@ -454,7 +489,8 @@ namespace MDSS::SurfaceState
             OccupancyPush[5] = MaterialChannels[0];
             OccupancyPush[6] = MaterialChannels[1];
             OccupancyPush[7] = MaterialChannels[2];
-            OccupancyPush[8] = ActiveMaterialMask & 0x7U;
+            OccupancyPush[8] = ActiveMaterialMask & 0xfU;
+            OccupancyPush[9] = MaterialChannels[3];
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, OccupancyPipeline);
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -533,7 +569,7 @@ namespace MDSS::SurfaceState
                              0,
                              nullptr);
 
-        struct TPush
+        struct FPush
         {
             std::uint32_t            Texels, Channel, Channels, Accumulation;
             float                    AccumulationDisplayScale, GeometryDisplayScale;
@@ -542,18 +578,21 @@ namespace MDSS::SurfaceState
             std::uint32_t            Padding;
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
-        static_assert(offsetof(TPush, NormalMatrixColumns) == 48);
-        static_assert(sizeof(TPush) == 96);
+        static_assert(offsetof(FPush, NormalMatrixColumns) == 48);
+        static_assert(sizeof(FPush) == 96);
         glm::mat3       NormalMatrix(0.0F);
         const glm::mat3 ModelLinear(ModelMatrix);
         const float     Determinant = glm::determinant(ModelLinear);
+
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
 
         bool bBuildBaseline = false;
+
         if (bAccumulation && !bTotalHeight)
         {
             const auto Revisions = Descriptors.GetGeometryInputRevisions();
+
             if (!It->second.bInputsObserved || It->second.ObservedInputRevisions != Revisions ||
                 It->second.BaselineScale != GeometryDisplayScale)
             {
@@ -569,7 +608,7 @@ namespace MDSS::SurfaceState
             }
         }
 
-        TPush Push{TexelCount,
+        FPush Push{TexelCount,
                    Channel,
                    Channels,
                    bAccumulation ? 1U : 0U,
@@ -645,6 +684,7 @@ namespace MDSS::SurfaceState
                                  0,
                                  nullptr);
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, HeightPipeline);
+
             if (bEnableOccupancyScan)
                 vkCmdDispatchIndirect(Command, It->second.GeometryCache->GetHandle(), HeightDispatchIndirectOffset);
             else
@@ -667,6 +707,7 @@ namespace MDSS::SurfaceState
             vkCmdWriteTimestamp(Command, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, HeightCompleteQuery);
 
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
+
         if (bEnableOccupancyScan)
             vkCmdDispatchIndirect(Command, It->second.GeometryCache->GetHandle(), NormalDispatchIndirectOffset);
         else

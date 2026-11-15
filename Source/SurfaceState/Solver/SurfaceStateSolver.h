@@ -17,8 +17,16 @@
 #include <glm/vec3.hpp>
 #include <span>
 
+// ============================================================
+// 00. Types and Resource Interface
+// ============================================================
+#pragma region 00_Types_and_Resource_Interface
+// 계산 단계에서 공유하는 record와 자원 참조의 형식을 먼저 정의한다.
+
 namespace MDSS::SurfaceState
 {
+    struct FPreparedStep;
+
     inline constexpr std::uint32_t SurfaceSolverStateDrivenGeometryUpdateFlag = 1U << 6U;
     inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
@@ -50,7 +58,13 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t SurfaceSolverPerWorkgroupChannelMaskFlag = 1U << 23U;
     inline constexpr std::uint32_t SurfaceSolverAdaptiveGeometryFlag = 1U << 24U;
 
-    enum class TSurfaceSolverTerm : std::uint8_t
+    inline constexpr std::uint32_t SurfaceSolverReactionFlag = 1U << 25U;
+    // Opt-in research controls; product defaults never set these flags.
+    inline constexpr std::uint32_t SurfaceSolverFreezeGeometryFlag = 1U << 26U;
+    inline constexpr std::uint32_t SurfaceSolverEveryStepGeometryFlag = 1U << 27U;
+    inline constexpr std::uint32_t SurfaceSolverReactionLedgerFlag = 1U << 28U;
+
+    enum class ESurfaceSolverTerm : std::uint8_t
     {
         SaturationDrive,
         GeometryDrive,
@@ -63,26 +77,26 @@ namespace MDSS::SurfaceState
         Count
     };
 
-    struct TSurfaceSolverDebugSettings
+    struct FSurfaceSolverDebugSettings
     {
         bool                                                                  bStateDrivenGeometryUpdateEnabled = true;
-        std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
+        std::array<bool, static_cast<std::size_t>(ESurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, true};
 
-        [[nodiscard]] bool IsEnabled(TSurfaceSolverTerm Term) const noexcept
+        [[nodiscard]] bool IsEnabled(ESurfaceSolverTerm Term) const noexcept
         {
             return Enabled[static_cast<std::size_t>(Term)];
         }
 
-        void SetEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept
+        void SetEnabled(ESurfaceSolverTerm Term, bool bEnabled) noexcept
         {
             Enabled[static_cast<std::size_t>(Term)] = bEnabled;
         }
     };
 
-    struct TSurfaceSolverInstanceStep
+    struct FSurfaceSolverInstanceStep
     {
-        const TSurfaceStateDescriptorResources* Descriptors = nullptr;
+        const FSurfaceStateDescriptorResources* Descriptors = nullptr;
         bool                                    bCurrentStateAB = true;
         std::size_t                             TexelCount = 0;
         std::size_t                             ChannelCount = 0;
@@ -90,28 +104,30 @@ namespace MDSS::SurfaceState
         glm::mat4                               ModelMatrix{1.0F};
         glm::vec3                               GravityWorld{0.0F, 0.0F, -1.0F};
         std::uint32_t                           SolverFlags = 0U;
+
         // State-driven geometry updates need height after each substep; otherwise height is only needed before
         // rendering.
         bool bPrepareAccumulationHeight = true;
+
         // CPU contact distribution이 sparse input group list를 업로드한 경우 reset/merge pass를 반드시 기록한다.
         bool bHasInputActivation = false;
     };
 
-    class TSurfaceStateSolver final
+    class FSurfaceStateSolver final
     {
     public:
         // Lifecycle
-        TSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout);
-        ~TSurfaceStateSolver();
+        FSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout);
+        ~FSurfaceStateSolver();
 
-        TSurfaceStateSolver(const TSurfaceStateSolver&) = delete;
-        TSurfaceStateSolver& operator=(const TSurfaceStateSolver&) = delete;
-        TSurfaceStateSolver(TSurfaceStateSolver&&) = delete;
-        TSurfaceStateSolver& operator=(TSurfaceStateSolver&&) = delete;
+        FSurfaceStateSolver(const FSurfaceStateSolver&) = delete;
+        FSurfaceStateSolver& operator=(const FSurfaceStateSolver&) = delete;
+        FSurfaceStateSolver(FSurfaceStateSolver&&) = delete;
+        FSurfaceStateSolver& operator=(FSurfaceStateSolver&&) = delete;
 
         // Solver command recording
         void RecordStep(VkCommandBuffer                         CommandBuffer,
-                        const TSurfaceStateDescriptorResources& Descriptors,
+                        const FSurfaceStateDescriptorResources& Descriptors,
                         bool                                    bCurrentStateAB,
                         std::size_t                             TexelCount,
                         std::size_t                             ChannelCount,
@@ -123,25 +139,47 @@ namespace MDSS::SurfaceState
                         std::uint32_t                           FirstPassQuery = 0U,
                         bool                                    bPrepareAccumulationHeight = true) const;
         void RecordSteps(VkCommandBuffer                             CommandBuffer,
-                         std::span<const TSurfaceSolverInstanceStep> InstanceSteps,
+                         std::span<const FSurfaceSolverInstanceStep> InstanceSteps,
                          VkQueryPool                                 TimestampQueryPool = VK_NULL_HANDLE,
                          std::uint32_t                               FirstStepQuery = 0U) const;
 
-        void SetRuntimeFlagsEnabled(bool Enabled) noexcept { bRuntimeFlagsEnabled = Enabled; }
-        [[nodiscard]] bool IsRuntimeFlagsEnabled() const noexcept { return bRuntimeFlagsEnabled; }
+        void SetRuntimeFlagsEnabled(bool bEnabled) noexcept
+        {
+            bRuntimeFlagsEnabled = bEnabled;
+        }
+
+        [[nodiscard]] bool IsRuntimeFlagsEnabled() const noexcept
+        {
+            return bRuntimeFlagsEnabled;
+        }
+
     private:
+        // GPU command orchestration. Order and stage barriers are part of the solver contract.
+        void RecordPreSolverGeometryBuild(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared) const;
+        void RecordSparseScheduleBootstrap(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
+        void RecordSolverFluxPass(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
+        void RecordSolverStatePass(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
+        void RecordPostSolverDerivedGeometry(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
         bool bRuntimeFlagsEnabled = true;
+
         // Compute pipeline creation
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
         static VkPipeline     CreateComputePipeline(VkDevice Device, VkPipelineLayout Layout, const char* ShaderPath);
 
         VkDevice                   Device = VK_NULL_HANDLE;
         VkPipelineLayout           PipelineLayout = VK_NULL_HANDLE;
+        VkPipeline                 ReactionPipeline = VK_NULL_HANDLE;
         VkPipeline                 AccumulationHeightPipeline = VK_NULL_HANDLE;
         VkPipeline                 SparseScheduleResetPipeline = VK_NULL_HANDLE;
         VkPipeline                 AccumulationGeometryPipeline = VK_NULL_HANDLE;
         std::array<VkPipeline, 3>  DynamicTransferWeightPipelines{};
         std::array<VkPipeline, 11> Pass1Pipelines{};
         std::array<VkPipeline, 11> Pass2Pipelines{};
+
+#pragma endregion
     };
 } // namespace MDSS::SurfaceState

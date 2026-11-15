@@ -14,87 +14,103 @@
 
 namespace MDSS
 {
-#pragma region Scene_Lifecycle_and_Camera_Access
+// ============================================================
+// 00. Scene Lifecycle and Camera Access
+// ============================================================
+#pragma region 00_Scene_Lifecycle_and_Camera_Access
+// Scene의 초기 설정과 카메라 조회 경계를 관리한다.
 
-    TScene::TScene() : MainCamera({2.0F, -3.3F, 2.0F}, {0.0F, 0.0F, 0.0F}, 50.0F), InitialCamera(MainCamera)
+    FScene::FScene() : MainCamera({2.0F, -3.3F, 2.0F}, {0.0F, 0.0F, 0.0F}, 50.0F), InitialCamera(MainCamera)
     {
-        TLogger::Debug("TScene", "Main camera created at default position.");
+        FLogger::Debug("TScene", "Main camera created at default position.");
     }
 
-    TCamera& TScene::GetMainCamera() noexcept
+    FCamera& FScene::GetMainCamera() noexcept
     {
         return MainCamera;
     }
 
-    const TCamera& TScene::GetMainCamera() const noexcept
+    const FCamera& FScene::GetMainCamera() const noexcept
     {
         return MainCamera;
     }
 
-    const TCamera& TScene::GetInitialCamera() const noexcept
+    const FCamera& FScene::GetInitialCamera() const noexcept
     {
         return InitialCamera;
     }
 
 #pragma endregion
 
-#pragma region Scene_Configuration
+// ============================================================
+// 01. Scene Configuration
+// ============================================================
+#pragma region 01_Scene_Configuration
+// 로드한 Scene 설정을 실행·표시 경로가 사용할 값으로 유지한다.
 
-    void TScene::SetSourcePath(std::filesystem::path Path)
+    void FScene::SetSourcePath(std::filesystem::path Path)
     {
         SourcePath = std::move(Path);
     }
 
-    const std::filesystem::path& TScene::GetSourcePath() const noexcept
+    const std::filesystem::path& FScene::GetSourcePath() const noexcept
     {
         return SourcePath;
     }
 
-    std::uint32_t TScene::GetSimulationResolution() const noexcept
+    std::uint32_t FScene::GetSimulationResolution() const noexcept
     {
         return SimulationResolution;
     }
 
-    void TScene::SetSimulationResolution(std::uint32_t Resolution)
+    void FScene::SetSimulationResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
         {
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         }
+
         SimulationResolution = Resolution;
     }
 
-    float TScene::GetLitHeightDisplayScale() const noexcept
+    float FScene::GetLitHeightDisplayScale() const noexcept
     {
         return LitHeightDisplayScale;
     }
 
-    void TScene::SetLitHeightDisplayScale(float Scale)
+    void FScene::SetLitHeightDisplayScale(float Scale)
     {
         if (!std::isfinite(Scale) || Scale < 0.0F || Scale > 100.0F)
         {
             throw std::invalid_argument("Lit height display scale must be finite and between 0 and 100.");
         }
+
         LitHeightDisplayScale = Scale;
     }
 
 #pragma endregion
 
-#pragma region Initial_State_and_Contacts
+// ============================================================
+// 02. Initial State and Contacts
+// ============================================================
+#pragma region 02_Initial_State_and_Contacts
+// 초기 State와 접촉 입력을 Solver 준비 단계에 전달한다.
 
-    void TScene::CaptureInitialState()
+    void FScene::CaptureInitialState()
     {
         InitialCamera = MainCamera;
         InitialTransforms.clear();
         InitialTransforms.reserve(StaticMeshInstances.size());
-        for (const TStaticMeshInstance& Instance : StaticMeshInstances)
+
+        for (const FStaticMeshInstance& Instance : StaticMeshInstances)
             InitialTransforms.push_back(Instance.GetTransform());
     }
 
-    void TScene::RestoreInitialState()
+    void FScene::RestoreInitialState()
     {
         MainCamera = InitialCamera;
         const std::size_t Count = std::min(StaticMeshInstances.size(), InitialTransforms.size());
+
         for (std::size_t Index = 0; Index < Count; ++Index)
             StaticMeshInstances[Index].GetTransform() = InitialTransforms[Index];
         if (DemoAnimation)
@@ -107,9 +123,13 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Demo_Animation_State
+// ============================================================
+// 03. Demo Animation State
+// ============================================================
+#pragma region 03_Demo_Animation_State
+// clip 재생·정지·재시작의 시간과 적용 상태를 관리한다.
 
-    void TScene::SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip)
+    void FScene::SetDemoAnimation(std::filesystem::path Path, FDemoAnimationClip Clip)
     {
         DemoAnimationPath = std::move(Path);
         DemoAnimation = std::move(Clip);
@@ -117,37 +137,42 @@ namespace MDSS
         bDemoAnimationPlaying = DemoAnimation->bAutoplay;
     }
 
-    const std::filesystem::path& TScene::GetDemoAnimationPath() const noexcept
+    const std::filesystem::path& FScene::GetDemoAnimationPath() const noexcept
     {
         return DemoAnimationPath;
     }
-    bool TScene::HasDemoAnimation() const noexcept
+
+    bool FScene::HasDemoAnimation() const noexcept
     {
         return DemoAnimation.has_value();
     }
-    bool TScene::HasDemoContactEvents() const noexcept
+
+    bool FScene::HasDemoContactEvents() const noexcept
     {
         return DemoAnimation && !DemoAnimation->ContactEvents.empty();
     }
-    bool TScene::IsDemoAnimationPlaying() const noexcept
+
+    bool FScene::IsDemoAnimationPlaying() const noexcept
     {
         return bDemoAnimationPlaying;
     }
-    float TScene::GetDemoAnimationTime() const noexcept
+
+    float FScene::GetDemoAnimationTime() const noexcept
     {
         return DemoAnimationTime;
     }
-    float TScene::GetDemoAnimationDuration() const noexcept
+
+    float FScene::GetDemoAnimationDuration() const noexcept
     {
         return DemoAnimation ? DemoAnimation->DurationSeconds : 0.0F;
     }
 
-    const TDemoAnimationClip::TWeatherCue* TScene::GetDemoWeather() const noexcept
+    const FDemoAnimationClip::FWeatherCue* FScene::GetDemoWeather() const noexcept
     {
         return DemoAnimation && DemoAnimation->Weather ? &*DemoAnimation->Weather : nullptr;
     }
 
-    void TScene::PlayDemoAnimation()
+    void FScene::PlayDemoAnimation()
     {
         if (!DemoAnimation)
             return;
@@ -156,22 +181,22 @@ namespace MDSS
         bDemoAnimationPlaying = true;
     }
 
-    void TScene::PauseDemoAnimation() noexcept
+    void FScene::PauseDemoAnimation() noexcept
     {
         bDemoAnimationPlaying = false;
     }
 
-    void TScene::AddInitialContact(TSceneInitialContact Contact)
+    void FScene::AddInitialContact(FSceneInitialContact Contact)
     {
         InitialContacts.push_back(std::move(Contact));
     }
 
-    const std::vector<TSceneInitialContact>& TScene::GetInitialContacts() const noexcept
+    const std::vector<FSceneInitialContact>& FScene::GetInitialContacts() const noexcept
     {
         return InitialContacts;
     }
 
-    void TScene::RestartDemoAnimation()
+    void FScene::RestartDemoAnimation()
     {
         if (!DemoAnimation)
             return;
@@ -180,13 +205,15 @@ namespace MDSS
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
     }
 
-    std::vector<TDemoAnimationClip::TContactEvent> TScene::AdvanceDemoAnimation(float DeltaTime)
+    std::vector<FDemoAnimationClip::FContactEvent> FScene::AdvanceDemoAnimation(float DeltaTime)
     {
-        std::vector<TDemoAnimationClip::TContactEvent> Fired;
+        std::vector<FDemoAnimationClip::FContactEvent> Fired;
+
         if (!DemoAnimation || !bDemoAnimationPlaying || !std::isfinite(DeltaTime) || DeltaTime <= 0.0F)
             return Fired;
         const float PreviousTime = DemoAnimationTime;
         DemoAnimationTime += DeltaTime;
+
         if (DemoAnimation->bLoop)
             DemoAnimationTime = std::fmod(DemoAnimationTime, DemoAnimation->DurationSeconds);
         else if (DemoAnimationTime >= DemoAnimation->DurationSeconds)
@@ -194,35 +221,42 @@ namespace MDSS
             DemoAnimationTime = DemoAnimation->DurationSeconds;
             bDemoAnimationPlaying = false;
         }
+
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
+
         for (const auto& Event : DemoAnimation->ContactEvents)
         {
             if ((Event.Time > PreviousTime || (PreviousTime == 0.0F && Event.Time == 0.0F)) &&
                 Event.Time <= DemoAnimationTime)
                 Fired.push_back(Event);
         }
+
         return Fired;
     }
 
 #pragma endregion
 
-#pragma region Mesh_Instance_Management
+// ============================================================
+// 04. Mesh Instance Management
+// ============================================================
+#pragma region 04_Mesh_Instance_Management
+// Scene instance의 추가·조회와 변환 상태를 관리한다.
 
-    void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)
+    void FScene::AddStaticMeshInstance(FStaticMeshInstance Instance)
     {
         StaticMeshInstances.push_back(std::move(Instance));
         InitialTransforms.push_back(StaticMeshInstances.back().GetTransform());
-        TLogger::Debug(
+        FLogger::Debug(
             "TScene",
             "Static mesh instance added. TScene instance count=" + std::to_string(StaticMeshInstances.size()) + ".");
     }
 
-    std::vector<TStaticMeshInstance>& TScene::GetStaticMeshInstances() noexcept
+    std::vector<FStaticMeshInstance>& FScene::GetStaticMeshInstances() noexcept
     {
         return StaticMeshInstances;
     }
 
-    const std::vector<TStaticMeshInstance>& TScene::GetStaticMeshInstances() const noexcept
+    const std::vector<FStaticMeshInstance>& FScene::GetStaticMeshInstances() const noexcept
     {
         return StaticMeshInstances;
     }

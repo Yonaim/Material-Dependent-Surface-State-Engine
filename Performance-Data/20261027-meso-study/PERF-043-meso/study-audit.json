@@ -1,0 +1,498 @@
+{
+  "created_at": "2026-10-27T09:14:00.735884+09:00",
+  "expected": 35,
+  "completed": 35,
+  "missing": [],
+  "attempt_statuses": [
+    {
+      "id": "cpu-analytic-64",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-png-64",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-brick-64",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-analytic-128",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-png-128",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-brick-128",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-analytic-256",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-png-256",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-brick-256",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-brick-128-x0.5",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-brick-128-x2",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "cpu-flat8-128",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "legacy-smoke-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-flat-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-analytic-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-analytic-ls-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-png-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-png-ls-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-ls-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-analytic-truth-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-128-x0.5-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-128-x2-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-png-128-E",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-128-E",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-128-120-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-64-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-256-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-ls-256-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-cavity-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-cavity-128-E",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-cavity-ls-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-passthrough-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-replay-128-D",
+      "attempt": 1,
+      "status": "completed"
+    },
+    {
+      "id": "gpu-brick-ls-replay-128-D",
+      "attempt": 1,
+      "status": "completed"
+    }
+  ],
+  "evaluation_steps": 5580,
+  "max_relative_material_budget": 1.7751922444633502e-08,
+  "production_geometry_copied_verbatim": true,
+  "unique_executable_hashes": [
+    "0ebd940d4edff662f1d8ce1646ef59f2ffa2d6d777e4c058f855dc33eb113078"
+  ],
+  "max_independent_channel_relative_budget": 1.9122348144583723e-06,
+  "independent_channel_checks": [
+    {
+      "id": "legacy-smoke-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.883920087676276e-08,
+        4.087653924836961e-09,
+        1.099020918003641e-09
+      ]
+    },
+    {
+      "id": "gpu-flat-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.413352894092856e-07,
+        1.765198243495016e-08,
+        1.532835932459916e-08
+      ]
+    },
+    {
+      "id": "gpu-analytic-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.341994612625101e-07,
+        1.4947697187430083e-08,
+        2.1387247233495856e-08
+      ]
+    },
+    {
+      "id": "gpu-analytic-ls-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.418556993829301e-07,
+        1.854964334718386e-08,
+        2.3584967882078792e-08
+      ]
+    },
+    {
+      "id": "gpu-png-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.376905883810331e-07,
+        1.7284458259651245e-08,
+        2.1639330431396936e-08
+      ]
+    },
+    {
+      "id": "gpu-png-ls-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.503073193883477e-07,
+        1.4798126772817613e-08,
+        1.3257563410051545e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.481237111734425e-07,
+        1.9006133933959744e-08,
+        2.215968677176385e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-ls-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.4221381248197e-07,
+        1.6463401216262757e-08,
+        1.6378225593445188e-08
+      ]
+    },
+    {
+      "id": "gpu-analytic-truth-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.419978772991511e-07,
+        1.749966494597318e-08,
+        1.8555096769545914e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-128-x0.5-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.508776367177201e-07,
+        2.8610083719275215e-08,
+        1.8606971709745304e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-128-x2-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.401267305651513e-07,
+        1.37740516221185e-08,
+        1.3136850795532238e-08
+      ]
+    },
+    {
+      "id": "gpu-png-128-E",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.485633575544604e-07,
+        2.5969623296695934e-08,
+        1.6842327156043167e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-128-E",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.433568303727836e-07,
+        1.2102651366689963e-08,
+        1.830510666416645e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-128-120-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        1.9122348144583723e-06,
+        1.2750721817876895e-08,
+        1.104878973336112e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-64-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.820340710041161e-07,
+        1.8205046024168932e-08,
+        2.6933111294400455e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-256-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.415630290879353e-07,
+        1.7439556162029723e-08,
+        1.65656250076968e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-ls-256-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.402454148174206e-07,
+        1.937427950985485e-08,
+        1.9165806580212525e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-cavity-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.500247153751182e-07,
+        1.9980267972612285e-08,
+        2.1930205291540493e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-cavity-128-E",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.494201031658082e-07,
+        1.598171975325824e-08,
+        1.6695492757642582e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-cavity-ls-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.479777371056019e-07,
+        2.1218090066060097e-08,
+        1.5228067342009343e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-passthrough-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.481237111734425e-07,
+        1.9006133933959744e-08,
+        2.215968677176385e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-replay-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.481237111734425e-07,
+        1.9006133933959744e-08,
+        2.215968677176385e-08
+      ]
+    },
+    {
+      "id": "gpu-brick-ls-replay-128-D",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "relative_residual": [
+        8.4221381248197e-07,
+        1.6463401216262757e-08,
+        1.6378225593445188e-08
+      ]
+    }
+  ],
+  "unit_tests": {
+    "normal_map_transfer": "passed",
+    "shared_surface_geometry": "failed: unchanged render mesh invalid-texel triangle-count expectation",
+    "log": "raw/unit-tests.log"
+  },
+  "provenance_limit": "First 33 runs archive exe, GLSL and generated CPU body, but initially omit production SPIR-V directory. Two representative replays capture production SPIR-V before execution and compare bitwise; original missing per-run shader capture is not retroactively filled.",
+  "errors": []
+}

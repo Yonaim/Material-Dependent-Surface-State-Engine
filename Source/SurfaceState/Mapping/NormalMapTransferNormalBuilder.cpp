@@ -10,7 +10,11 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Normal_Map_Sampling_Helpers
+// ============================================================
+// 00. Normal Map Sampling Helpers
+// ============================================================
+#pragma region 00_Normal_Map_Sampling_Helpers
+// UV와 tangent 기저에서 Normal Map 입력을 유효한 표면 방향으로 읽는다.
 
     namespace
     {
@@ -23,7 +27,7 @@ namespace MDSS::SurfaceState
             return Remainder < 0 ? Remainder + SignedExtent : Remainder;
         }
 
-        bool SampleNormalMapLinearRepeat(const Asset::TextureData& Texture, const glm::vec2& UV, glm::vec3& OutNormal)
+        bool SampleNormalMapLinearRepeat(const Asset::FTextureData& Texture, const glm::vec2& UV, glm::vec3& OutNormal)
         {
             if (Texture.Width == 0 || Texture.Height == 0 ||
                 Texture.Pixels.size() != static_cast<std::size_t>(Texture.Width) * Texture.Height * 4U ||
@@ -55,22 +59,28 @@ namespace MDSS::SurfaceState
             const glm::vec3 Bottom = glm::mix(ReadNormal(X0, Y0 + 1), ReadNormal(X0 + 1, Y0 + 1), TX);
             const glm::vec3 Sample = glm::mix(Top, Bottom, TY);
             const float     SampleLengthSquared = glm::dot(Sample, Sample);
+
             if (!std::isfinite(SampleLengthSquared) || SampleLengthSquared <= NormalMapEpsilon)
             {
                 return false;
             }
+
             OutNormal = Sample / std::sqrt(SampleLengthSquared);
             return true;
         }
     } // namespace
 #pragma endregion
 
-#pragma region Transfer_Normal_Build
+// ============================================================
+// 01. Transfer Normal Build
+// ============================================================
+#pragma region 01_Transfer_Normal_Build
+// 수송 계산이 사용할 normal을 mapping과 Normal Map에서 전처리한다.
 
-    bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&                   Texel,
-                                      const std::vector<Asset::TVertex>&             Vertices,
-                                      const std::vector<Asset::TMeshTriangleSource>& Triangles,
-                                      const Asset::TextureData&                      NormalMap,
+    bool BuildNormalMapTransferNormal(const FSurfaceTexelGeometry&                   Texel,
+                                      const std::vector<Asset::FVertex>&             Vertices,
+                                      const std::vector<Asset::FMeshTriangleSource>& Triangles,
+                                      const Asset::FTextureData&                     NormalMap,
                                       glm::vec3&                                     OutTransferNormal,
                                       bool                                           bFlipNormalY)
     {
@@ -79,18 +89,20 @@ namespace MDSS::SurfaceState
             return false;
         }
 
-        const Asset::TMeshTriangleSource& Triangle = Triangles[Texel.Triangle];
+        const Asset::FMeshTriangleSource& Triangle = Triangles[Texel.Triangle];
         const auto&                       VertexIndices = Triangle.RenderVertexIndices;
+
         if (Triangle.Surface != Texel.Surface || VertexIndices[0] >= Vertices.size() ||
             VertexIndices[1] >= Vertices.size() || VertexIndices[2] >= Vertices.size())
         {
             return false;
         }
 
-        const Asset::TVertex& V0 = Vertices[VertexIndices[0]];
-        const Asset::TVertex& V1 = Vertices[VertexIndices[1]];
-        const Asset::TVertex& V2 = Vertices[VertexIndices[2]];
+        const Asset::FVertex& V0 = Vertices[VertexIndices[0]];
+        const Asset::FVertex& V1 = Vertices[VertexIndices[1]];
+        const Asset::FVertex& V2 = Vertices[VertexIndices[2]];
         const glm::vec2 UV = Texel.Barycentric.x * V0.UV + Texel.Barycentric.y * V1.UV + Texel.Barycentric.z * V2.UV;
+
         if (!std::isfinite(UV.x) || !std::isfinite(UV.y))
         {
             return false;
@@ -112,10 +124,12 @@ namespace MDSS::SurfaceState
         Tangent /= std::sqrt(TangentLengthSquared);
         const glm::vec3 Bitangent = glm::normalize(glm::cross(Normal, Tangent)) * (Handedness < 0.0F ? -1.0F : 1.0F);
         glm::vec3       NormalTS{};
+
         if (!SampleNormalMapLinearRepeat(NormalMap, UV, NormalTS))
         {
             return false;
         }
+
         if (bFlipNormalY)
         {
             NormalTS.y = -NormalTS.y;
@@ -123,10 +137,12 @@ namespace MDSS::SurfaceState
 
         const glm::vec3 NormalLocal = Tangent * NormalTS.x + Bitangent * NormalTS.y + Normal * NormalTS.z;
         const float     NormalLengthSquared = glm::dot(NormalLocal, NormalLocal);
+
         if (!std::isfinite(NormalLengthSquared) || NormalLengthSquared <= NormalMapEpsilon)
         {
             return false;
         }
+
         OutTransferNormal = NormalLocal / std::sqrt(NormalLengthSquared);
         return true;
     }

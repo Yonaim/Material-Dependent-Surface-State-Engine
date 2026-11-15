@@ -45,6 +45,7 @@ namespace MDSS
 
             std::string Result;
             char        Buffer[512];
+
             while (std::fgets(Buffer, sizeof(Buffer), Pipe) != nullptr)
             {
                 Result += Buffer;
@@ -58,22 +59,28 @@ namespace MDSS
             {
                 Result.pop_back();
             }
+
             if (Result.empty())
             {
                 return std::nullopt;
             }
+
             return std::filesystem::path(Result);
         }
     } // namespace
 
-#pragma region std_Implementation
+// ============================================================
+// 00. std Implementation
+// ============================================================
+#pragma region 00_std_Implementation
+// 운영체제 파일 선택 창을 열어 Scene 경로를 반환한다.
 
-    std::optional<std::filesystem::path> TSceneFileDialog::OpenScene()
+    std::optional<std::filesystem::path> FSceneFileDialog::OpenScene()
     {
         return RunNativeDialog(false);
     }
 
-    std::optional<std::filesystem::path> TSceneFileDialog::SaveScene()
+    std::optional<std::filesystem::path> FSceneFileDialog::SaveScene()
     {
         return RunNativeDialog(true);
     }

@@ -1,0 +1,231 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/ReactionTransitionComparison.DemoAnim",
+  "camera": {
+    "position": [
+      0.8,
+      -6.9,
+      5.9
+    ],
+    "target": [
+      0,
+      0,
+      0.12
+    ],
+    "verticalFieldOfViewDegrees": 40
+  },
+  "simulationResolution": 128,
+  "litHeightDisplayScale": 1,
+  "objects": [
+    {
+      "id": "control",
+      "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateTop.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/ReactionTransitionControl.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -2.05,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "control_sides",
+      "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateSides.obj",
+      "transform": {
+        "position": [
+          -2.05,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "transition",
+      "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateTop.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/ReactionTransitionConversion.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          0.0,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "transition_sides",
+      "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateSides.obj",
+      "transform": {
+        "position": [
+          0.0,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "reaction",
+      "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateTop.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/ReactionTransitionConsume.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          2.05,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "reaction_sides",
+      "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateSides.obj",
+      "transform": {
+        "position": [
+          2.05,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "labels",
+      "mesh": "../Meshes/ReactionLab/ReactionTransitionLabels.obj",
+      "transform": {
+        "position": [
+          0,
+          -1.42,
+          -0.02
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "stage",
+      "mesh": "../Meshes/ReactionLab/Stage.obj",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.29
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          7,
+          3.65,
+          0.18
+        ]
+      }
+    }
+  ],
+  "initialContacts": [
+    {
+      "target": "control",
+      "state": "fuel",
+      "worldPosition": [
+        -2.05,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 2.0,
+      "falloff": 0.25
+    },
+    {
+      "target": "transition",
+      "state": "fuel",
+      "worldPosition": [
+        0.0,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 2.0,
+      "falloff": 0.25
+    },
+    {
+      "target": "reaction",
+      "state": "fuel",
+      "worldPosition": [
+        2.05,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 2.0,
+      "falloff": 0.25
+    }
+  ]
+}

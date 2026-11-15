@@ -11,7 +11,7 @@
 
 namespace MDSS::SurfaceState
 {
-    struct TSurfaceTexelSelection
+    struct FSurfaceTexelSelection
     {
         std::size_t   Instance = 0;
         std::uint32_t Surface = 0;
@@ -21,37 +21,39 @@ namespace MDSS::SurfaceState
         std::string   Profile;
     };
 
-    struct TSurfaceTexelSnapshot
+    struct FSurfaceTexelSnapshot
     {
-        TSurfaceTexelSelection Selection;
-        TStateId               Channel = InvalidStateId;
+        FSurfaceTexelSelection Selection;
+        FStateId               Channel = InvalidStateId;
         std::uint64_t          Step = 0;
         std::uint64_t          Serial = 0;
         bool                   bStateAB = true;
+
         // State/capacity/saturation/reference amount; factors/meso/reference;
+
         // cavity depth/fill/excess/status; heights; area/scale; final local normal.
-        std::array<glm::vec4, 6> Values{};
+        std::array<glm::vec4, 7> Values{};
     };
 
     /** @brief One-texel GPU diagnostic with frame-fence-owned readback; never waits for the whole device. */
-    class TTexelInspector final
+    class FTexelInspector final
     {
     public:
         // Inspector resource lifecycle
-        TTexelInspector(VkPhysicalDevice      PhysicalDevice,
+        FTexelInspector(VkPhysicalDevice      PhysicalDevice,
                         VkDevice              Device,
                         VkDescriptorSetLayout SurfaceLayout,
                         std::size_t           FrameCount);
-        ~TTexelInspector();
-        TTexelInspector(const TTexelInspector&) = delete;
-        TTexelInspector& operator=(const TTexelInspector&) = delete;
+        ~FTexelInspector();
+        FTexelInspector(const FTexelInspector&) = delete;
+        FTexelInspector& operator=(const FTexelInspector&) = delete;
 
         // Selection recording and snapshot readback
         void Record(VkCommandBuffer                         Command,
                     std::size_t                             Frame,
-                    const TSurfaceStateDescriptorResources& Descriptors,
-                    const TSurfaceTexelSelection&           Selection,
-                    TStateId                                Channel,
+                    const FSurfaceStateDescriptorResources& Descriptors,
+                    const FSurfaceTexelSelection&           Selection,
+                    FStateId                                Channel,
                     std::uint32_t                           Channels,
                     float                                   AccumulationDisplayScale,
                     const glm::mat4&                        ModelMatrix,
@@ -60,7 +62,7 @@ namespace MDSS::SurfaceState
         /** @brief Call only after the corresponding frame fence has signaled. */
         void                                                      CompleteFrame(std::size_t Frame);
         void                                                      Invalidate() noexcept;
-        [[nodiscard]] const std::optional<TSurfaceTexelSnapshot>& GetSnapshot() const noexcept
+        [[nodiscard]] const std::optional<FSurfaceTexelSnapshot>& GetSnapshot() const noexcept
         {
             return Snapshot;
         }
@@ -68,11 +70,11 @@ namespace MDSS::SurfaceState
     private:
         // Resource cleanup
         void Destroy() noexcept;
-        struct TFrame
+        struct FFrame
         {
-            std::unique_ptr<GPU::TGPUBuffer>     Buffer;
+            std::unique_ptr<GPU::FGPUBuffer>     Buffer;
             VkDescriptorSet                      Set = VK_NULL_HANDLE;
-            std::optional<TSurfaceTexelSnapshot> Pending;
+            std::optional<FSurfaceTexelSnapshot> Pending;
             std::uint64_t                        Generation = 0;
         };
         VkDevice                             Device;
@@ -80,9 +82,9 @@ namespace MDSS::SurfaceState
         VkDescriptorPool                     Pool = VK_NULL_HANDLE;
         VkPipelineLayout                     Layout = VK_NULL_HANDLE;
         VkPipeline                           Pipeline = VK_NULL_HANDLE;
-        std::vector<TFrame>                  Frames;
+        std::vector<FFrame>                  Frames;
         std::uint64_t                        Generation = 0;
         std::uint64_t                        Serial = 0;
-        std::optional<TSurfaceTexelSnapshot> Snapshot;
+        std::optional<FSurfaceTexelSnapshot> Snapshot;
     };
 }

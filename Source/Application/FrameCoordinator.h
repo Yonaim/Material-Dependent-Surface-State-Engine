@@ -1,3 +1,8 @@
+/**
+ * @file FrameCoordinator.h
+ * @brief 고정 시간 step과 프레임별 Solver 기록·완료 시점을 조율한다.
+ */
+
 #pragma once
 
 #include "SurfaceState/Solver/SimulationClock.h"
@@ -9,25 +14,27 @@
 
 namespace MDSS
 {
-    class TDebugUI;
+    class FDebugUI;
 }
+
 namespace MDSS::SurfaceState
 {
-    class TSurfaceStateSystem;
+    class FSurfaceStateSystem;
 }
 
 namespace MDSS
 {
     // Owns simulation time and records simulation work into the frame command buffer.
-    class TFrameCoordinator final
+    class FFrameCoordinator final
     {
     public:
-        explicit TFrameCoordinator(SurfaceState::TSurfaceStateSystem& SurfaceStateSystem) noexcept;
+        explicit FFrameCoordinator(SurfaceState::FSurfaceStateSystem& SurfaceStateSystem) noexcept;
 
         // Called after the frame fence wait, before swapchain acquisition.
-        bool BeginFrame(TDebugUI& DebugUI, float DeltaTime, bool bSuspendClock);
+        bool BeginFrame(FDebugUI& DebugUI, float DeltaTime, bool bSuspendClock);
+
         // Consume time only after an image was acquired so skipped frames retain their budget.
-        void PrepareSteps(TDebugUI& DebugUI, bool bResetState);
+        void PrepareSteps(FDebugUI& DebugUI, bool bResetState);
         void RecordSimulation(VkCommandBuffer CommandBuffer,
                               VkQueryPool     QueryPool,
                               std::uint32_t   FirstStepQuery,
@@ -39,34 +46,40 @@ namespace MDSS
         {
             return Steps;
         }
+
         [[nodiscard]] std::uint32_t GetStepCount() const noexcept
         {
             return static_cast<std::uint32_t>(Steps.size());
         }
+
         [[nodiscard]] double GetPendingSeconds() const noexcept
         {
             return Clock.GetPendingSeconds();
         }
+
         [[nodiscard]] double GetSimulatedSeconds() const noexcept
         {
             return Clock.GetSimulatedSeconds();
         }
+
         [[nodiscard]] float GetMaximumStep() const noexcept
         {
             return MaximumStep;
         }
+
         [[nodiscard]] float GetDroppedSeconds() const noexcept
         {
             return DroppedSeconds;
         }
+
         [[nodiscard]] std::uint64_t GetStepSerial() const noexcept
         {
             return StepSerial;
         }
 
     private:
-        SurfaceState::TSurfaceStateSystem& SurfaceStateSystem;
-        SurfaceState::TSimulationClock     Clock;
+        SurfaceState::FSurfaceStateSystem& SurfaceStateSystem;
+        SurfaceState::FSimulationClock     Clock;
         std::vector<float>                 Steps;
         std::uint64_t                      StepSerial = 0;
         float                              MaximumStep = SurfaceState::FixedSimulationStepSeconds;

@@ -14,17 +14,21 @@
 
 namespace MDSS::Asset
 {
-#pragma region Texture_Asset_Lifecycle
+// ============================================================
+// 00. Texture Asset Lifecycle
+// ============================================================
+#pragma region 00_Texture_Asset_Lifecycle
+// 이미지·뷰·sampler 수명을 Texture asset의 수명에 연결한다.
 
-    TextureAsset::TextureAsset(TAssetID                         ID,
-                               std::string                      Name,
-                               std::filesystem::path            SourcePath,
-                               const GPU::TVulkanContext&       Context,
-                               std::uint32_t                    Width,
-                               std::uint32_t                    Height,
-                               const std::vector<std::uint8_t>& RGBA8Pixels,
-                               VkFormat                         Format)
-        : TAsset(ID, std::move(Name), std::move(SourcePath)), Width(Width), Height(Height), Format(Format)
+    FTextureAsset::FTextureAsset(FAssetID                         ID,
+                                 std::string                      Name,
+                                 std::filesystem::path            SourcePath,
+                                 const GPU::FVulkanContext&       Context,
+                                 std::uint32_t                    Width,
+                                 std::uint32_t                    Height,
+                                 const std::vector<std::uint8_t>& RGBA8Pixels,
+                                 VkFormat                         Format)
+        : FAsset(ID, std::move(Name), std::move(SourcePath)), Width(Width), Height(Height), Format(Format)
     {
         if (Width == 0 || Height == 0 || RGBA8Pixels.size() != static_cast<std::size_t>(Width) * Height * 4U)
         {
@@ -32,15 +36,15 @@ namespace MDSS::Asset
         }
 
         const VkDeviceSize ByteCount = static_cast<VkDeviceSize>(RGBA8Pixels.size());
-        GPU::TGPUBuffer    StagingBuffer(Context.GetPhysicalDevice(),
+        GPU::FGPUBuffer    StagingBuffer(Context.GetPhysicalDevice(),
                                          Context.GetDevice(),
                                          ByteCount,
                                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                         GPU::TGPUBufferMemoryCategory::Other);
+                                         GPU::EGPUBufferMemoryCategory::Other);
         StagingBuffer.Upload(RGBA8Pixels.data(), ByteCount);
 
-        Image = std::make_unique<GPU::TGPUImage>(Context.GetPhysicalDevice(),
+        Image = std::make_unique<GPU::FGPUImage>(Context.GetPhysicalDevice(),
                                                  Context.GetDevice(),
                                                  VkExtent2D{Width, Height},
                                                  Format,
@@ -56,51 +60,59 @@ namespace MDSS::Asset
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        ImageView = std::make_unique<GPU::TGPUImageView>(
+        ImageView = std::make_unique<GPU::FGPUImageView>(
             Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
-        Sampler = std::make_unique<GPU::TGPUSampler>(Context.GetDevice());
-        TLogger::Debug("TAssetManager",
+        Sampler = std::make_unique<GPU::FGPUSampler>(Context.GetDevice());
+        FLogger::Debug("TAssetManager",
                        "Uploaded TextureAsset '" + GetName() + "' to GPU (" + std::to_string(Width) + "x" +
                            std::to_string(Height) + ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
 #pragma endregion
 
-#pragma region Texture_Resource_Access
+// ============================================================
+// 01. Texture Resource Access
+// ============================================================
+#pragma region 01_Texture_Resource_Access
+// 업로드된 texture의 GPU 자원과 메타데이터를 소비자에게 제공한다.
 
-    std::uint32_t TextureAsset::GetWidth() const noexcept
+    std::uint32_t FTextureAsset::GetWidth() const noexcept
     {
         return Width;
     }
 
-    std::uint32_t TextureAsset::GetHeight() const noexcept
+    std::uint32_t FTextureAsset::GetHeight() const noexcept
     {
         return Height;
     }
 
-    VkFormat TextureAsset::GetFormat() const noexcept
+    VkFormat FTextureAsset::GetFormat() const noexcept
     {
         return Format;
     }
 
-    VkImageView TextureAsset::GetImageView() const noexcept
+    VkImageView FTextureAsset::GetImageView() const noexcept
     {
         return ImageView->GetHandle();
     }
 
-    VkSampler TextureAsset::GetSampler() const noexcept
+    VkSampler FTextureAsset::GetSampler() const noexcept
     {
         return Sampler->GetHandle();
     }
 
 #pragma endregion
 
-#pragma region Texture_Layout_and_Upload
+// ============================================================
+// 02. Texture Layout and Upload
+// ============================================================
+#pragma region 02_Texture_Layout_and_Upload
+// 이미지 layout을 전환하고 CPU 픽셀을 GPU texture로 전송한다.
 
-    void TextureAsset::TransitionImageLayout(const GPU::TVulkanContext& Context,
-                                             VkImage                    Image,
-                                             VkImageLayout              OldLayout,
-                                             VkImageLayout              NewLayout)
+    void FTextureAsset::TransitionImageLayout(const GPU::FVulkanContext& Context,
+                                              VkImage                    Image,
+                                              VkImageLayout              OldLayout,
+                                              VkImageLayout              NewLayout)
     {
         VkCommandBuffer CommandBuffer = Context.GetCommands().BeginSingleTime();
 
@@ -146,8 +158,8 @@ namespace MDSS::Asset
         Context.GetCommands().EndSingleTime(CommandBuffer, Context.GetQueues().GetGraphics());
     }
 
-    void TextureAsset::CopyBufferToImage(
-        const GPU::TVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height)
+    void FTextureAsset::CopyBufferToImage(
+        const GPU::FVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height)
     {
         VkCommandBuffer CommandBuffer = Context.GetCommands().BeginSingleTime();
 

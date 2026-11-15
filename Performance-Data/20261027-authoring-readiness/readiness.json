@@ -1,0 +1,96 @@
+{
+  "created_at": "2026-10-27T09:55:52.475789+09:00",
+  "status": "not_ready_for_comparative_authoring_study",
+  "profile_probe_cases": 5,
+  "profile_and_binding_checks_passed": true,
+  "scene_reference_errors": [],
+  "results": [
+    {
+      "builtin_absorbed_wetness_binding": false,
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "expected_builtin_absorbed_wetness_binding": false,
+      "id": "base",
+      "profile_loaded": true,
+      "registered": true,
+      "rule_count": 2,
+      "scope": "Actual profile loader/registry/appearance binding; no rendered-frame or author-performance evidence",
+      "state": "waterfilm"
+    },
+    {
+      "builtin_absorbed_wetness_binding": false,
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm",
+        "wetness"
+      ],
+      "expected_builtin_absorbed_wetness_binding": false,
+      "id": "wetness",
+      "profile_loaded": true,
+      "registered": true,
+      "rule_count": 3,
+      "scope": "Actual profile loader/registry/appearance binding; no rendered-frame or author-performance evidence",
+      "state": "wetness"
+    },
+    {
+      "builtin_absorbed_wetness_binding": true,
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "expected_builtin_absorbed_wetness_binding": true,
+      "id": "absorbedwetness",
+      "profile_loaded": true,
+      "registered": true,
+      "rule_count": 3,
+      "scope": "Actual profile loader/registry/appearance binding; no rendered-frame or author-performance evidence",
+      "state": "absorbedwetness"
+    },
+    {
+      "builtin_absorbed_wetness_binding": false,
+      "channels": [
+        "heat",
+        "ice",
+        "residue",
+        "waterfilm"
+      ],
+      "expected_builtin_absorbed_wetness_binding": false,
+      "id": "residue",
+      "profile_loaded": true,
+      "registered": true,
+      "rule_count": 3,
+      "scope": "Actual profile loader/registry/appearance binding; no rendered-frame or author-performance evidence",
+      "state": "residue"
+    },
+    {
+      "builtin_absorbed_wetness_binding": false,
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "expected_builtin_absorbed_wetness_binding": false,
+      "id": "threshold",
+      "profile_loaded": true,
+      "registered": true,
+      "rule_count": 2,
+      "scope": "Actual profile loader/registry/appearance binding; no rendered-frame or author-performance evidence",
+      "state": "waterfilm"
+    }
+  ],
+  "prepared_tasks": 3,
+  "human_sessions": 0,
+  "human_completion_times": null,
+  "comparative_quality_results": null,
+  "human_study_not_run_reason": "M is a headless coordinator with the same profile declaration workflow; distinct model intervention and matched UI not available. Rendered acceptance predicates and real participant data are absent.",
+  "rendered_scene_execution": "not_run",
+  "rendered_quality": "not_verified",
+  "single_system_pilot": "Isolated editable scene/profile task pack prepared; real author must perform, restart and submit artifacts before any completion result",
+  "finding": "Runtime scalar registration is broader than builtin demo appearance; wetness and absorbedwetness are distinct names, not aliases"
+}

@@ -1,0 +1,26 @@
+{
+  "created_at": "2026-10-27T13:51:30.459878+09:00",
+  "question": "Can scratch-buffer resizing preserve descriptor layout/set lifetime for existing solver and rendering pipelines?",
+  "scope": "Correctness repair; no performance or novelty claim",
+  "baseline": "Six pre-fix rendered conditions logged Vulkan layout lifetime errors; native executable and inputs archived in policy-change-retry",
+  "product_change": "Rebind existing descriptor sets after device idle; keep layout/set handles stable",
+  "tests": [
+    "Existing code plus new scratch-layout-only regression should fail stable-handle contract",
+    "Fixed regression: 12 format switches, State preservation, actual compute/render and no Vulkan errors",
+    "SurfaceGPUResource tests",
+    "Rerun the six original 362-step rendered references with unchanged FP32 Dense settings"
+  ],
+  "acceptance": [
+    "No Vulkan error log in repaired regression or rendered conditions",
+    "Existing layout and AB/BA descriptor handles unchanged across format switches",
+    "State values preserved immediately across storage rebind",
+    "Required frame/image/metadata outputs present at original counts",
+    "Compare named final State arrays to prior observations without treating invalid prior Vulkan runs as ground truth"
+  ],
+  "failed_preflight": {
+    "stage": "baseline test capture requested before first target build completed",
+    "native_executions": 0,
+    "error": "Test executable not present yet",
+    "existing_evidence_overwritten": false
+  }
+}

@@ -1,0 +1,9 @@
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 227)                   "triangles must not connect different Surfaces or charts");
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 228)             Check(glm::dot(glm::cross(B.Position - A.Position, C.Position - A.Position), A.Normal) > 0,
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 229)                   "mirrored UV charts must retain front-facing geometric winding");
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 230)         }
+12bc192c (yonaMac 2026-10-04 21:15:29 +0900 231)         Geometry.GetTexels()[4].Surface = SurfaceState::InvalidSurfaceID;
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 232)         const auto Hole = BuildSurfaceTexelMesh(Geometry);
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 233)         Check(std::ranges::find(Hole.Indices, 4U) == Hole.Indices.end() && Hole.Surfaces[0].IndexCount == 12,
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 234)               "invalid texels must be omitted while retaining valid three-corner cell triangles");
+a02cce91 (yonaMac 2026-09-29 23:58:52 +0900 235)         Geometry.GetTexels()[10].Chart = 42;

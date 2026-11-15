@@ -12,7 +12,7 @@
 
 namespace MDSS::GPU
 {
-    class TVulkanInstance
+    class FVulkanInstance
     {
     public:
         // Vulkan instance lifecycle
@@ -20,13 +20,13 @@ namespace MDSS::GPU
          * @brief Vulkan instance를 만들고 요청 extension 및 빌드 설정에 따른 validation을 적용한다.
          * @throws std::runtime_error 필수 extension/layer가 없거나 instance 생성이 실패한 경우.
          */
-        TVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions);
-        ~TVulkanInstance();
+        FVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions);
+        ~FVulkanInstance();
 
-        TVulkanInstance(const TVulkanInstance&) = delete;
-        TVulkanInstance& operator=(const TVulkanInstance&) = delete;
-        TVulkanInstance(TVulkanInstance&&) = delete;
-        TVulkanInstance& operator=(TVulkanInstance&&) = delete;
+        FVulkanInstance(const FVulkanInstance&) = delete;
+        FVulkanInstance& operator=(const FVulkanInstance&) = delete;
+        FVulkanInstance(FVulkanInstance&&) = delete;
+        FVulkanInstance& operator=(FVulkanInstance&&) = delete;
 
         [[nodiscard]] VkInstance GetHandle() const noexcept;
 

@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "task_id": "AUTH-GOAL-01-v1",
+  "created_at": "2026-10-27T14:45:12.804938+09:00",
+  "status": "specification_prepared_execution_not_run",
+  "scope": "AI-assisted single-system feasibility pilot; no human productivity or baseline comparison",
+  "source_commit": "880af1ebcffe601f0bac27413cad94055ce92812",
+  "source_version": "Commit plus dirty working tree; source hashes below identify preparation inputs only",
+  "prior_knowledge": "PERF-041/042/043 and six approximately-six-second reference renders are known. This goal is informed by that knowledge, not independently or blindly selected.",
+  "report": "Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md#9",
+  "primary_object": "b_heated",
+  "contextual_objects": [
+    "a_finite",
+    "c_cooled"
+  ],
+  "duration_seconds": 16,
+  "last_external_input_seconds": 4,
+  "requested_checkpoints_seconds": [
+    0,
+    1,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16
+  ],
+  "initial_snapshot": "After initialContacts, before the first solver step; not frame zero after an update",
+  "screenshot_state_alignment": "Record actual simulation serial and demo time. Old benchmark drain-end State is not interchangeable with a screenshot-time State.",
+  "input_event_counts": {
+    "b_heated/heat": 16,
+    "c_cooled/heat": 16,
+    "c_cooled/waterfilm": 15
+  },
+  "fixed_configuration": {
+    "simulation_resolution": 128,
+    "render_mesh_resolution": 128,
+    "fixed_dt_seconds": 0.016666666666666666,
+    "geometry_feedback": true,
+    "raw_flux_cache": true,
+    "fp16_raw_flux": false,
+    "fp16_weights": false,
+    "sparse_solver": false,
+    "sparse_height": false,
+    "sparse_geometry": false,
+    "camera": "Unchanged Scene camera; animation camera tracks removed",
+    "appearance": "Existing built-in lit effects, fixed lighting and display scale"
+  },
+  "editable": [
+    "work/Editable.SRProfile numerical response parameters",
+    "Existing ice_melting and water_cooling rate/modifier parameters; keep both rules",
+    "Add absorbedwetness and one existing inflowFraction waterfilm-to-absorbedwetness rule"
+  ],
+  "locked": [
+    "Engine/solver/shaders",
+    "Mesh/material/textures",
+    "Scene/contacts/animation/camera",
+    "Direct wetness paint, scripted State removal, new phenomenon-specific code"
+  ],
+  "gates": [
+    {
+      "id": "G0",
+      "criterion": "Runtime/Vulkan, finite/nonnegative State and input/settings provenance",
+      "evidence_status": "not_run_for_this_new_input"
+    },
+    {
+      "id": "G1",
+      "criterion": "At t=6, B total Ice / B initial Ice is in [0.05, 0.80]; Ice is visually recognizable at t=1",
+      "evidence_status": "not_measured"
+    },
+    {
+      "id": "G2",
+      "criterion": "By t=8, waterfilm coverage >=0.10 outside B initial Ice coverage >=0.10 footprint occupies >=1% of B reference upper-face area",
+      "evidence_status": "requires_time_matched_state_and_geometry_samples"
+    },
+    {
+      "id": "G3",
+      "criterion": "At t=12, 14 and 16, the same texels outside the B initial Ice coverage >=0.10 footprint occupy >=1% of B reference upper-face area, have waterfilm <=0.05, Ice <=0.05, absorbedwetness >=0.25, and had waterfilm >=0.10 at an earlier recorded checkpoint. Their lit trace is visible at normal viewing scale.",
+      "evidence_status": "requires_temporal_samples_and_visual_review"
+    },
+    {
+      "id": "G4",
+      "criterion": "Fresh-process reload preserves final profile/rules and passes G0-G3 again; report actual differences, do not demand bitwise pixels",
+      "evidence_status": "not_run"
+    }
+  ],
+  "metric_definition": "coverage = clamp(amount / (profileCapacity * WorldTexelArea * 256^2),0,1). Use fixed macro reference-area weights and top-face identity from geometry, not render vertex IDs, pixel counts or presumed surface ID.",
+  "threshold_status": "Task design choices, not physical constants, literature standards or measured results; freeze for this pilot and version any revisions, retaining failures.",
+  "visual_gate": "An assessor marks the normal-size fixed-camera lit trace without heatmap/difference amplification; location must overlap the numerical G3 region. AI self-review is provisional and cannot substitute for an independent human quality assessment.",
+  "limitations": [
+    "No independently approved artistic reference",
+    "Per-checkpoint same-step State/geometry captures and top-face area masks not yet prepared",
+    "A checkpoint visit mask is a lower bound on visited area, not a per-step provenance proof",
+    "No per-step full material ledger for this new rendered task",
+    "No human session, comparison intervention or new-mesh generalization"
+  ],
+  "stopping_rule": "At most six recorded profile candidates, then one fresh-process replay of a successful submission. Stop on the first complete provisional pass; retain failed candidates. If none pass, report goal unmet within the declared budget, not impossible in principle.",
+  "model_claim": "Successful output establishes feasibility of this task only, not novelty or relative ease.",
+  "preparation_checks": [
+    {
+      "folder": "start",
+      "relative_paths_only": true,
+      "references_exist": true
+    },
+    {
+      "folder": "work",
+      "relative_paths_only": true,
+      "references_exist": true
+    }
+  ],
+  "input_sha256": {
+    "Assets\\Scenes\\IceReactionLab.Scene": "1421f94f1403bda25343e1bf9bb4d12295f160d2face9d6da65f7f3fe2e72389",
+    "Assets\\Animations\\IceReactionLab.DemoAnim": "e97633cdbf498e74cb2820858285e60f9fc8ff8c304eb41e2b6060dc18204313",
+    "Assets\\SurfaceProfiles\\IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+    "Assets\\SurfaceProfileMaps\\IceReactionLab.SurfaceProfileMap": "5848bade1d4a0360163ea819508237869fb8fe5ae8533cb0b9c3ffb623b2cacb",
+    "Scripts\\Research\\prepare_authoring_goal.py": "097046f6891fbe14e8a5b8e36b5d9b926f4d4e0675e1dac23617dcfb191041c5"
+  },
+  "prepared_artifact_sha256": {
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\start\\Task.Scene": "8fef380819117bab400b89daad0355e0e4431e5a3dedf2f98a79b031e49f2f15",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\start\\Task.DemoAnim": "4b82843939f847888f9219cfc07d9668fb9873ded4fb2aa39e63ccecb21b4818",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\start\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\start\\Editable.SRProfile": "3276b906a5c011beea56748f78e0cae9370a6458f20339d931cdaedca39d190e",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\work\\Task.Scene": "8fef380819117bab400b89daad0355e0e4431e5a3dedf2f98a79b031e49f2f15",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\work\\Task.DemoAnim": "4b82843939f847888f9219cfc07d9668fb9873ded4fb2aa39e63ccecb21b4818",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\work\\Editable.SurfaceProfileMap": "74549a369eb6514fc1e86cc87a352579c5f1c36b7fec54ab51eac2a4848599b6",
+    "Performance-Data\\20261027-authoring-readiness\\goal-v1\\raw\\work\\Editable.SRProfile": "3276b906a5c011beea56748f78e0cae9370a6458f20339d931cdaedca39d190e"
+  },
+  "human_sessions": 0,
+  "application_runs": 0,
+  "measured_results": null
+}

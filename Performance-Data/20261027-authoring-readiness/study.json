@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "study_id": "20261027-authoring-readiness",
+  "question": "Can a fair authoring study currently identify the contribution of the common coupled model?",
+  "status": "layout_lifetime_fixed_reference_capture_gates_passed_human_study_not_ready",
+  "created_at": "2026-10-27T09:52:48.457809+09:00",
+  "updated_at": "2026-10-27T14:10:35.805705+09:00",
+  "record_kind": "validation and study design, no performance experiment ID",
+  "experiments": [
+    {
+      "id": "profile-appearance-probe",
+      "status": "completed_5_cases",
+      "path": "raw/probe/"
+    },
+    {
+      "id": "reference-render-validation",
+      "status": "blocked_before_execution_1_of_6_attempted",
+      "path": "render-validation/"
+    },
+    {
+      "id": "grid-render-index-regression",
+      "status": "before_failure_reproduced_test_updated_after_execution_blocked",
+      "path": "geometry-validation/"
+    },
+    {
+      "id": "policy-change-geometry-retry",
+      "status": "passed",
+      "path": "policy-change-retry/"
+    },
+    {
+      "id": "relative-path-reference-renders",
+      "status": "observed_6_cases_validation_failed",
+      "path": "policy-change-retry/render-v2/"
+    },
+    {
+      "id": "descriptor-lifetime-correctness-fix",
+      "status": "validated_targeted_gpu_and_6_renders",
+      "path": "layout-lifetime-fix/"
+    }
+  ],
+  "report": "../../Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md"
+}

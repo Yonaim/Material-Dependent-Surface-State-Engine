@@ -14,9 +14,13 @@
 
 namespace MDSS
 {
-#pragma region Camera_Matrices
+// ============================================================
+// 00. Camera Matrices
+// ============================================================
+#pragma region 00_Camera_Matrices
+// 카메라 위치·방향·투영 조건에서 view와 projection을 계산한다.
 
-    TCamera::TCamera(
+    FCamera::FCamera(
         glm::vec3 Position, glm::vec3 Target, float VerticalFieldOfViewDegrees, float NearPlane, float FarPlane)
         : Position(Position), Target(Target), VerticalFieldOfViewDegrees(VerticalFieldOfViewDegrees),
           NearPlane(NearPlane), FarPlane(FarPlane)
@@ -32,12 +36,12 @@ namespace MDSS
         }
     }
 
-    glm::mat4 TCamera::GetViewMatrix() const
+    glm::mat4 FCamera::GetViewMatrix() const
     {
         return glm::lookAtRH(Position, Target, Up);
     }
 
-    glm::mat4 TCamera::GetProjectionMatrix(float AspectRatio) const
+    glm::mat4 FCamera::GetProjectionMatrix(float AspectRatio) const
     {
         if (AspectRatio <= 0.0F)
         {
@@ -52,26 +56,30 @@ namespace MDSS
         return Projection;
     }
 
-    glm::mat4 TCamera::GetViewProjectionMatrix(float AspectRatio) const
+    glm::mat4 FCamera::GetViewProjectionMatrix(float AspectRatio) const
     {
         return GetProjectionMatrix(AspectRatio) * GetViewMatrix();
     }
 
 #pragma endregion
 
-#pragma region Camera_Controls
+// ============================================================
+// 01. Camera Controls
+// ============================================================
+#pragma region 01_Camera_Controls
+// 사용자 입력을 카메라 위치·방향 변화에 적용한다.
 
-    void TCamera::SetPosition(glm::vec3 NewPosition) noexcept
+    void FCamera::SetPosition(glm::vec3 NewPosition) noexcept
     {
         Position = NewPosition;
     }
 
-    void TCamera::SetTarget(glm::vec3 NewTarget) noexcept
+    void FCamera::SetTarget(glm::vec3 NewTarget) noexcept
     {
         Target = NewTarget;
     }
 
-    void TCamera::SetRotationDegrees(glm::vec2 RotationDegrees) noexcept
+    void FCamera::SetRotationDegrees(glm::vec2 RotationDegrees) noexcept
     {
         const glm::vec3 ViewDirection = Target - Position;
         const float     Distance = std::max(glm::length(ViewDirection), 1.0F);
@@ -86,26 +94,30 @@ namespace MDSS
         Target = Position + glm::normalize(Forward) * Distance;
     }
 
-    void TCamera::SetVerticalFieldOfViewDegrees(float FieldOfViewDegrees) noexcept
+    void FCamera::SetVerticalFieldOfViewDegrees(float FieldOfViewDegrees) noexcept
     {
         VerticalFieldOfViewDegrees = std::clamp(FieldOfViewDegrees, 1.0F, 179.0F);
     }
 
 #pragma endregion
 
-#pragma region Camera_State_Access
+// ============================================================
+// 02. Camera State Access
+// ============================================================
+#pragma region 02_Camera_State_Access
+// Scene과 UI가 공유할 카메라 설정을 조회·변경한다.
 
-    const glm::vec3& TCamera::GetPosition() const noexcept
+    const glm::vec3& FCamera::GetPosition() const noexcept
     {
         return Position;
     }
 
-    const glm::vec3& TCamera::GetTarget() const noexcept
+    const glm::vec3& FCamera::GetTarget() const noexcept
     {
         return Target;
     }
 
-    glm::vec2 TCamera::GetRotationDegrees() const noexcept
+    glm::vec2 FCamera::GetRotationDegrees() const noexcept
     {
         const glm::vec3 Direction = glm::normalize(Target - Position);
         const float     Pitch = std::asin(std::clamp(Direction.z, -1.0F, 1.0F));
@@ -113,7 +125,7 @@ namespace MDSS
         return {glm::degrees(Pitch), glm::degrees(Yaw)};
     }
 
-    float TCamera::GetVerticalFieldOfViewDegrees() const noexcept
+    float FCamera::GetVerticalFieldOfViewDegrees() const noexcept
     {
         return VerticalFieldOfViewDegrees;
     }

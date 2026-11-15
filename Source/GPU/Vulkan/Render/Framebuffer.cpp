@@ -13,37 +13,45 @@
 
 namespace MDSS::GPU
 {
-#pragma region Framebuffer_Lifecycle
+// ============================================================
+// 00. Framebuffer Lifecycle
+// ============================================================
+#pragma region 00_Framebuffer_Lifecycle
+// attachment 수명에 맞춰 framebuffer의 생성·해제를 관리한다.
 
-    TFramebuffer::TFramebuffer(VkDevice                        Device,
-                               VkRenderPass                    TRenderPass,
+    FFramebuffer::FFramebuffer(VkDevice                        Device,
+                               VkRenderPass                    FRenderPass,
                                VkExtent2D                      Extent,
                                const std::vector<VkImageView>& ColorImageViews,
                                const std::vector<VkImageView>& DepthImageViews)
         : Device(Device)
     {
-        Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
+        Create(FRenderPass, Extent, ColorImageViews, DepthImageViews);
     }
 
-    TFramebuffer::~TFramebuffer()
+    FFramebuffer::~FFramebuffer()
     {
         Reset();
     }
 
 #pragma endregion
 
-#pragma region Framebuffer_Creation
+// ============================================================
+// 01. Framebuffer Creation
+// ============================================================
+#pragma region 01_Framebuffer_Creation
+// 현재 image view와 extent를 render pass의 attachment로 연결한다.
 
-    void TFramebuffer::Recreate(VkRenderPass                    TRenderPass,
+    void FFramebuffer::Recreate(VkRenderPass                    FRenderPass,
                                 VkExtent2D                      Extent,
                                 const std::vector<VkImageView>& ColorImageViews,
                                 const std::vector<VkImageView>& DepthImageViews)
     {
         Reset();
-        Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
+        Create(FRenderPass, Extent, ColorImageViews, DepthImageViews);
     }
 
-    void TFramebuffer::Reset()
+    void FFramebuffer::Reset()
     {
         for (VkFramebuffer Handle : Handles)
         {
@@ -52,10 +60,11 @@ namespace MDSS::GPU
                 vkDestroyFramebuffer(Device, Handle, nullptr);
             }
         }
+
         Handles.clear();
     }
 
-    void TFramebuffer::Create(VkRenderPass                    TRenderPass,
+    void FFramebuffer::Create(VkRenderPass                    FRenderPass,
                               VkExtent2D                      Extent,
                               const std::vector<VkImageView>& ColorImageViews,
                               const std::vector<VkImageView>& DepthImageViews)
@@ -70,7 +79,7 @@ namespace MDSS::GPU
 
             VkFramebufferCreateInfo CreateInfo{};
             CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            CreateInfo.renderPass = TRenderPass;
+            CreateInfo.renderPass = FRenderPass;
             CreateInfo.attachmentCount = static_cast<std::uint32_t>(Attachments.size());
             CreateInfo.pAttachments = Attachments.data();
             CreateInfo.width = Extent.width;
@@ -83,21 +92,26 @@ namespace MDSS::GPU
                 {
                     vkDestroyFramebuffer(Device, Handles[Created], nullptr);
                 }
+
                 Handles.clear();
                 throw std::runtime_error("Failed to create Vulkan framebuffer.");
             }
         }
 
-        TLogger::Debug("TRenderer",
+        FLogger::Debug("TRenderer",
                        "Framebuffers created: " + std::to_string(Handles.size()) + " at " +
                            std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ".");
     }
 
 #pragma endregion
 
-#pragma region Framebuffer_Accessors
+// ============================================================
+// 02. Framebuffer Accessors
+// ============================================================
+#pragma region 02_Framebuffer_Accessors
+// frame index에 대응하는 framebuffer 식별자를 제공한다.
 
-    VkFramebuffer TFramebuffer::Get(std::size_t Index) const
+    VkFramebuffer FFramebuffer::Get(std::size_t Index) const
     {
         if (Index >= Handles.size())
         {
@@ -107,7 +121,7 @@ namespace MDSS::GPU
         return Handles[Index];
     }
 
-    std::size_t TFramebuffer::GetCount() const noexcept
+    std::size_t FFramebuffer::GetCount() const noexcept
     {
         return Handles.size();
     }

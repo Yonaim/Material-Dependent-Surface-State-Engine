@@ -12,7 +12,7 @@
 
 namespace MDSS::SurfaceState
 {
-    struct TMesoGeometryBuildReport
+    struct FMesoGeometryBuildReport
     {
         std::size_t   ActiveTexelCount = 0;
         std::size_t   ComponentCount = 0;
@@ -21,5 +21,5 @@ namespace MDSS::SurfaceState
     };
 
     /** @brief 샘플링한 노멀 맵 normal을 적분해 텍셀별 Meso 형상 데이터를 제자리에서 만든다. */
-    [[nodiscard]] TMesoGeometryBuildReport BuildMesoGeometry(TSharedSurfaceGeometryData& Geometry);
+    [[nodiscard]] FMesoGeometryBuildReport BuildMesoGeometry(FSharedSurfaceGeometryData& Geometry);
 } // MDSS 네임스페이스

@@ -16,11 +16,15 @@
  * @brief 엔진 응용 프로그램을 실행하고 처리되지 않은 초기화 오류를 기록한다.
  * @return 실행 성공 시 0, fatal error 발생 시 1.
  */
-#pragma region Application_Entry_Point
+// ============================================================
+// 00. Application Entry Point
+// ============================================================
+#pragma region 00_Application_Entry_Point
+// 명령행 실행 옵션을 준비한 뒤 Application 수명으로 제어를 넘긴다.
 
 int main(int Argc, char* Argv[])
 {
-    MDSS::TApplicationLaunchOptions LaunchOptions;
+    MDSS::FApplicationLaunchOptions LaunchOptions;
     try
     {
         LaunchOptions = MDSS::ParseApplicationLaunchOptions(Argc, Argv);
@@ -28,20 +32,22 @@ int main(int Argc, char* Argv[])
     catch (const std::invalid_argument& Exception)
     {
         std::cerr << Exception.what() << '\n' << MDSS::GetApplicationUsage() << '\n';
+
         return 2;
     }
 
     try
     {
-        MDSS::TApplication TApplication(std::move(LaunchOptions.Benchmark),
+        MDSS::FApplication FApplication(std::move(LaunchOptions.Benchmark),
                                         LaunchOptions.RenderTileSize,
                                         LaunchOptions.bPerWorkgroupChannelMask,
                                         std::move(LaunchOptions.ScenePath));
-        TApplication.Run(LaunchOptions.FrameLimit);
+        FApplication.Run(LaunchOptions.FrameLimit);
     }
     catch (const std::exception& Exception)
     {
-        MDSS::TLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
+        MDSS::FLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
+
         return 1;
     }
 

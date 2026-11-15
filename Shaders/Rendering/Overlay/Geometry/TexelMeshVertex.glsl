@@ -1,9 +1,12 @@
-/**
- * @file TexelMeshVertex.glsl
- * @brief 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
- */
+// TexelMeshVertex.glsl — 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+// #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -15,9 +18,17 @@ layout(location = 5) in vec4 InWeights;
 layout(set = 2, binding = 0, std430) readonly buffer TComputedVertices
 {
     TTexelGeometryVertex Values[];
-} Computed;
+}
 
-layout(push_constant) uniform TPush { mat4 Model; mat4 ViewProjection; } Push;
+Computed;
+
+layout(push_constant) uniform TPush
+{
+    mat4 Model;
+    mat4 ViewProjection;
+}
+
+Push;
 
 layout(location = 0) out vec3 FragNormal;
 layout(location = 1) out vec3 FragTangent;
@@ -27,38 +38,92 @@ layout(location = 4) flat out uint FragSurfaceIndex;
 layout(location = 5) out vec3 FragMesoNormalWS;
 layout(location = 6) out vec3 FragWorldPosition;
 
+vec3 SampleDeformedMeshNormal(out float Height);
+void PublishTexelMeshVertex(float Height, vec3 Normal);
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+// 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
+
 void main()
 {
     float Height = 0.0;
-    vec3 NormalOffset = vec3(0);
-    float Weight = 0.0;
+    vec3 Normal = SampleDeformedMeshNormal(Height);
+    PublishTexelMeshVertex(Height, Normal);
+}
+// #endregion
 
-    for (uint K = 0u; K < 4u; ++K)
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// 원본 smooth/hard normal을 유지하면서 추가 displacement만 반영한다.
+
+    // 02.00. Sample Deformed Geometry
+    // #region 02_00_Sample_Deformed_Geometry
+    // 인접 texel의 높이와 normal offset을 보간한다.
+
+    vec3 SampleDeformedMeshNormal(out float Height)
     {
-        uint T = InSamples[K];
-        if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length())) continue;
+        Height = 0.0;
+        vec3 NormalOffset = vec3(0);
+        float Weight = 0.0;
 
-        Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
-        // 원본 정점의 smooth/hard normal을 유지하면서 샘플된 Meso/높이 변화량만 더한다.
-        NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
-        Weight += InWeights[K];
+        for (uint K = 0u; K < 4u; ++K)
+        {
+            uint T = InSamples[K];
+
+            if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length()))
+            {
+                continue;
+            }
+
+            Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
+
+            // 원본 정점의 smooth/hard normal을 유지하면서 샘플된 Meso/높이 변화량만 더한다.
+            NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
+            Weight += InWeights[K];
+        }
+
+        vec3 Normal = InNormal + NormalOffset;
+
+        if (Weight == 0.0 || dot(Normal, Normal) < 1e-12)
+        {
+            Normal = InNormal;
+        }
+
+        return Normal;
     }
 
-    vec3 Normal = InNormal + NormalOffset;
-    if (Weight == 0.0 || dot(Normal, Normal) < 1e-12) Normal = InNormal;
+    // #endregion
 
-    mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
-    FragNormal = normalize(NormalMatrix * InNormal);
-    FragMesoNormalWS = normalize(NormalMatrix * Normal);
-    FragTangent = normalize(cross(abs(FragNormal.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0), FragNormal));
-    FragTangentSign = 1.0;
+    // 02.01. Publish World Vertex
+    // #region 02_01_Publish_World_Vertex
+    // 최종 world position과 표면 lighting 입력을 vertex output으로 기록한다.
 
-    FragUV = InUVSurface.xy;
-    FragSurfaceIndex = uint(InUVSurface.w);
+    void PublishTexelMeshVertex(float Height, vec3 Normal)
+    {
+        mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
+        FragNormal = normalize(NormalMatrix * InNormal);
+        FragMesoNormalWS = normalize(NormalMatrix * Normal);
+        FragTangent = normalize(cross(abs(FragNormal.z) < 0.9 ? vec3(0, 0, 1) : vec3(0, 1, 0), FragNormal));
+        FragTangentSign = 1.0;
 
-    vec3 Position = InPosition + InDisplacementNormal * Height;
-    vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
+        FragUV = InUVSurface.xy;
+        FragSurfaceIndex = uint(InUVSurface.w);
 
-    FragWorldPosition = WorldPosition.xyz;
-    gl_Position = Push.ViewProjection * WorldPosition;
-}
+        vec3 Position = InPosition + InDisplacementNormal * Height;
+        vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
+
+        FragWorldPosition = WorldPosition.xyz;
+        gl_Position = Push.ViewProjection * WorldPosition;
+
+    }
+
+    // #endregion
+
+// #endregion

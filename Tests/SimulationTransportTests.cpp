@@ -14,45 +14,63 @@
 #include <numeric>
 #include <stdexcept>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
+
 namespace
 {
-    void Check(bool Condition, const char* Message)
+    void Check(bool bCondition, const char* Message)
     {
-        if (!Condition)
+        if (!bCondition)
             throw std::runtime_error(Message);
     }
+
+#pragma endregion
+
+// ============================================================
+// 01. TestClock
+// ============================================================
+#pragma region 01_TestClock
+// 기대 조건: default policy must be fixed ticks with auto substepping disabled
 
     void TestClock()
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        Check(DefaultFixedSimulationTimestep && !DefaultAutoSubstepping,
+        Check(bDefaultFixedSimulationTimestep && !bDefaultAutoSubstepping,
               "default policy must be fixed ticks with auto substepping disabled");
         for (int FPS : {15, 30, 60, 120})
         {
-            TSimulationClock Clock;
+            FSimulationClock Clock;
             std::size_t      Steps = 0;
+
             for (int Frame = 0; Frame < FPS; ++Frame)
             {
                 Clock.Accumulate(1.0 / FPS, 1.0, false);
                 Check(Clock.LimitPendingSeconds(MaxRealtimePendingTicks * FixedSimulationStepSeconds) == 0.0,
                       "normal 15/30/60/120 FPS playback must not skip simulation time");
                 const auto FrameSteps = Clock.Consume(0.001F, true, false, false, false);
+
                 for (float Step : FrameSteps)
                     Check(Step == FixedSimulationStepSeconds,
                           "fixed dt must ignore the transport limit when auto is off");
                 Steps += FrameSteps.size();
             }
+
             Check(Steps == 60 && std::abs(Clock.GetSimulatedSeconds() - 1.0) < 1.0e-6,
                   "15/30/60/120 FPS must advance the same simulation time");
         }
-        TSimulationClock Clock;
+
+        FSimulationClock Clock;
         Clock.Accumulate(1.0, 1.0, false);
         Check(Clock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == MaxSimulationStepsPerFrame,
               "catch-up work must be bounded");
         Check(Clock.GetPendingSeconds() > 0.8, "catch-up limit must retain elapsed time");
-        TSimulationClock RealtimeClock;
+        FSimulationClock RealtimeClock;
         RealtimeClock.Accumulate(1.0, 1.0, false);
         const double MaximumRealtimePending = MaxRealtimePendingTicks * FixedSimulationStepSeconds;
         const double Dropped = RealtimeClock.LimitPendingSeconds(MaximumRealtimePending);
@@ -66,7 +84,7 @@ namespace
         Check(RealtimeClock.LimitPendingSeconds(MaximumRealtimePending) == 0.0 &&
                   RealtimeClock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == 1,
               "normal frame timing must remain unchanged after a discarded stall");
-        TSimulationClock FastClock;
+        FSimulationClock FastClock;
         FastClock.Accumulate(1.0 / 60.0, 4.0, false);
         Check(FastClock.LimitPendingSeconds(MaximumRealtimePending) == 0.0 &&
                   FastClock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == 4,
@@ -152,31 +170,41 @@ namespace
               "reset must discard the in-progress fixed tick as well as elapsed time");
     }
 
+#pragma endregion
+
+// ============================================================
+// 02. TestArea
+// ============================================================
+#pragma region 02_TestArea
+// 기대 조건: tilted UV plane must retain world area at 128/256/512 including nonuniform scale
+
     void TestArea()
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        const std::vector<TVertex>             Vertices{{{0, 0, 0}, {0, 0, 1}, {0, 0}},
+        const std::vector<FVertex>             Vertices{{{0, 0, 0}, {0, 0, 1}, {0, 0}},
                                                         {{2, 0, 0}, {0, 0, 1}, {1, 0}},
                                                         {{2, 3, 1}, {0, 0, 1}, {1, 1}},
                                                         {{0, 3, 1}, {0, 0, 1}, {0, 1}}};
-        const std::vector<TMeshTriangleSource> Triangles{{{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, 0},
+        const std::vector<FMeshTriangleSource> Triangles{{{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, 0},
                                                          {{0, 2, 3}, {0, 2, 3}, {0, 2, 3}, 0}};
         const glm::mat4                        Model = glm::scale(glm::mat4(1), glm::vec3(2, 3, 4));
         const double Expected = glm::length(glm::cross(glm::vec3(4, 0, 0), glm::vec3(0, 9, 4)));
         double       PreviousCapacity = 0.0;
+
         for (std::uint32_t Resolution : {128U, 256U, 512U})
         {
             const auto Mapping =
-                SurfaceState::TSurfaceMappingBuilder::Build(Vertices, Triangles, {{0, {Resolution, Resolution}}});
-            auto Geometry = SurfaceState::TSurfaceGeometryBuilder::Build(
-                Mapping, std::vector<SurfaceState::TSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
+                SurfaceState::FSurfaceMappingBuilder::Build(Vertices, Triangles, {{0, {Resolution, Resolution}}});
+            auto Geometry = SurfaceState::FSurfaceGeometryBuilder::Build(
+                Mapping, std::vector<SurfaceState::FSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
             const auto   Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, Model);
             const double TotalArea = std::accumulate(Areas.begin(), Areas.end(), 0.0);
             Check(std::abs(TotalArea - Expected) < Expected * 1.0e-5,
                   "tilted UV plane must retain world area at 128/256/512 including nonuniform scale");
             const double TotalCapacity = TotalArea / SurfaceStateReferenceArea;
+
             if (PreviousCapacity != 0.0)
                 Check(std::abs(TotalCapacity - PreviousCapacity) < PreviousCapacity * 1.0e-5,
                       "same surface must have the same integrated Capacity");
@@ -187,11 +215,19 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 03. TestFrustumCulling
+// ============================================================
+#pragma region 03_TestFrustumCulling
+// 기대 조건: center sphere must be visible
+
     void TestFrustumCulling()
     {
         glm::mat4 Projection = glm::perspectiveRH_ZO(glm::radians(90.0F), 1.0F, 1.0F, 10.0F);
         Projection[1][1] *= -1.0F;
-        const MDSS::Rendering::TViewFrustum Frustum(Projection);
+        const MDSS::Rendering::FViewFrustum Frustum(Projection);
         Check(Frustum.ContainsSphere({0.0F, 0.0F, -5.0F}, 0.5F), "center sphere must be visible");
         Check(!Frustum.ContainsSphere({0.0F, 0.0F, 5.0F}, 0.5F), "sphere behind camera must be culled");
         Check(!Frustum.ContainsSphere({12.0F, 0.0F, -5.0F}, 0.5F), "sphere outside side plane must be culled");
@@ -205,6 +241,14 @@ namespace
     }
 }
 
+#pragma endregion
+
+// ============================================================
+// 04. Test Entry Point
+// ============================================================
+#pragma region 04_Test_Entry_Point
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
+
 int main()
 {
     try
@@ -213,6 +257,7 @@ int main()
         TestArea();
         TestFrustumCulling();
         std::cout << "Simulation clock, world-area, and frustum tests passed\n";
+
         return 0;
     }
     catch (const std::exception& Error)
@@ -221,3 +266,5 @@ int main()
         return 1;
     }
 }
+
+#pragma endregion

@@ -1,3 +1,4 @@
+# 프로젝트 소유 C++ 파일에 공통 clang-format 설정을 적용한다.
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $ExcludedDirectoryNames = @(".git", "Build", "build", "CMakeFiles", "ThirdParty")

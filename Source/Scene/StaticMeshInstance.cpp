@@ -9,16 +9,20 @@
 
 namespace MDSS
 {
-#pragma region TStaticMeshInstance_Implementation
+// ============================================================
+// 00. FStaticMeshInstance Implementation
+// ============================================================
+#pragma region 00_TStaticMeshInstance_Implementation
+// 정적 메시 에셋 참조와 인스턴스 transform.
 
-    TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform)
-        : TStaticMeshInstance(Mesh, SurfaceState::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
+    FStaticMeshInstance::FStaticMeshInstance(Asset::FMeshAssetHandle Mesh, FTransform InstanceTransform)
+        : FStaticMeshInstance(Mesh, SurfaceState::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
     {
     }
 
-    TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle                 Mesh,
-                                             SurfaceState::TSurfaceRuntimeDataHandle SurfaceData,
-                                             TTransform                              InstanceTransform,
+    FStaticMeshInstance::FStaticMeshInstance(Asset::FMeshAssetHandle                 Mesh,
+                                             SurfaceState::FSurfaceRuntimeDataHandle SurfaceData,
+                                             FTransform                              InstanceTransform,
                                              std::filesystem::path                   MeshPath,
                                              std::filesystem::path                   ProfileMapPath,
                                              std::string                             ObjectId)
@@ -27,42 +31,42 @@ namespace MDSS
     {
     }
 
-    TTransform& TStaticMeshInstance::GetTransform() noexcept
+    FTransform& FStaticMeshInstance::GetTransform() noexcept
     {
         return InstanceTransform;
     }
 
-    const TTransform& TStaticMeshInstance::GetTransform() const noexcept
+    const FTransform& FStaticMeshInstance::GetTransform() const noexcept
     {
         return InstanceTransform;
     }
 
-    Asset::TMeshAssetHandle TStaticMeshInstance::GetMesh() const noexcept
+    Asset::FMeshAssetHandle FStaticMeshInstance::GetMesh() const noexcept
     {
         return Mesh;
     }
 
-    SurfaceState::TSurfaceRuntimeDataHandle TStaticMeshInstance::GetSurfaceData() const noexcept
+    SurfaceState::FSurfaceRuntimeDataHandle FStaticMeshInstance::GetSurfaceData() const noexcept
     {
         return SurfaceData;
     }
 
-    void TStaticMeshInstance::SetSurfaceData(SurfaceState::TSurfaceRuntimeDataHandle Handle) noexcept
+    void FStaticMeshInstance::SetSurfaceData(SurfaceState::FSurfaceRuntimeDataHandle Handle) noexcept
     {
         SurfaceData = Handle;
     }
 
-    const std::filesystem::path& TStaticMeshInstance::GetMeshPath() const noexcept
+    const std::filesystem::path& FStaticMeshInstance::GetMeshPath() const noexcept
     {
         return SourceMeshPath;
     }
 
-    const std::filesystem::path& TStaticMeshInstance::GetProfileMapPath() const noexcept
+    const std::filesystem::path& FStaticMeshInstance::GetProfileMapPath() const noexcept
     {
         return SourceProfileMapPath;
     }
 
-    const std::string& TStaticMeshInstance::GetId() const noexcept
+    const std::string& FStaticMeshInstance::GetId() const noexcept
     {
         return Id;
     }

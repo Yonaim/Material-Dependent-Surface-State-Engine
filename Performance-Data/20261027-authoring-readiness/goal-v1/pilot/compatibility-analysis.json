@@ -1,0 +1,85 @@
+{
+  "passed": true,
+  "audit": {
+    "created_at": "2026-10-27T18:30:13.269481+09:00",
+    "runtime_error_lines": [],
+    "swapchain_skip_lines": [],
+    "state_checks": {
+      "0": {
+        "nonfinite": 0,
+        "negative": 0
+      },
+      "60": {
+        "nonfinite": 0,
+        "negative": 0
+      },
+      "360": {
+        "nonfinite": 0,
+        "negative": 0
+      }
+    },
+    "dynamic_nonfinite": {
+      "60": 0,
+      "360": 0
+    },
+    "checkpoint_reaction_flags": 0,
+    "final_serial": 362,
+    "settings_match": true,
+    "images_complete": true,
+    "initial_input_sums": {
+      "absorbedwetness": 0.0,
+      "heat": 268159.00173711777,
+      "ice": 469278.25280094147,
+      "waterfilm": 0.0
+    },
+    "target_instance": 2,
+    "top_face_ids": [
+      0
+    ],
+    "top_reference_area": 3.629999876022339,
+    "top_texels": 16384,
+    "g0_passed": true,
+    "initial_scope": "Initial rasterized InputDelta plus zero CurrentState before first step, not a post-solver snapshot",
+    "flag_scope": "Checkpoints and final only; not a full per-step budget audit",
+    "actual_checkpoint_times": {
+      "0": {
+        "demo": 0.01666666753590107,
+        "simulation": 0.01666666753590107
+      },
+      "60": {
+        "demo": 0.9999997019767761,
+        "simulation": 1.0000000521540642
+      },
+      "360": {
+        "demo": 6.000023365020752,
+        "simulation": 6.000000312924385
+      }
+    }
+  },
+  "state_arrays": [
+    {
+      "file": "capture.jsonl.state-0.f32",
+      "bitwise_equal": true
+    },
+    {
+      "file": "capture.jsonl.state-2.f32",
+      "bitwise_equal": true
+    },
+    {
+      "file": "capture.jsonl.state-4.f32",
+      "bitwise_equal": true
+    }
+  ],
+  "shader_changes": [],
+  "source_changes": [
+    "Source\\Application\\Application.cpp",
+    "Source\\Rendering\\Core\\Renderer.cpp",
+    "Source\\Rendering\\Core\\Renderer.h",
+    "Source\\Rendering\\Profiling\\RendererBenchmark.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\SurfaceGPUResourceManager.cpp",
+    "Source\\SurfaceState\\GPU\\Resources\\SurfaceGPUResourceManager.h",
+    "Source\\SurfaceState\\Solver\\SurfaceStepRecording.cpp",
+    "Source\\SurfaceState\\SurfaceStateSystem.h"
+  ],
+  "limitation": "Three final arrays against prior clean capture; consistency, not physical ground truth or complete repository tests"
+}

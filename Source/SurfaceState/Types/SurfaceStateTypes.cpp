@@ -11,7 +11,11 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Profile_Value_Validation_Helpers
+// ============================================================
+// 00. Profile Value Validation Helpers
+// ============================================================
+#pragma region 00_Profile_Value_Validation_Helpers
+// 계수의 유한성·범위·필수 값을 공통 검사한다.
 
     namespace
     {
@@ -33,25 +37,32 @@ namespace MDSS::SurfaceState
     } // namespace
 #pragma endregion
 
-#pragma region State_Name_Normalization
+// ============================================================
+// 01. State Name Normalization
+// ============================================================
+#pragma region 01_State_Name_Normalization
+// 입력 State 이름의 공백·대소문자를 Registry 비교 형식으로 통일한다.
 
     std::string NormalizeSurfaceStateName(std::string_view Name)
     {
         const auto IsAsciiWhitespace = [](unsigned char Character)
         { return Character == ' ' || (Character >= '\t' && Character <= '\r'); };
         std::size_t First = 0;
+
         while (First < Name.size() && IsAsciiWhitespace(static_cast<unsigned char>(Name[First])))
         {
             ++First;
         }
 
         std::size_t Last = Name.size();
+
         while (Last > First && IsAsciiWhitespace(static_cast<unsigned char>(Name[Last - 1])))
         {
             --Last;
         }
 
         std::string Result(Name.substr(First, Last - First));
+
         for (char& Character : Result)
         {
             if (Character >= 'A' && Character <= 'Z')
@@ -59,14 +70,21 @@ namespace MDSS::SurfaceState
                 Character = static_cast<char>(Character - 'A' + 'a');
             }
         }
+
         return Result;
     }
 #pragma endregion
 
-#pragma region Surface_Response_Profile_Validation
+// ============================================================
+// 02. Surface Response Profile Validation
+// ============================================================
+#pragma region 02_Surface_Response_Profile_Validation
+// State 파라미터와 반응 참조가 Profile 계약을 만족하는지 검증한다.
 
-    void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data)
+    void ValidateSurfaceResponseProfileData(const FSurfaceResponseProfileData& Data)
     {
+        ValidateSurfaceReactions(Data);
+
         for (const auto& [Name, State] : Data.States)
         {
             if (Name.empty() || NormalizeSurfaceStateName(Name) != Name)
@@ -75,6 +93,7 @@ namespace MDSS::SurfaceState
             }
 
             const std::string Prefix = "states." + Name + ".";
+
             if (!std::isfinite(State.StateCapacity) || State.StateCapacity <= 0.0F)
             {
                 throw std::invalid_argument(Prefix + "stateCapacity must be finite and greater than zero.");
@@ -93,16 +112,19 @@ namespace MDSS::SurfaceState
 
         for (std::size_t Index = 0; Index < Data.Transitions.size(); ++Index)
         {
-            const TSurfaceStateTransition& Transition = Data.Transitions[Index];
+            const FSurfaceStateTransition& Transition = Data.Transitions[Index];
             const std::string              Prefix = "transitions[" + std::to_string(Index) + "].";
+
             if (Transition.Source.empty() || NormalizeSurfaceStateName(Transition.Source) != Transition.Source)
             {
                 throw std::invalid_argument(Prefix + "source must be non-empty and normalized.");
             }
+
             if (Transition.Target.empty() || NormalizeSurfaceStateName(Transition.Target) != Transition.Target)
             {
                 throw std::invalid_argument(Prefix + "target must be non-empty and normalized.");
             }
+
             if (Transition.Source == Transition.Target)
             {
                 throw std::invalid_argument(Prefix + "source and target must be different states.");

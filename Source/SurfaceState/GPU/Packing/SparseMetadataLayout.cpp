@@ -1,15 +1,20 @@
+/**
+ * @file SparseMetadataLayout.cpp
+ * @brief sparse 실행의 workgroup 목록·마스크·간접 명령 주소를 계산한다.
+ */
+
 #include "SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h"
 
 #include <stdexcept>
 
 namespace MDSS::SurfaceState
 {
-    TSurfaceSparseMetadataLayout GetSurfaceSparseMetadataLayout(std::size_t TexelCount)
+    FSurfaceSparseMetadataLayout GetSurfaceSparseMetadataLayout(std::size_t TexelCount)
     {
         if (TexelCount == 0)
             throw std::invalid_argument("Sparse metadata requires a non-zero texel count.");
 
-        TSurfaceSparseMetadataLayout L{};
+        FSurfaceSparseMetadataLayout L{};
         L.WorkgroupCount = TexelCount / 64U + (TexelCount % 64U != 0U);
         const std::size_t G = L.WorkgroupCount;
         const std::size_t Base = TexelCount * 3U;

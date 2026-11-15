@@ -1,0 +1,258 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/IceReactionLab.DemoAnim",
+  "camera": {
+    "position": [
+      0.8,
+      -6.9,
+      5.9
+    ],
+    "target": [
+      0,
+      0,
+      0.12
+    ],
+    "verticalFieldOfViewDegrees": 43
+  },
+  "simulationResolution": 128,
+  "litHeightDisplayScale": 1,
+  "objects": [
+    {
+      "id": "a_finite",
+      "mesh": "../Meshes/MarbleCube/MarbleCube.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/IceReactionLab.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -2.05,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "a_finite_label",
+      "mesh": "../Meshes/ReactionLab/a_finite.obj",
+      "transform": {
+        "position": [
+          -2.05,
+          -1.42,
+          -0.02
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "b_heated",
+      "mesh": "../Meshes/MarbleCube/MarbleCube.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/IceReactionLab.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "b_heated_label",
+      "mesh": "../Meshes/ReactionLab/b_heated.obj",
+      "transform": {
+        "position": [
+          0,
+          -1.42,
+          -0.02
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "c_cooled",
+      "mesh": "../Meshes/MarbleCube/MarbleCube.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/IceReactionLab.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          2.05,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          8,
+          0,
+          0
+        ],
+        "scale": [
+          1.65,
+          2.2,
+          0.22
+        ]
+      }
+    },
+    {
+      "id": "c_cooled_label",
+      "mesh": "../Meshes/ReactionLab/c_cooled.obj",
+      "transform": {
+        "position": [
+          2.05,
+          -1.42,
+          -0.02
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "lab_stage",
+      "mesh": "../Meshes/ReactionLab/Stage.obj",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.29
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          7,
+          3.65,
+          0.18
+        ]
+      }
+    }
+  ],
+  "initialContacts": [
+    {
+      "target": "a_finite",
+      "state": "ice",
+      "worldPosition": [
+        -2.05,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 3.5,
+      "falloff": 0.25
+    },
+    {
+      "target": "a_finite",
+      "state": "heat",
+      "worldPosition": [
+        -2.05,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 0.85,
+      "falloff": 0.25
+    },
+    {
+      "target": "b_heated",
+      "state": "ice",
+      "worldPosition": [
+        0,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 3.5,
+      "falloff": 0.25
+    },
+    {
+      "target": "b_heated",
+      "state": "heat",
+      "worldPosition": [
+        0,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 2.0,
+      "falloff": 0.25
+    },
+    {
+      "target": "c_cooled",
+      "state": "ice",
+      "worldPosition": [
+        2.05,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 3.5,
+      "falloff": 0.25
+    },
+    {
+      "target": "c_cooled",
+      "state": "heat",
+      "worldPosition": [
+        2.05,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 2.0,
+      "falloff": 0.25
+    },
+    {
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "worldPosition": [
+        2.05,
+        0.23225797607978538,
+        0.1437227628015891
+      ],
+      "radius": 0.7,
+      "strength": 2.5,
+      "falloff": 0.25
+    }
+  ]
+}

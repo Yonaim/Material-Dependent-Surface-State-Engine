@@ -10,10 +10,29 @@ The project focuses on representing surface state changes in UV-space and updati
 - UV-space texel-based surface state simulation
 - Material-dependent surface response
 - Geometry-aware state transport
-- Heat-to-red, Burn, and Mud states
+- Heat, Ice, WaterFilm, Mud, and Lava appearance
+- Data-driven local State conversion, generation, consumption, and interactions
 - Compute shader based state update
 - Raycast-based state injection
 - ImGui-based debug and simulation controls
+
+## Ice reaction demo
+
+Build with `./Scripts/build.ps1 -Configuration Debug`, then run:
+
+For CMake Tools or direct CMake use with Visual Studio 2026, select the
+`windows-msvc-x64` configure preset and the matching Debug or Release build
+preset. This preset requires CMake 4.2 or newer.
+
+```powershell
+& ./Build/bin/Debug/MDSS.exe --scene Assets/Scenes/IceReactionLab.Scene
+```
+
+The Lit scene compares finite heating, sustained heating, and water cooling with `ice`, `waterfilm`, and `heat` States. The 14-second animation starts automatically. F10 opens the presentation view. Profile v5 rules live in `Assets/SurfaceProfiles/IceReactionLab.SRProfile`; thresholds and condition scales are amounts per fixed reference area.
+
+`Scripts/Validation/verify_reactions.ps1` captures the Lit scene at 3 and 14 seconds and checks finite, nonnegative States and Reaction diagnostics. Detailed contracts are in `Docs/Agent-Vault/02_Architecture/01_Contracts/06_Reactions.md`.
+
+On POSIX systems, `./Scripts/build.sh -DCMAKE_BUILD_TYPE=Release -- --scene Assets/Scenes/IceReactionLab.Scene` builds and launches the app. Arguments before `--` configure CMake; arguments after it go to the app. `./Scripts/run.sh` launches an existing build.
 
 ## Project Status
 

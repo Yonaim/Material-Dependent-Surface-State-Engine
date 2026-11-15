@@ -1,0 +1,294 @@
+{
+  "created_at": "2026-10-27T09:01:23.282377+09:00",
+  "method": "float64 direct solve of same unweighted graph slope least squares; first node pinned, then zero mean",
+  "results": [
+    {
+      "id": "cpu-analytic-64",
+      "vertices": 4096,
+      "edges": 16002,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.009659184909119684,
+      "reference_edge_relative": 0.004631823643617484,
+      "reference_linear_relative": 1.5612373215761552e-14,
+      "height_rmse_vs_ls": 0.00013566438372318235,
+      "reference_height_rms": 0.007428241374981428,
+      "height_relative_rmse_vs_ls": 0.018263324638332922,
+      "production_range": [
+        -0.015005744062364101,
+        0.014886214397847652
+      ],
+      "reference_range": [
+        -0.014715608161602684,
+        0.014719401631999633
+      ],
+      "reference_file_sha256": "65ee37e894db37121b622c8b5e272472fc9afa731094f24a84613793f095df22",
+      "reciprocal_missing": 0,
+      "production_relative_rmse_vs_truth": 0.02050114407965578,
+      "reference_relative_rmse_vs_truth": 0.009568565941995013
+    },
+    {
+      "id": "cpu-png-64",
+      "vertices": 4096,
+      "edges": 16002,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.012208876502283675,
+      "reference_edge_relative": 0.008758730711898905,
+      "reference_linear_relative": 1.5465258320499186e-14,
+      "height_rmse_vs_ls": 0.00013593406250232657,
+      "reference_height_rms": 0.007413122309378428,
+      "height_relative_rmse_vs_ls": 0.01833695126415961,
+      "production_range": [
+        -0.0149760153144598,
+        0.014856508001685143
+      ],
+      "reference_range": [
+        -0.014681509112219882,
+        0.014688466788862634
+      ],
+      "reference_file_sha256": "e362676df4bb762c5330d176297d5f4f81f4c64074950f814466365c0da4a9cd",
+      "reciprocal_missing": 0,
+      "production_relative_rmse_vs_truth": 0.021571349509133742,
+      "reference_relative_rmse_vs_truth": 0.011622353165996612
+    },
+    {
+      "id": "cpu-brick-64",
+      "vertices": 4096,
+      "edges": 16002,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.7275079607870422,
+      "reference_edge_relative": 0.727295716498065,
+      "reference_linear_relative": 3.4523873161597066e-15,
+      "height_rmse_vs_ls": 0.001089466670953889,
+      "reference_height_rms": 0.01691677835531031,
+      "height_relative_rmse_vs_ls": 0.06440154549946543,
+      "production_range": [
+        -0.033995892852544785,
+        0.032883647829294205
+      ],
+      "reference_range": [
+        -0.033981578611242874,
+        0.032480560550870674
+      ],
+      "reference_file_sha256": "ec869b448774df5b145e5fbe4aafbb3973ef3c9a68bc46e846e1cf70e047658a",
+      "reciprocal_missing": 0
+    },
+    {
+      "id": "cpu-analytic-128",
+      "vertices": 16384,
+      "edges": 64770,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.05732585037758098,
+      "reference_edge_relative": 0.0011428614566557308,
+      "reference_linear_relative": 6.588895740557706e-14,
+      "height_rmse_vs_ls": 0.001202610139186202,
+      "reference_height_rms": 0.007481992570397885,
+      "height_relative_rmse_vs_ls": 0.16073393923755908,
+      "production_range": [
+        -0.017402641475200653,
+        0.015912970528006554
+      ],
+      "reference_range": [
+        -0.014928198742560687,
+        0.014928652684830465
+      ],
+      "reference_file_sha256": "e771c403a7618671bf5dab8ed36774a8407e1e2215943dd13a0c140aa6780d10",
+      "reciprocal_missing": 0,
+      "production_relative_rmse_vs_truth": 0.16041672967116083,
+      "reference_relative_rmse_vs_truth": 0.0024010567764882118
+    },
+    {
+      "id": "cpu-png-128",
+      "vertices": 16384,
+      "edges": 64770,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.05787435154442952,
+      "reference_edge_relative": 0.008186830242122325,
+      "reference_linear_relative": 6.585768244335095e-14,
+      "height_rmse_vs_ls": 0.0012021455801828362,
+      "reference_height_rms": 0.0074871404863354404,
+      "height_relative_rmse_vs_ls": 0.16056137618585314,
+      "production_range": [
+        -0.01740693300962448,
+        0.015904398635029793
+      ],
+      "reference_range": [
+        -0.01493026940532132,
+        0.014930833275436102
+      ],
+      "reference_file_sha256": "e576f2e5ce33d8f9449d180ec47735a1c129b88df25578fb76300d45a7f774ef",
+      "reciprocal_missing": 0,
+      "production_relative_rmse_vs_truth": 0.16033252550950375,
+      "reference_relative_rmse_vs_truth": 0.0018012856777546967
+    },
+    {
+      "id": "cpu-brick-128",
+      "vertices": 16384,
+      "edges": 64770,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.7073918944585511,
+      "reference_edge_relative": 0.7070478426705764,
+      "reference_linear_relative": 4.100890949979696e-15,
+      "height_rmse_vs_ls": 0.0008778992338486535,
+      "reference_height_rms": 0.007541783616662323,
+      "height_relative_rmse_vs_ls": 0.11640472313592774,
+      "production_range": [
+        -0.018822219222784042,
+        0.01707681268453598
+      ],
+      "reference_range": [
+        -0.019681201846036136,
+        0.01743426626320931
+      ],
+      "reference_file_sha256": "86754b5dbd19af8ffa687a80e1f03a9c55622d8e67cdc5382ab2a0d89c15ee39",
+      "reciprocal_missing": 0
+    },
+    {
+      "id": "cpu-analytic-256",
+      "vertices": 65536,
+      "edges": 260610,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.05734202843171368,
+      "reference_edge_relative": 0.0002845915111067417,
+      "reference_linear_relative": 2.734908654368811e-13,
+      "height_rmse_vs_ls": 0.0007143289659197031,
+      "reference_height_rms": 0.007495490007879472,
+      "height_relative_rmse_vs_ls": 0.09530116979260597,
+      "production_range": [
+        -0.016380857676267624,
+        0.015211413614451885
+      ],
+      "reference_range": [
+        -0.014981982180153681,
+        0.014982037116785786
+      ],
+      "reference_file_sha256": "ea63d26e72964876e6342cd3c986db71ab99e8273ef556d7e9ec859d4c2ae515",
+      "reciprocal_missing": 0,
+      "production_relative_rmse_vs_truth": 0.09526686519303496,
+      "reference_relative_rmse_vs_truth": 0.0006013312711862286
+    },
+    {
+      "id": "cpu-png-256",
+      "vertices": 65536,
+      "edges": 260610,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.05791952054929181,
+      "reference_edge_relative": 0.008000402705122258,
+      "reference_linear_relative": 2.7275841219333337e-13,
+      "height_rmse_vs_ls": 0.0007125392463425662,
+      "reference_height_rms": 0.007492726644531137,
+      "height_relative_rmse_vs_ls": 0.095097456526409,
+      "production_range": [
+        -0.016370415687561035,
+        0.015207926742732525
+      ],
+      "reference_range": [
+        -0.014978901294433902,
+        0.014979259412152859
+      ],
+      "reference_file_sha256": "1a11343fb7ee1dc80d958b5e6d1a5ebc00602c1b0119d59809a1f54361486af0",
+      "reciprocal_missing": 0,
+      "production_relative_rmse_vs_truth": 0.09504578724238501,
+      "reference_relative_rmse_vs_truth": 0.0010329684236004587
+    },
+    {
+      "id": "cpu-brick-256",
+      "vertices": 65536,
+      "edges": 260610,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.6033377091285189,
+      "reference_edge_relative": 0.6032128669653342,
+      "reference_linear_relative": 1.3659455480478626e-15,
+      "height_rmse_vs_ls": 0.000979711950726237,
+      "reference_height_rms": 0.0022134463518582387,
+      "height_relative_rmse_vs_ls": 0.4426183403558646,
+      "production_range": [
+        -0.007086263038218021,
+        0.006498659960925579
+      ],
+      "reference_range": [
+        -0.009012789827117616,
+        0.00731100323448621
+      ],
+      "reference_file_sha256": "c8a30a9b6ec05ffa33010068fdb007576f89cb388267c7f7f2bc66b2eef37e8b",
+      "reciprocal_missing": 0
+    },
+    {
+      "id": "cpu-brick-128-x0.5",
+      "vertices": 16384,
+      "edges": 64770,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.7073918942212736,
+      "reference_edge_relative": 0.7070478433205796,
+      "reference_linear_relative": 4.0987346739934594e-15,
+      "height_rmse_vs_ls": 0.00043894910276193714,
+      "reference_height_rms": 0.003770891814003521,
+      "height_relative_rmse_vs_ls": 0.11640458661048378,
+      "production_range": [
+        -0.009411105886101723,
+        0.008538411930203438
+      ],
+      "reference_range": [
+        -0.009840600970200172,
+        0.008717133068399746
+      ],
+      "reference_file_sha256": "31c6f69b4d977dc99f01f12b0585670966dbc9f283c8d59de5f8f8ff5f04c23b",
+      "reciprocal_missing": 0
+    },
+    {
+      "id": "cpu-brick-128-x2",
+      "vertices": 16384,
+      "edges": 64770,
+      "components": 1,
+      "production_iterations": 128,
+      "production_edge_relative": 0.7073918950260126,
+      "reference_edge_relative": 0.7070478430064556,
+      "reference_linear_relative": 4.133310777081684e-15,
+      "height_rmse_vs_ls": 0.0017557950084029885,
+      "reference_height_rms": 0.015083567092198016,
+      "height_relative_rmse_vs_ls": 0.11640449488312181,
+      "production_range": [
+        -0.03764444589614868,
+        0.03415365144610405
+      ],
+      "reference_range": [
+        -0.039362403363788254,
+        0.03486853220752203
+      ],
+      "reference_file_sha256": "61ae4ff69d75519a0b6ef0987d69fac665f7fb9b04fb0091bb1b750f8243eccb",
+      "reciprocal_missing": 0
+    },
+    {
+      "id": "cpu-flat8-128",
+      "vertices": 16384,
+      "edges": 64770,
+      "components": 1,
+      "production_iterations": 121,
+      "production_edge_relative": 0.00012132675809265382,
+      "reference_edge_relative": 4.923872326141328e-14,
+      "reference_linear_relative": 1.6532330154440362e-13,
+      "height_rmse_vs_ls": 7.828992645942554e-08,
+      "reference_height_rms": 0.0016009489732772455,
+      "height_relative_rmse_vs_ls": 4.890219973667307e-05,
+      "production_range": [
+        -0.003891328349709511,
+        0.003891327418386936
+      ],
+      "reference_range": [
+        -0.003890990052223305,
+        0.003890990052223311
+      ],
+      "reference_file_sha256": "31c75e5f6de78d0dfc668a5cc86f689f21a682e31a0b8ea65884cd6abf32180b",
+      "reciprocal_missing": 0
+    }
+  ]
+}

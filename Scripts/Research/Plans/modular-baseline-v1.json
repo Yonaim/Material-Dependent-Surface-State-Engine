@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "spec_id": "modular-baseline-v1",
+  "status": "specification_only_not_implemented",
+  "frozen_at": "2026-10-27T06:42:03.757579+09:00",
+  "document": "Docs/MDSSP-Agent-Vault/03_Development/04_Modular-Baseline-Spec.md",
+  "source_commit": "880af1ebcffe601f0bac27413cad94055ce92812",
+  "source_snapshot": {
+    "Shaders/Simulation/Solver/SurfaceSolverPass1.comp": "d033ad55d71fe584e0438da8ee718b74afb5cbc4ee10bbe9223af76d6bfcc7a2",
+    "Shaders/Simulation/Solver/SurfaceSolverPass2.comp": "d3504718b6ff45a76bd9a80b58fd7576e6261111258273f63d8a8cf8bdc7e3ed",
+    "Shaders/Simulation/Solver/Transport.glsl": "75ae1a3e731f81bfe94ce76e4129d3e297d42bd19df5751955db2d166d7138d8",
+    "Shaders/Simulation/Solver/GeometryDrive.glsl": "69303edeb31c2e1e14715c22da0d79fa2b3dc0235932e5a65eef61e58df749a0",
+    "Shaders/Simulation/Solver/StateMath.glsl": "bccd023f1b041f574a4488b41cf258461e406ba71b4c32918d8721530956820e",
+    "Shaders/Simulation/Solver/SurfaceReaction.comp": "a7ccbaf85080a0a1091ef9c32f7ee045fdfa6bc89c73ca9a056197658ebd56af",
+    "Source/SurfaceState/Solver/SurfaceStateSolver.cpp": "03672b8f2dda968699fd6ca15508ce79b3ed910c635917ca39322fee32d3540d",
+    "Source/SurfaceState/Types/SurfaceReactions.cpp": "cfb291db89b7108fc7ac2eca73d1a5e5e79cdeaa70fded61bf1c2fbb9b646c60",
+    "Source/SurfaceState/Types/SurfaceStateRegistry.cpp": "1ce804d2118a4fea2a712fd3265046d00b5c676791031e4f65f9fd12bb762795",
+    "Source/AssetManager/Loaders/SRProfileLoader.cpp": "5a82aed783b443ae9334b0f18463c2f43edbb2df1c236f973c7a05b6a129ff3a",
+    "Scripts/Research/CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
+    "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+    "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6",
+    "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
+    "Docs/MDSSP-Agent-Vault/03_Development/04_Modular-Baseline-Spec.md": "d242698136aac81243f023d29b3b0aaceb86bd8f0e8db7cd8806279df5ffc391",
+    "Performance-Data/20261026-coupling-study/PERF-041-coupling/plan.json": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb"
+  },
+  "knowledge": "PERF-041 outcomes already known; no blind/held-out claim; T2/T3 prospective task specifications",
+  "primary_hypothesis": "H3 marginal extension burden under the same discrete numerical model; not H4 novelty",
+  "baseline": {
+    "U": "MDSSP unified state/profile calculation",
+    "M": "modules declaring state, transport provider, height contribution; shared coordinator/reactions/geometry",
+    "reuse_allowed": [
+      "same numerical helper functions and templates",
+      "generic transport module factory",
+      "common state layout and profiles",
+      "common geometry/reaction services",
+      "GPU sharing, caching, batching/fusion, shared reads"
+    ],
+    "separate_dispatch": "diagnostic only, not forced on primary M",
+    "wrapper": "calling unchanged MDSSP RecordSteps under module labels is classified as a wrapper control",
+    "convergence": "If ordinary modular reuse converges to U, retain as a valid null result; do not prohibit the convergence"
+  },
+  "reference_condition": {
+    "id": "plate-128-60-D",
+    "case": "plate",
+    "variant": "D",
+    "resolution": 128,
+    "hz": 60,
+    "seconds": 14,
+    "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+    "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
+    "scale": [
+      1.65,
+      2.2,
+      0.22
+    ],
+    "rotation_x_degrees": 8,
+    "ledger": true,
+    "full_geometry": true
+  },
+  "numerics": {
+    "sparse_solver": false,
+    "sparse_geometry": false,
+    "sparse_height": false,
+    "adaptive": false,
+    "channel_masks": false,
+    "raw_flux_cache": true,
+    "raw_flux_precision": "FP32",
+    "weight_precision": "FP32",
+    "full_geometry_every_step": true,
+    "meso_height": 0,
+    "normal_map": false,
+    "bootstrap_dt": 0,
+    "snapshots_seconds": [
+      0,
+      1,
+      2,
+      4,
+      8,
+      14
+    ],
+    "diagnostic_ledger": true
+  },
+  "tasks": [
+    {
+      "id": "T0",
+      "parent": null,
+      "variants": [
+        "B",
+        "D",
+        "E"
+      ],
+      "profile_changes": {},
+      "input_case": "plate",
+      "rotation_x_degrees": 8,
+      "purpose": "base numerical contract",
+      "prior_outcome_known": true
+    },
+    {
+      "id": "T1",
+      "parent": "T0",
+      "variants": [
+        "D"
+      ],
+      "profile_changes": {
+        "add_mud_from": "Assets/SurfaceProfiles/DemoMud.SRProfile",
+        "mud_overrides": {
+          "cavityFillFactor": 0,
+          "cavityDecayProtectionFactor": 0,
+          "cavityExitResistanceFactor": 0
+        }
+      },
+      "input_case": "mud",
+      "rotation_x_degrees": 8,
+      "purpose": "state and height-contribution extension",
+      "prior_outcome_known": true
+    },
+    {
+      "id": "T2",
+      "parent": "T0",
+      "variants": [
+        "D"
+      ],
+      "profile_changes": {
+        "add_states": {
+          "wetness": {
+            "stateCapacity": 1,
+            "inputFactor": 1,
+            "saturationSpreadFactor": 0,
+            "gravityFlowFactor": 0,
+            "decayRate": 0,
+            "cavityDecayProtectionFactor": 0,
+            "cavityExitResistanceFactor": 0,
+            "accumulationFactor": 0,
+            "cavityFillFactor": 0,
+            "thicknessPerAmount": 0.025
+          }
+        },
+        "append_reactions": [
+          {
+            "id": "surface_absorption",
+            "mode": "inflowFraction",
+            "inflowState": "waterfilm",
+            "inflowSources": [
+              "positiveInput",
+              "incoming"
+            ],
+            "fraction": 0.1,
+            "consumes": {
+              "waterfilm": 1
+            },
+            "produces": {
+              "wetness": 1
+            }
+          }
+        ]
+      },
+      "input_case": "plate",
+      "rotation_x_degrees": 8,
+      "initial_wetness": 0,
+      "external_wetness_input": 0,
+      "purpose": "state plus actual-inflow reaction extension",
+      "prior_outcome_known": false
+    },
+    {
+      "id": "T3",
+      "parent": [
+        "T1",
+        "T2"
+      ],
+      "variants": [
+        "D",
+        "E"
+      ],
+      "profile_changes": {
+        "union_of": [
+          "T1",
+          "T2"
+        ]
+      },
+      "input_case": "mud",
+      "rotation_x_degrees": 20,
+      "initial_wetness": 0,
+      "external_wetness_input": 0,
+      "purpose": "composition and transform reuse",
+      "prior_outcome_known": false
+    }
+  ],
+  "minimum_diagnostic_trajectories": 14,
+  "controls": {
+    "M_separate_T0_D_full_run_if_schedule_differs": true,
+    "ledger_off_T0_D_seconds": 1,
+    "ledger_off_implementations": [
+      "U",
+      "M"
+    ],
+    "reverse_module_order_T3_D_seconds": 1,
+    "reverse_module_order_implementations": [
+      "U",
+      "M"
+    ]
+  },
+  "gates": {
+    "z_heat": "initial heat + all positive heat input",
+    "z_material": "initial ice/waterfilm/mud/wetness + all positive inputs to these states",
+    "normalization_floor": 1e-20,
+    "state_snapshot_l1_relative": 1e-05,
+    "state_density_max_abs_floor": 0.0001,
+    "state_density_max_relative": 1e-05,
+    "geometry_world_position_relative_to_L": 1e-05,
+    "L": "max(initial world bbox diagonal, 1 world unit)",
+    "normal_vector_linf": 0.0001,
+    "edge_weight_linf": 2e-05,
+    "cumulative_transport_decay_rule_extent_relative": 1e-05,
+    "material_budget_relative": 1e-05,
+    "invalid_counts": 0,
+    "frozen_geometry": "bit identical to own G0",
+    "bootstrap": "same state/input/G0 between U and M for each task/variant",
+    "gate_failure": "invalid comparison or bug; not evidence for U superiority"
+  },
+  "cost_evaluation": {
+    "tasks": [
+      "T0-D",
+      "T3-D"
+    ],
+    "resolutions": [
+      128,
+      256
+    ],
+    "hz": 60,
+    "seconds": 14,
+    "steps": 840,
+    "repetitions_per_implementation": 5,
+    "pair_order": [
+      [
+        "U",
+        "M"
+      ],
+      [
+        "M",
+        "U"
+      ],
+      [
+        "U",
+        "M"
+      ],
+      [
+        "M",
+        "U"
+      ],
+      [
+        "U",
+        "M"
+      ]
+    ],
+    "concurrent_gpu_runs": false,
+    "warmup_seconds": 1,
+    "restore_after_warmup": [
+      "State",
+      "G0",
+      "input queue",
+      "time",
+      "activity masks",
+      "diagnostic accumulators"
+    ],
+    "per_step_readback": false,
+    "ledger": false,
+    "final_download": "outside measured region; validate against diagnostic",
+    "timing": "all simulation stages including required packing; CPU recording/setup separate",
+    "performance_claim": "headless simulation only; no app frame budget or productivity claim"
+  },
+  "effort": {
+    "primary": "semantic marginal changes at T1/T2 and composition T3; report final generalized baseline too",
+    "categories": [
+      "shared provision",
+      "T0 foundation",
+      "declarations",
+      "generic infrastructure extension",
+      "task-specific coupling",
+      "core numerical changes",
+      "bug fixes",
+      "generated boilerplate"
+    ],
+    "elapsed_ai_time": "exploratory only; not a human-productivity measure",
+    "baseline_factory_improvement": "allowed and counted; reuse in later tasks",
+    "task_lineage": "T1/T2 branch independently from T0; T3 compose, do not double-count"
+  },
+  "decision_rules": {
+    "null": "M expresses T1/T2/T3 with declarations or ordinary reusable interfaces at comparable semantics; stop H3 superiority claim",
+    "provisional_go": "U removes unavoidable semantic coupling/core changes for both T1 and T2 after reasonable M generalization, reproduced in T3; identify mechanism; not novelty proof",
+    "invalid": "quality gate failed or arithmetic/scheduling differs",
+    "dispatch_only": "not a system-model contribution"
+  },
+  "deferred": [
+    "Bunny graph repair and mesh generalization",
+    "normal-map meso and cavity",
+    "appearance and user studies",
+    "prior framework reproduction and novelty"
+  ],
+  "implementation_status": {
+    "modular_coordinator": "not implemented",
+    "task_request_conversion": "not implemented",
+    "T2_T3_assets": "not implemented",
+    "paired_runner": "not implemented"
+  },
+  "results": null
+}

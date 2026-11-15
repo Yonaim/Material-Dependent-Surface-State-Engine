@@ -13,27 +13,27 @@
 
 namespace MDSS::Asset
 {
-    class TMaterialAsset final : public TAsset
+    class FMaterialAsset final : public FAsset
     {
     public:
         // Material construction and data access
-        TMaterialAsset(TAssetID              ID,
+        FMaterialAsset(FAssetID              ID,
                        std::string           Name,
                        std::filesystem::path SourcePath,
                        glm::vec4             BaseColor,
-                       TextureAssetHandle    BaseColorTexture,
-                       TextureAssetHandle    NormalTexture,
+                       FTextureAssetHandle   BaseColorTexture,
+                       FTextureAssetHandle   NormalTexture,
                        glm::vec4             WaterAppearance = {0.0F, 1.0F, 0.22F, 100.0F});
 
-        [[nodiscard]] const glm::vec4&   GetBaseColor() const noexcept;
-        [[nodiscard]] TextureAssetHandle GetBaseColorTexture() const noexcept;
-        [[nodiscard]] TextureAssetHandle GetNormalTexture() const noexcept;
-        [[nodiscard]] const glm::vec4&   GetWaterAppearance() const noexcept;
+        [[nodiscard]] const glm::vec4&    GetBaseColor() const noexcept;
+        [[nodiscard]] FTextureAssetHandle GetBaseColorTexture() const noexcept;
+        [[nodiscard]] FTextureAssetHandle GetNormalTexture() const noexcept;
+        [[nodiscard]] const glm::vec4&    GetWaterAppearance() const noexcept;
 
     private:
-        glm::vec4          BaseColor{1.0F};
-        TextureAssetHandle BaseColorTexture = InvalidAssetHandle;
-        TextureAssetHandle NormalTexture = InvalidAssetHandle;
-        glm::vec4          WaterAppearance{0.0F, 1.0F, 0.22F, 100.0F};
+        glm::vec4           BaseColor{1.0F};
+        FTextureAssetHandle BaseColorTexture = InvalidAssetHandle;
+        FTextureAssetHandle NormalTexture = InvalidAssetHandle;
+        glm::vec4           WaterAppearance{0.0F, 1.0F, 0.22F, 100.0F};
     };
 } // namespace MDSS::Asset

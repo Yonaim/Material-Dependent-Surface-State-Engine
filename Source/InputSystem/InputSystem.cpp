@@ -4,7 +4,6 @@
  */
 
 #include "InputSystem/InputSystem.h"
-
 #include "AssetManager/Core/AssetManager.h"
 #include "InputSystem/Raycaster.h"
 #include "Logger/Logger.h"
@@ -15,25 +14,29 @@
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
 #include <glm/geometric.hpp>
 #include <limits>
 
 namespace MDSS
 {
-#pragma region TInputSystem_Implementation
+// ============================================================
+// 00. FInputSystem Implementation
+// ============================================================
+#pragma region 00_TInputSystem_Implementation
+    // 장치 입력과 디버그 입력을 Surface 접촉 이벤트로 변환한다.
 
-    TInputSystem::TInputSystem(GLFWwindow* Window) noexcept : Window(Window)
+    FInputSystem::FInputSystem(GLFWwindow *Window) noexcept
+        : Window(Window)
     {
     }
 
-    std::optional<SurfaceState::TSurfaceContactInput>
-    TInputSystem::PollDebugContact(const TScene&                            Scene,
-                                   const Asset::TAssetManager&              Assets,
-                                   const SurfaceState::TSurfaceDataManager& SurfaceData,
-                                   const TCamera&                           Camera,
+    std::optional<SurfaceState::FSurfaceContactInput>
+    FInputSystem::PollDebugContact(const FScene                            &Scene,
+                                   const Asset::FAssetManager              &Assets,
+                                   const SurfaceState::FSurfaceDataManager &SurfaceData,
+                                   const FCamera                           &Camera,
                                    bool                                     bInjectMode,
-                                   SurfaceState::TStateId                   State,
+                                   SurfaceState::FStateId                   State,
                                    float                                    Strength,
                                    float                                    Radius,
                                    float                                    Falloff,
@@ -52,42 +55,47 @@ namespace MDSS
         {
             return std::nullopt;
         }
+
         if (State == SurfaceState::InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
         {
-            TLogger::Warning("TInputSystem",
+            FLogger::Warning("TInputSystem",
                              "Ignored debug contact because State, Strength, radius, or falloff is invalid.");
             return std::nullopt;
         }
 
         const glm::vec3 Direction = Camera.GetTarget() - Camera.GetPosition();
+
         if (glm::dot(Direction, Direction) <= 1.0e-12F)
         {
-            TLogger::Warning("TInputSystem", "Ignored debug contact because the camera has no forward direction.");
+            FLogger::Warning("TInputSystem", "Ignored debug contact because the camera has no forward direction.");
             return std::nullopt;
         }
 
-        const TSurfaceRayHit Hit = TRaycaster::Cast(Scene, Assets, Camera.GetPosition(), Direction);
-        if (!Hit.Hit)
+        const FSurfaceRayHit Hit = FRaycaster::Cast(Scene, Assets, Camera.GetPosition(), Direction);
+
+        if (!Hit.bHit)
         {
-            TLogger::Warning("TInputSystem", "Debug contact missed all front-facing mesh triangles.");
+            FLogger::Warning("TInputSystem", "Debug contact missed all front-facing mesh triangles.");
             return std::nullopt;
         }
+
         if (Hit.InstanceIndex >= Scene.GetStaticMeshInstances().size() ||
             Hit.InstanceIndex >= static_cast<std::size_t>(SurfaceState::InvalidSurfaceInstanceID))
         {
-            TLogger::Error("TInputSystem", "Raycast returned an invalid Surface instance index.");
+            FLogger::Error("TInputSystem", "Raycast returned an invalid Surface instance index.");
             return std::nullopt;
         }
 
-        const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[Hit.InstanceIndex];
+        const FStaticMeshInstance &Instance = Scene.GetStaticMeshInstances()[Hit.InstanceIndex];
+
         if (!SurfaceData.HasSurfaceData(Instance.GetSurfaceData()))
         {
-            TLogger::Warning("TInputSystem", "Raycast hit a Mesh instance without Surface simulation data.");
+            FLogger::Warning("TInputSystem", "Raycast hit a Mesh instance without Surface simulation data.");
             return std::nullopt;
         }
 
-        SurfaceState::TSurfaceContactInput Contact;
-        Contact.TargetInstance = static_cast<SurfaceState::TSurfaceInstanceID>(Hit.InstanceIndex);
+        SurfaceState::FSurfaceContactInput Contact;
+        Contact.TargetInstance = static_cast<SurfaceState::FSurfaceInstanceID>(Hit.InstanceIndex);
         Contact.State = State;
         Contact.WorldPosition = Hit.WorldPosition;
         Contact.WorldDirection = glm::normalize(Direction);
@@ -98,12 +106,14 @@ namespace MDSS
         Contact.Shape = Shape;
         Contact.SecondaryRadius = SecondaryRadius;
         Contact.RotationDegrees = RotationDegrees;
+
         if (Shape != SurfaceState::ESurfaceContactShape::Circle)
         {
             Contact.bPlanar = true;
             Contact.PlaneNormal = Hit.WorldNormal;
             Contact.PlaneHalfDepth = Radius;
         }
+
         Contact.TexelSearchRadius = TexelSearchRadius;
         Contact.bHasSimulationMapping = true;
         Contact.TargetTriangle = Hit.TriangleID;

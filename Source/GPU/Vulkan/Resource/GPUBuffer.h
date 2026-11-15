@@ -14,7 +14,7 @@
 
 namespace MDSS::GPU
 {
-    class TGPUBuffer
+    class FGPUBuffer
     {
     public:
         // Buffer allocation and lifecycle
@@ -22,18 +22,18 @@ namespace MDSS::GPU
          * @brief 지정한 usage와 memory property로 Vulkan buffer와 memory를 생성한다.
          * @throws std::runtime_error buffer 또는 memory 생성에 실패한 경우.
          */
-        TGPUBuffer(VkPhysicalDevice         PhysicalDevice,
+        FGPUBuffer(VkPhysicalDevice         PhysicalDevice,
                    VkDevice                 Device,
                    VkDeviceSize             Size,
                    VkBufferUsageFlags       Usage,
                    VkMemoryPropertyFlags    MemoryProperties,
-                   TGPUBufferMemoryCategory Category = TGPUBufferMemoryCategory::Other);
-        ~TGPUBuffer();
+                   EGPUBufferMemoryCategory Category = EGPUBufferMemoryCategory::Other);
+        ~FGPUBuffer();
 
-        TGPUBuffer(const TGPUBuffer&) = delete;
-        TGPUBuffer& operator=(const TGPUBuffer&) = delete;
-        TGPUBuffer(TGPUBuffer&&) = delete;
-        TGPUBuffer& operator=(TGPUBuffer&&) = delete;
+        FGPUBuffer(const FGPUBuffer&) = delete;
+        FGPUBuffer& operator=(const FGPUBuffer&) = delete;
+        FGPUBuffer(FGPUBuffer&&) = delete;
+        FGPUBuffer& operator=(FGPUBuffer&&) = delete;
 
         /**
          * @brief host-visible buffer memory에 바이트 범위를 복사한다.
@@ -52,7 +52,7 @@ namespace MDSS::GPU
         [[nodiscard]] VkDeviceSize             GetSize() const noexcept;
         [[nodiscard]] VkBufferUsageFlags       GetUsage() const noexcept;
         [[nodiscard]] VkMemoryPropertyFlags    GetMemoryProperties() const noexcept;
-        [[nodiscard]] TGPUBufferMemoryCategory GetMemoryCategory() const noexcept;
+        [[nodiscard]] EGPUBufferMemoryCategory GetMemoryCategory() const noexcept;
         [[nodiscard]] std::uint64_t            GetUploadRevision() const noexcept;
 
     private:
@@ -66,7 +66,7 @@ namespace MDSS::GPU
         VkDeviceSize                       Size = 0;
         VkDeviceSize                       AllocationSize = 0;
         VkBufferUsageFlags                 Usage = 0;
-        TGPUBufferMemoryCategory           MemoryCategory = TGPUBufferMemoryCategory::Other;
+        EGPUBufferMemoryCategory           MemoryCategory = EGPUBufferMemoryCategory::Other;
         VkMemoryPropertyFlags              MemoryProperties = 0;
         mutable std::atomic<std::uint64_t> UploadRevision{0};
     };

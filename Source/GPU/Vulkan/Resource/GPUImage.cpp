@@ -12,9 +12,13 @@
 
 namespace MDSS::GPU
 {
-#pragma region Image_Lifecycle_and_Creation
+// ============================================================
+// 00. Image Lifecycle and Creation
+// ============================================================
+#pragma region 00_Image_Lifecycle_and_Creation
+// 이미지의 extent·format·usage에 맞춰 image와 memory를 생성·해제한다.
 
-    TGPUImage::TGPUImage(VkPhysicalDevice      PhysicalDevice,
+    FGPUImage::FGPUImage(VkPhysicalDevice      PhysicalDevice,
                          VkDevice              Device,
                          VkExtent2D            Extent,
                          VkFormat              Format,
@@ -27,12 +31,12 @@ namespace MDSS::GPU
         Create(PhysicalDevice, Extent, Format, Tiling, Usage, MemoryProperties, ArrayLayers);
     }
 
-    TGPUImage::~TGPUImage()
+    FGPUImage::~FGPUImage()
     {
         Reset();
     }
 
-    void TGPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
+    void FGPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
                              VkExtent2D            NewExtent,
                              VkFormat              NewFormat,
                              VkImageTiling         Tiling,
@@ -44,7 +48,7 @@ namespace MDSS::GPU
         Create(PhysicalDevice, NewExtent, NewFormat, Tiling, Usage, MemoryProperties, ArrayLayers);
     }
 
-    void TGPUImage::Reset()
+    void FGPUImage::Reset()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -54,7 +58,7 @@ namespace MDSS::GPU
 
         if (Memory != VK_NULL_HANDLE)
         {
-            TGPUResourceMemoryStats::ImageFreed(AllocationSize);
+            FGPUResourceMemoryStats::ImageFreed(AllocationSize);
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
@@ -64,7 +68,7 @@ namespace MDSS::GPU
         Extent = {};
     }
 
-    void TGPUImage::Create(VkPhysicalDevice      PhysicalDevice,
+    void FGPUImage::Create(VkPhysicalDevice      PhysicalDevice,
                            VkExtent2D            NewExtent,
                            VkFormat              NewFormat,
                            VkImageTiling         Tiling,
@@ -127,37 +131,46 @@ namespace MDSS::GPU
             AllocationSize = 0;
             throw std::runtime_error("Failed to bind Vulkan image memory.");
         }
-        TGPUResourceMemoryStats::ImageAllocated(AllocationSize);
 
-        TLogger::Verbose("Vulkan",
+        FGPUResourceMemoryStats::ImageAllocated(AllocationSize);
+
+        FLogger::Verbose("Vulkan",
                          "TGPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
                              ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
 #pragma endregion
 
-#pragma region Image_Accessors
+// ============================================================
+// 01. Image Accessors
+// ============================================================
+#pragma region 01_Image_Accessors
+// image handle과 format·extent를 관련 렌더 자원에 제공한다.
 
-    VkImage TGPUImage::GetHandle() const noexcept
+    VkImage FGPUImage::GetHandle() const noexcept
     {
         return Handle;
     }
 
-    VkFormat TGPUImage::GetFormat() const noexcept
+    VkFormat FGPUImage::GetFormat() const noexcept
     {
         return Format;
     }
 
-    VkExtent2D TGPUImage::GetExtent() const noexcept
+    VkExtent2D FGPUImage::GetExtent() const noexcept
     {
         return Extent;
     }
 
 #pragma endregion
 
-#pragma region Memory_Type_Selection
+// ============================================================
+// 02. Memory Type Selection
+// ============================================================
+#pragma region 02_Memory_Type_Selection
+// 요구 memory property와 장치의 type mask를 만족하는 메모리 종류를 선택한다.
 
-    std::uint32_t TGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
+    std::uint32_t FGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,
                                             VkMemoryPropertyFlags RequiredProperties)
     {

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "study_id": "20261027-meso-study",
+  "created_at": "2026-10-27T08:59:49.463111+09:00",
+  "updated_at": "2026-10-27T09:14:50.064615+09:00",
+  "status": "completed",
+  "question": "Do normal reconstruction/scale choices materially affect subsequent shared-geometry transport, and does a standard least-squares solve suffice?",
+  "experiments": [
+    {
+      "id": "PERF-043-meso",
+      "status": "completed",
+      "path": "PERF-043-meso/"
+    }
+  ],
+  "report": "Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md",
+  "started_at": "2026-10-27T09:01:11.521817+09:00",
+  "finished_at": "2026-10-27T09:13:22.532596+09:00",
+  "successful_runs": 35,
+  "evaluation_gpu_steps": 5580,
+  "research_audit_errors": 0,
+  "unit_test_failures": 1,
+  "conclusion": "Standard same-constraint LS reduces reconstruction error; downstream state differences small in tested cases; no demonstrated need for new meso transport algorithm"
+}

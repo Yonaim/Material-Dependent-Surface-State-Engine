@@ -14,8 +14,8 @@ namespace MDSS::SurfaceState
 {
     namespace
     {
-        constexpr VkDeviceSize SnapshotBytes = sizeof(std::array<glm::vec4, 6>);
-        static_assert(SnapshotBytes == 96);
+        constexpr VkDeviceSize SnapshotBytes = sizeof(std::array<glm::vec4, 7>);
+        static_assert(SnapshotBytes == 112);
         void RequireVk(VkResult Result)
         {
             if (Result != VK_SUCCESS)
@@ -23,9 +23,13 @@ namespace MDSS::SurfaceState
         }
     }
 
-#pragma region Inspector_Resource_Lifecycle
+// ============================================================
+// 00. Inspector Resource Lifecycle
+// ============================================================
+#pragma region 00_Inspector_Resource_Lifecycle
+// 선택 texel의 GPU 진단과 readback 자원을 관리한다.
 
-    TTexelInspector::TTexelInspector(VkPhysicalDevice      PhysicalDevice,
+    FTexelInspector::FTexelInspector(VkPhysicalDevice      PhysicalDevice,
                                      VkDevice              Device,
                                      VkDescriptorSetLayout SurfaceLayout,
                                      std::size_t           FrameCount)
@@ -57,11 +61,13 @@ namespace MDSS::SurfaceState
             if (!File)
                 throw std::runtime_error("Cannot open Texel Inspector shader.");
             const auto Size = File.tellg();
+
             if (Size <= 0 || Size % 4 != 0)
                 throw std::runtime_error("Invalid Texel Inspector SPIR-V.");
             std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
             File.seekg(0);
             File.read(reinterpret_cast<char*>(Code.data()), Size);
+
             if (!File)
                 throw std::runtime_error("Cannot read Texel Inspector shader.");
             VkShaderModuleCreateInfo ModuleInfo{};
@@ -87,15 +93,16 @@ namespace MDSS::SurfaceState
             PoolInfo.pPoolSizes = &PoolSize;
             RequireVk(vkCreateDescriptorPool(Device, &PoolInfo, nullptr, &Pool));
             Frames.resize(FrameCount);
+
             for (auto& Frame : Frames)
             {
-                Frame.Buffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                Frame.Buffer = std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                                  Device,
                                                                  SnapshotBytes,
                                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                                 GPU::TGPUBufferMemoryCategory::Debug);
+                                                                 GPU::EGPUBufferMemoryCategory::Debug);
                 VkDescriptorSetAllocateInfo Allocate{};
                 Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 Allocate.descriptorPool = Pool;
@@ -122,11 +129,12 @@ namespace MDSS::SurfaceState
         }
     }
 
-    TTexelInspector::~TTexelInspector()
+    FTexelInspector::~FTexelInspector()
     {
         Destroy();
     }
-    void TTexelInspector::Destroy() noexcept
+
+    void FTexelInspector::Destroy() noexcept
     {
         if (Pipeline)
             vkDestroyPipeline(Device, Pipeline, nullptr);
@@ -135,18 +143,23 @@ namespace MDSS::SurfaceState
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
         Frames.clear();
+
         if (OutputLayout)
             vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
     }
 #pragma endregion
 
-#pragma region Inspector_Command_Recording
+// ============================================================
+// 01. Inspector Command Recording
+// ============================================================
+#pragma region 01_Inspector_Command_Recording
+// 선택 texel의 State·형상·반응 진단을 읽을 compute 명령을 기록한다.
 
-    void TTexelInspector::Record(VkCommandBuffer                         Command,
+    void FTexelInspector::Record(VkCommandBuffer                         Command,
                                  std::size_t                             FrameIndex,
-                                 const TSurfaceStateDescriptorResources& Descriptors,
-                                 const TSurfaceTexelSelection&           Selection,
-                                 TStateId                                Channel,
+                                 const FSurfaceStateDescriptorResources& Descriptors,
+                                 const FSurfaceTexelSelection&           Selection,
+                                 FStateId                                Channel,
                                  std::uint32_t                           Channels,
                                  float                                   AccumulationDisplayScale,
                                  const glm::mat4&                        ModelMatrix,
@@ -154,19 +167,21 @@ namespace MDSS::SurfaceState
                                  std::uint64_t                           Step)
     {
         auto& Frame = Frames.at(FrameIndex);
-        struct TPush
+        struct FPush
         {
             std::uint32_t            Texel, Channel, Channels;
             float                    AccumulationDisplayScale;
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
-        static_assert(sizeof(TPush) == 64);
+        static_assert(sizeof(FPush) == 64);
         glm::mat3       NormalMatrix(0.0F);
         const glm::mat3 ModelLinear(ModelMatrix);
         const float     Determinant = glm::determinant(ModelLinear);
+
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
-        TPush Push{Selection.Texel, Channel, Channels, AccumulationDisplayScale, {}};
+        FPush Push{Selection.Texel, Channel, Channels, AccumulationDisplayScale, {}};
+
         for (int Column = 0; Column < 3; ++Column)
             Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);
         const std::array<VkDescriptorSet, 2> Sets{bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(),
@@ -192,25 +207,31 @@ namespace MDSS::SurfaceState
                              &Barrier,
                              0,
                              nullptr);
-        Frame.Pending = TSurfaceTexelSnapshot{Selection, Channel, Step, ++Serial, bStateAB, {}};
+        Frame.Pending = FSurfaceTexelSnapshot{Selection, Channel, Step, ++Serial, bStateAB, {}};
         Frame.Generation = Generation;
     }
 #pragma endregion
 
-#pragma region Inspector_Readback
+// ============================================================
+// 02. Inspector Readback
+// ============================================================
+#pragma region 02_Inspector_Readback
+// GPU 완료 후 캡처한 texel 진단을 CPU snapshot으로 읽는다.
 
-    void TTexelInspector::CompleteFrame(std::size_t FrameIndex)
+    void FTexelInspector::CompleteFrame(std::size_t FrameIndex)
     {
         auto& Frame = Frames.at(FrameIndex);
+
         if (Frame.Pending && Frame.Generation == Generation && (!Snapshot || Frame.Pending->Serial > Snapshot->Serial))
         {
             Frame.Buffer->Download(Frame.Pending->Values.data(), SnapshotBytes);
             Snapshot = std::move(Frame.Pending);
         }
+
         Frame.Pending.reset();
     }
 
-    void TTexelInspector::Invalidate() noexcept
+    void FTexelInspector::Invalidate() noexcept
     {
         ++Generation;
         Snapshot.reset();

@@ -1,0 +1,19 @@
+{
+  "obsidian-style-settings": {
+    "blue-topaz-theme@@img-grid": true,
+    "blue-topaz-theme@@folder-icons": true,
+    "blue-topaz-theme@@remove-first-folder-icon": true,
+    "blue-topaz-theme@@remove-arrow": false,
+    "blue-topaz-theme@@folder-note-underline": false,
+    "blue-topaz-theme@@folder-note-dot": true,
+    "blue-topaz-theme@@bt-toggle-colorful-folder": true,
+    "blue-topaz-theme@@folder-style-change-options-colorful": "folder-style-change-options-colorful-border",
+    "blue-topaz-theme@@folder-style-change-options-colorful-subfolder": "folder-colorful-six",
+    "blue-topaz-theme@@line-height-main": 1.8
+  },
+  "editor-width-slider": {
+    "sliderPercentage": "13",
+    "sliderPercentageDefault": "20",
+    "sliderWidth": "150"
+  }
+}

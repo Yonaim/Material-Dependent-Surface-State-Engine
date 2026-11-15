@@ -1,0 +1,105 @@
+{
+  "created_at": "2026-10-27T13:36:00.742291+09:00",
+  "original_manifest": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\manifest.json",
+  "replay_manifest": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2-replays\\manifest.json",
+  "replayed_conditions": [
+    "absorbedwetness"
+  ],
+  "selected_runs": [
+    {
+      "id": "base",
+      "task": "P1",
+      "reference_profile": "base",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\base\\input\\Task.Scene",
+      "settings": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\base\\input\\settings.json",
+      "warmup_frames": 359,
+      "measurement_frames": 1,
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\base\\capture.jsonl"
+    },
+    {
+      "id": "threshold",
+      "task": "P1",
+      "reference_profile": "threshold",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\threshold\\input\\Task.Scene",
+      "settings": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\threshold\\input\\settings.json",
+      "warmup_frames": 359,
+      "measurement_frames": 1,
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\threshold\\capture.jsonl"
+    },
+    {
+      "id": "wetness",
+      "task": "P2",
+      "reference_profile": "wetness",
+      "channels": [
+        "heat",
+        "ice",
+        "waterfilm",
+        "wetness"
+      ],
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\wetness\\input\\Task.Scene",
+      "settings": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\wetness\\input\\settings.json",
+      "warmup_frames": 359,
+      "measurement_frames": 1,
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\wetness\\capture.jsonl"
+    },
+    {
+      "id": "absorbedwetness",
+      "task": "P2",
+      "reference_profile": "absorbedwetness",
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2-replays\\raw\\absorbedwetness\\input\\Task.Scene",
+      "settings": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2-replays\\raw\\absorbedwetness\\input\\settings.json",
+      "warmup_frames": 359,
+      "measurement_frames": 1,
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2-replays\\raw\\absorbedwetness\\capture.jsonl"
+    },
+    {
+      "id": "reuse20",
+      "task": "P3",
+      "reference_profile": "absorbedwetness",
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\reuse20\\input\\Task.Scene",
+      "settings": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\reuse20\\input\\settings.json",
+      "warmup_frames": 359,
+      "measurement_frames": 1,
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\reuse20\\capture.jsonl"
+    },
+    {
+      "id": "absorbedwetness-repeat",
+      "task": "P2",
+      "reference_profile": "absorbedwetness",
+      "channels": [
+        "absorbedwetness",
+        "heat",
+        "ice",
+        "waterfilm"
+      ],
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\absorbedwetness-repeat\\input\\Task.Scene",
+      "settings": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\absorbedwetness-repeat\\input\\settings.json",
+      "warmup_frames": 359,
+      "measurement_frames": 1,
+      "output": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Performance-Data\\20261027-authoring-readiness\\policy-change-retry\\render-v2\\raw\\absorbedwetness-repeat\\capture.jsonl"
+    }
+  ],
+  "rule": "Replace only earlier runs failing required capture/count gates; never select by favorable numeric outcome"
+}

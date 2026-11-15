@@ -9,24 +9,28 @@
 
 namespace MDSS::Asset
 {
-#pragma region TAsset_Implementation
+// ============================================================
+// 00. FAsset Implementation
+// ============================================================
+#pragma region 00_TAsset_Implementation
+// 에셋 공통 식별자와 원본 경로 메타데이터.
 
-    TAsset::TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath)
+    FAsset::FAsset(FAssetID ID, std::string Name, std::filesystem::path SourcePath)
         : ID(ID), Name(std::move(Name)), SourcePath(std::move(SourcePath))
     {
     }
 
-    TAssetID TAsset::GetID() const noexcept
+    FAssetID FAsset::GetID() const noexcept
     {
         return ID;
     }
 
-    const std::string& TAsset::GetName() const noexcept
+    const std::string& FAsset::GetName() const noexcept
     {
         return Name;
     }
 
-    const std::filesystem::path& TAsset::GetSourcePath() const noexcept
+    const std::filesystem::path& FAsset::GetSourcePath() const noexcept
     {
         return SourcePath;
     }

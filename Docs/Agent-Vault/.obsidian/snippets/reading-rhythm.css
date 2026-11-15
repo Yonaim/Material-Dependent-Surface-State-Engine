@@ -1,0 +1,95 @@
+/* CS Vault: calm vertical rhythm for headings and lists.
+   Works with Obsidian's default theme; optional community themes may override some rules.
+   Reading view and Live Preview styled separately. */
+
+/* Give each source blank line inserted by Preserve Blank Lines one text line of height. */
+.markdown-reading-view .preserve-blank-line {
+  line-height: 1.5;
+}
+
+/* Markdown headings: leave about 70% of a heading's font size above and below. */
+.markdown-preview-view :is(h1, h2, h3, h4, h5, h6) {
+  margin-block: 0 !important;
+  padding-block: 0.7em !important;
+}
+
+/* Keep lists directly below headings at the same spacing. */
+.markdown-preview-view :is(h1, h2, h3, h4, h5, h6) + :is(ul, ol) {
+  margin-block-start: 0.7em !important;
+}
+
+/* Editing view: add matching space above and below each Markdown heading line. */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header {
+  padding-block: 0.7em;
+}
+
+/* Consistent list density, without giant gaps. */
+.markdown-reading-view .markdown-rendered li + li {
+  margin-block-start: 0.25em;
+}
+
+/* Editing view: add a small gap between consecutive list items. */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-list-line + .cm-line.HyperMD-list-line {
+  padding-block-start: 0.25em;
+}
+
+/* Tables: slightly more legible cell padding. */
+.markdown-reading-view .markdown-rendered table :is(th, td) {
+  padding-block: 0.42em;
+}
+
+/* Make the document title distinct from H1 and separate it from the note body. */
+.markdown-preview-view .inline-title,
+.markdown-source-view.mod-cm6 .inline-title {
+  font-size: 2.2em !important;
+  line-height: 1.15;
+  border-bottom: 1px solid var(--text-muted);
+  padding-block-end: 0.35em;
+  margin-block-end: 0.3em;
+}
+
+/* Give embedded images space above and below in Reading view. */
+.markdown-reading-view .markdown-rendered .image-embed img:not([class*="emoji"]):not(:active) {
+  margin-block: 1em !important;
+}
+
+/* Center embedded images and give them a consistent black outline in Reading view. */
+.markdown-reading-view .markdown-rendered .image-embed img:not([class*="emoji"]) {
+  display: block !important;
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin-inline: auto !important;
+  border: 1px solid #000 !important;
+  box-sizing: border-box;
+}
+
+/* Center image embeds as a group, including multiple images on one editor line. */
+.markdown-source-view.mod-cm6 .cm-content :is(.cm-line, .cm-embed-block):has(.image-embed) {
+  text-align: center !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-content .image-embed {
+  display: inline-block !important;
+  float: none !important;
+  margin-block: 1em !important;
+  margin-inline: 0 !important;
+}
+
+/* Apply the outline only to embedded images, not editor UI images. */
+.markdown-source-view.mod-cm6 .cm-content :is(.image-embed img, img.image-embed):not([class*="emoji"]) {
+  display: block !important;
+  margin: 0 !important;
+  border: 1px solid #000 !important;
+  box-sizing: border-box !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-content img.image-embed:not([class*="emoji"]) {
+  margin: 1em auto !important;
+}
+
+/* Live Preview: header line followed directly by list line.
+   CM6 line classes vary across releases and themes; verify visually. */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header + .cm-line.HyperMD-list-line {
+  padding-block-start: 0.60em;
+}

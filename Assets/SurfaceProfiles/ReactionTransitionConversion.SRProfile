@@ -1,0 +1,85 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 5,
+  "name": "ReactionTransitionConversion",
+  "states": {
+    "fuel": {
+      "stateCapacity": 4.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    },
+    "heat": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.12,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    },
+    "burn": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    },
+    "scorched": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
+      "cavityExitResistanceFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.035
+    }
+  },
+  "reactions": [
+    {
+      "id": "heat_to_burn",
+      "consumes": {
+        "heat": 1.0
+      },
+      "produces": {
+        "burn": 1.0
+      },
+      "rate": {
+        "model": "stateProportional",
+        "state": "heat",
+        "coefficient": 0.8
+      }
+    },
+    {
+      "id": "burn_to_scorched",
+      "consumes": {
+        "burn": 1.0
+      },
+      "produces": {
+        "scorched": 1.0
+      },
+      "rate": {
+        "model": "stateProportional",
+        "state": "burn",
+        "coefficient": 0.65
+      }
+    }
+  ]
+}

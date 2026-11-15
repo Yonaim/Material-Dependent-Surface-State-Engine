@@ -1,11 +1,14 @@
-/**
- * @file TexelGeometryBaseline.comp
- * @brief State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
- */
+// TexelGeometryBaseline.comp — State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+// #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 64) in;
 
@@ -13,23 +16,62 @@ layout(set = 1, binding = 1, std430) writeonly buffer TGeometryCache
 {
     uint Values[];
 }
+
 GeometryCache;
 
 layout(push_constant) uniform TPush
 {
-    uint  TexelCount;
-    uint  Channel;
-    uint  Channels;
-    uint  Accumulation;
+    uint TexelCount;
+    uint Channel;
+    uint Channels;
+    uint Accumulation;
     float AccumulationDisplayScale;
     float GeometryDisplayScale;
-    uint  TotalHeight;
-    uint  UseBaseline;
-    uint  TileSize;
-    uint  Padding[3];
-    vec4  NormalMatrixColumns[3];
+    uint TotalHeight;
+    uint UseBaseline;
+    uint TileSize;
+    uint Padding[3];
+    vec4 NormalMatrixColumns[3];
 }
+
 Push;
+
+vec3 BaselineNormal(uint Texel);
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+// State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
+
+void main()
+{
+    // 각 invocation은 한 texel의 기준 normal을 계산해 3개 uint plane에 보관한다.
+    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
+    if (T >= Push.TexelCount)
+    {
+        return;
+    }
+
+    vec3 Normal = BaselineNormal(T);
+
+    // 높이 데이터 뒤에 법선의 세 성분을 uint 비트 패턴으로 저장한다.
+    uint Offset = Push.TexelCount + T * 3u;
+    GeometryCache.Values[Offset] = floatBitsToUint(Normal.x);
+    GeometryCache.Values[Offset + 1u] = floatBitsToUint(Normal.y);
+    GeometryCache.Values[Offset + 2u] = floatBitsToUint(Normal.z);
+}
+
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
 
 vec3 BaselineNormal(uint Texel)
 {
@@ -40,11 +82,20 @@ vec3 BaselineNormal(uint Texel)
     if (Texel >= uint(Positions.Values.length()) || Texel >= uint(Normals.Values.length()) ||
         Texel >= uint(NeighborIndices.Values.length()) || Texel >= uint(GeometryScalars.Values.length()) ||
         Texel >= uint(TexelSurfaceIndices.Values.length()) || TexelSurfaceIndices.Values[Texel] == 0xffffffffu)
+    {
         return Fallback;
+    }
 
     float CenterHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
+
     if (isnan(CenterHeight) || isinf(CenterHeight))
+    {
         return Fallback;
+    }
+
+    // 02.00. Accumulate Neighbor Normal Equations
+    // #region 02_00_Accumulate_Neighbor_Normal_Equations
+    // 계산 결과를 TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
     // texel의 접평면 위에 서로 수직인 두 축 U, V를 만든다.
     vec3 N = normalize(Normals.Values[Texel].xyz);
@@ -62,21 +113,30 @@ vec3 BaselineNormal(uint Texel)
     for (uint DirectionIndex = 0u; DirectionIndex < 8u; ++DirectionIndex)
     {
         uint Other = NeighborIndices.Values[Texel].Indices[DirectionIndex];
+
         if (Other >= Push.TexelCount || Other >= uint(Positions.Values.length()) ||
             Other >= uint(Normals.Values.length()) || Other >= uint(GeometryScalars.Values.length()) ||
             Other >= uint(TexelSurfaceIndices.Values.length()) || TexelSurfaceIndices.Values[Other] == 0xffffffffu ||
             dot(N, Normals.Values[Other].xyz) < 0.5)
+        {
             continue;
+        }
 
         float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight;
-        if (isnan(OtherHeight) || isinf(OtherHeight))
-            continue;
 
-        vec3  Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
+        if (isnan(OtherHeight) || isinf(OtherHeight))
+        {
+            continue;
+        }
+
+        vec3 Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
         float X = dot(Delta, U), Y = dot(Delta, V);
         float LengthSquared = X * X + Y * Y;
+
         if (LengthSquared <= 1e-16)
+        {
             continue;
+        }
 
         // 가까운 이웃일수록 큰 영향을 주며, 높이 차는 먼저 표시 배율을 적용한다.
         float Weight = 1.0 / LengthSquared;
@@ -89,29 +149,26 @@ vec3 BaselineNormal(uint Texel)
         YH += Y * DH * Weight;
     }
 
+    // #endregion
+
+    // 02.01. Solve Tangent Plane Normal
+    // #region 02_01_Solve_Tangent_Plane_Normal
+    // 누적한 normal 방정식을 풀어 접평면 기울기를 표면 normal로 복원한다.
+
     // 2x2 연립방정식을 푼다. 이웃 배치가 퇴화하면 안정적인 기울기를 구할 수 없다.
     float Det = XX * YY - XY * XY;
+
     if (Det <= 1e-6 * max(XX * YY, 1e-12))
+    {
         return Fallback;
+    }
 
     vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
 
     // U 또는 V 방향으로 높아지는 표면의 법선은 해당 방향의 반대로 기울어진다.
     return normalize(N - U * Gradient.x - V * Gradient.y);
+
+    // #endregion
 }
 
-void main()
-{
-    // 각 invocation은 한 texel의 기준 normal을 계산해 3개 uint plane에 보관한다.
-    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
-    if (T >= Push.TexelCount)
-        return;
-
-    vec3 Normal = BaselineNormal(T);
-
-    // 높이 데이터 뒤에 법선의 세 성분을 uint 비트 패턴으로 저장한다.
-    uint Offset = Push.TexelCount + T * 3u;
-    GeometryCache.Values[Offset] = floatBitsToUint(Normal.x);
-    GeometryCache.Values[Offset + 1u] = floatBitsToUint(Normal.y);
-    GeometryCache.Values[Offset + 2u] = floatBitsToUint(Normal.z);
-}
+// #endregion

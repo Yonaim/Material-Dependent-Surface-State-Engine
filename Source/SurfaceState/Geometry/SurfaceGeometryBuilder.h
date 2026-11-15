@@ -13,15 +13,15 @@
 
 namespace MDSS::SurfaceState
 {
-    class TSurfaceGeometryBuilder final
+    class FSurfaceGeometryBuilder final
     {
     public:
         /**
          * @brief Copy validated mapping samples into shared geometry and attach their Profile indices.
          * @throws std::invalid_argument for invalid geometry, Profile assignments, or texel values.
          */
-        [[nodiscard]] static TSharedSurfaceGeometryData Build(const TSurfaceMappingData&        Mapping,
-                                                              std::vector<TSurfaceProfileIndex> ProfileMap,
+        [[nodiscard]] static FSharedSurfaceGeometryData Build(const FSurfaceMappingData&        Mapping,
+                                                              std::vector<FSurfaceProfileIndex> ProfileMap,
                                                               std::uint32_t                     ProfileCount);
     };
 } // namespace MDSS::SurfaceState

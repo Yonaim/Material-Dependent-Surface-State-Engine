@@ -1,9 +1,17 @@
-"""Download the CC0 Poly Haven meshes used by the three showcase scenes.
+"""showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
+
+Download the CC0 Poly Haven meshes used by the three showcase scenes.
 
 Run with: uv run --python 3.13 --with trimesh --with scipy --with pillow python Scripts/import_showcase_assets.py
 The generated OBJ files keep the source UVs and normals, share position indices
 across UV seams, and use the engine's `norm` MTL key.
 """
+
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+# region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 
@@ -18,7 +26,6 @@ import trimesh
 from PIL import Image
 from scipy.ndimage import distance_transform_edt
 
-
 ROOT = Path(__file__).resolve().parents[1]
 MESHES = ROOT / "Assets" / "Meshes"
 ASSETS = {
@@ -28,9 +35,20 @@ ASSETS = {
 }
 
 
+# endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+# region 01_Processing_Helpers
+# showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
+
+
 def fetch(url: str, destination: Path, md5: str | None = None) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    if not destination.exists() or (md5 and hashlib.md5(destination.read_bytes()).hexdigest() != md5):
+    if not destination.exists() or (
+        md5 and hashlib.md5(destination.read_bytes()).hexdigest() != md5
+    ):
         print(f"Downloading {destination.name}", flush=True)
         request = urllib.request.Request(url, headers={"User-Agent": "MDSS-Engine/1.0"})
         with urllib.request.urlopen(request) as response, destination.open("wb") as output:
@@ -86,7 +104,10 @@ def export_obj(gltf: Path, destination: Path, material: str, target_height: floa
     low, high = bounds.min(axis=0), bounds.max(axis=0)
     scale = target_height / (high[2] - low[2])
     center = (low + high) * 0.5
-    print(f"{destination.name}: {len(parts)} parts, bounds {low.round(3)}..{high.round(3)}", flush=True)
+    print(
+        f"{destination.name}: {len(parts)} parts, bounds {low.round(3)}..{high.round(3)}",
+        flush=True,
+    )
 
     with destination.open("w", encoding="utf-8", newline="\n") as output:
         output.write(f"mtllib {destination.stem}.mtl\no {destination.stem}\nusemtl {material}\n")
@@ -115,7 +136,10 @@ def export_obj(gltf: Path, destination: Path, material: str, target_height: floa
             for x, y, z in normals:
                 output.write(f"vn {x:.7f} {y:.7f} {z:.7f}\n")
             for face in np.asarray(part.faces, dtype=np.int64):
-                corners = [f"{position_indices[i]}/{attribute_offset+i+1}/{attribute_offset+i+1}" for i in face]
+                corners = [
+                    f"{position_indices[i]}/{attribute_offset+i+1}/{attribute_offset+i+1}"
+                    for i in face
+                ]
                 output.write(f"f {' '.join(corners)}\n")
             position_offset += len(unique_positions)
             attribute_offset += len(vertices)
@@ -145,14 +169,25 @@ def gltf_vertex_colors(gltf: Path, vertex_count: int) -> np.ndarray | None:
     data = (gltf.parent / buffer["uri"]).read_bytes()
     offset = view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
     stride = view.get("byteStride", components * np.dtype(dtype).itemsize)
-    colors = np.ndarray((vertex_count, components), dtype=dtype, buffer=data, offset=offset,
-                        strides=(stride, np.dtype(dtype).itemsize)).copy().astype(np.float32)
+    colors = (
+        np.ndarray(
+            (vertex_count, components),
+            dtype=dtype,
+            buffer=data,
+            offset=offset,
+            strides=(stride, np.dtype(dtype).itemsize),
+        )
+        .copy()
+        .astype(np.float32)
+    )
     if accessor["componentType"] != 5126 and accessor.get("normalized", False):
         colors /= np.iinfo(dtype).max
     return colors[:, :3]
 
 
-def bake_display_albedo(gltf: Path, source_diffuse: Path, source_ao: Path, destination: Path) -> str:
+def bake_display_albedo(
+    gltf: Path, source_diffuse: Path, source_ao: Path, destination: Path
+) -> str:
     scene = trimesh.load(gltf, force="scene", process=False)
     if len(scene.graph.nodes_geometry) != 1:
         raise RuntimeError(f"Expected one geometry node in {gltf}")
@@ -161,8 +196,11 @@ def bake_display_albedo(gltf: Path, source_diffuse: Path, source_ao: Path, desti
     # Rock 07 has strongly red/blue vertex paint. Its chroma made the demo much
     # redder than Poly Haven's neutral studio preview. Retain its luminance as
     # source shading information without shifting the source diffuse hue.
-    vertex_shading = (colors @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
-                      if colors is not None else None)
+    vertex_shading = (
+        colors @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+        if colors is not None
+        else None
+    )
     base = np.asarray(Image.open(source_diffuse).convert("RGB"), dtype=np.float32) / 255.0
     height, width = base.shape[:2]
     ao = np.asarray(Image.open(source_ao).convert("L"), dtype=np.float32) / 255.0
@@ -191,10 +229,13 @@ def bake_display_albedo(gltf: Path, source_diffuse: Path, source_ao: Path, desti
         if not inside.any():
             continue
         if vertex_shading is not None:
-            tile = factors[y0:y1 + 1, x0:x1 + 1]
-            tile[inside] = (wa * vertex_shading[face[0]] + wb * vertex_shading[face[1]] +
-                            wc * vertex_shading[face[2]])[inside]
-        covered[y0:y1 + 1, x0:x1 + 1][inside] = True
+            tile = factors[y0 : y1 + 1, x0 : x1 + 1]
+            tile[inside] = (
+                wa * vertex_shading[face[0]]
+                + wb * vertex_shading[face[1]]
+                + wc * vertex_shading[face[2]]
+            )[inside]
+        covered[y0 : y1 + 1, x0 : x1 + 1][inside] = True
     if not covered.any():
         raise RuntimeError(f"Display map bake covered no texels in {gltf}")
     nearest = distance_transform_edt(~covered, return_distances=False, return_indices=True)
@@ -206,6 +247,15 @@ def bake_display_albedo(gltf: Path, source_diffuse: Path, source_ao: Path, desti
     Image.fromarray(np.uint8(np.clip(encoded * 255.0 + 0.5, 0, 255)), "RGB").save(destination)
     print(f"Baked source AO and neutral vertex shading into {destination.name}", flush=True)
     return destination.name
+
+
+# endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+# region 02_Main_Process
+# showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
 
 
 def main() -> None:
@@ -221,7 +271,9 @@ def main() -> None:
                 diffuse = texture(slug, "Diffuse", folder, "LionHeadAlbedo.jpg")
                 normal = texture(slug, "nor_dx", folder, "LionHeadNormal.jpg")
                 ao = texture(slug, "AO", folder, "LionHeadAO.jpg")
-                display = bake_display_albedo(gltf, diffuse, ao, folder / "LionHeadDisplayAlbedo.png")
+                display = bake_display_albedo(
+                    gltf, diffuse, ao, folder / "LionHeadDisplayAlbedo.png"
+                )
                 material(folder, folder_name, display, normal.name)
                 texture("rock_01", "Diffuse", folder, "FountainStoneAlbedo.jpg")
                 texture("rock_01", "nor_dx", folder, "FountainStoneNormal.jpg")
@@ -243,5 +295,15 @@ def main() -> None:
                 texture("rock_01", "nor_dx", folder, "DebrisNormal.jpg")
 
 
+# endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+# region 03_Script_Execution
+# showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
+
 if __name__ == "__main__":
     main()
+
+# endregion

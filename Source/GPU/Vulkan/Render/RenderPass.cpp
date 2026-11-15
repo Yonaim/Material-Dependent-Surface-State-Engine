@@ -11,9 +11,13 @@
 
 namespace MDSS::GPU
 {
-#pragma region Render_Pass_Lifecycle
+// ============================================================
+// 00. Render Pass Lifecycle
+// ============================================================
+#pragma region 00_Render_Pass_Lifecycle
+// attachment와 dependency 설정으로 render pass를 만들고 해제한다.
 
-    TRenderPass::TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
+    FRenderPass::FRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
     {
         VkAttachmentDescription ColorAttachment{};
         ColorAttachment.format = ColorFormat;
@@ -78,7 +82,7 @@ namespace MDSS::GPU
         }
     }
 
-    TRenderPass::~TRenderPass()
+    FRenderPass::~FRenderPass()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -89,9 +93,13 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Render_Pass_Access
+// ============================================================
+// 01. Render Pass Access
+// ============================================================
+#pragma region 01_Render_Pass_Access
+// pipeline·framebuffer·명령 기록에서 사용할 render pass를 제공한다.
 
-    VkRenderPass TRenderPass::GetHandle() const noexcept
+    VkRenderPass FRenderPass::GetHandle() const noexcept
     {
         return Handle;
     }

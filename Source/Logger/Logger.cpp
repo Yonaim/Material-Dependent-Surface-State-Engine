@@ -21,17 +21,17 @@ namespace MDSS
 {
     namespace
     {
-        struct TLoggerStorage
+        struct FLoggerStorage
         {
             std::mutex             Mutex;
-            std::vector<TLogEntry> Entries;
+            std::vector<FLogEntry> Entries;
             std::uint64_t          NextSequence = 1;
             std::uint64_t          Revision = 0;
         };
 
-        TLoggerStorage& GetStorage()
+        FLoggerStorage& GetStorage()
         {
-            static TLoggerStorage Storage;
+            static FLoggerStorage Storage;
             return Storage;
         }
 
@@ -47,6 +47,7 @@ namespace MDSS
                 return isatty(fileno(stdout)) != 0;
 #endif
             }
+
             if (&Stream == &std::cerr)
             {
 #if defined(_WIN32)
@@ -55,68 +56,75 @@ namespace MDSS
                 return isatty(fileno(stderr)) != 0;
 #endif
             }
+
             return false;
         }
 
-        const char* GetAnsiColor(TLogLevel Level) noexcept
+        const char* GetAnsiColor(ELogLevel Level) noexcept
         {
             switch (Level)
             {
-                case TLogLevel::Verbose:
+                case ELogLevel::Verbose:
                     return "\033[90m";
-                case TLogLevel::Debug:
+                case ELogLevel::Debug:
                     return "\033[36m";
-                case TLogLevel::Info:
+                case ELogLevel::Info:
                     return "\033[32m";
-                case TLogLevel::Warning:
+                case ELogLevel::Warning:
                     return "\033[33m";
-                case TLogLevel::Error:
+                case ELogLevel::Error:
                     return "\033[31m";
-                case TLogLevel::Count:
+                case ELogLevel::Count:
                     break;
             }
+
             return "\033[0m";
         }
     } // namespace
 
-#pragma region Log_Writing
+// ============================================================
+// 00. Log Writing
+// ============================================================
+#pragma region 00_Log_Writing
+// level·module·메시지를 기록하고 관련 출력 경로로 전달한다.
 
-    void TLogger::Verbose(std::string_view Module, std::string_view Message)
+    void FLogger::Verbose(std::string_view Module, std::string_view Message)
     {
-        Write(TLogLevel::Verbose, Module, Message);
+        Write(ELogLevel::Verbose, Module, Message);
     }
 
-    void TLogger::Debug(std::string_view Module, std::string_view Message)
+    void FLogger::Debug(std::string_view Module, std::string_view Message)
     {
-        Write(TLogLevel::Debug, Module, Message);
+        Write(ELogLevel::Debug, Module, Message);
     }
 
-    void TLogger::Info(std::string_view Module, std::string_view Message)
+    void FLogger::Info(std::string_view Module, std::string_view Message)
     {
-        Write(TLogLevel::Info, Module, Message);
+        Write(ELogLevel::Info, Module, Message);
     }
 
-    void TLogger::Warning(std::string_view Module, std::string_view Message)
+    void FLogger::Warning(std::string_view Module, std::string_view Message)
     {
-        Write(TLogLevel::Warning, Module, Message);
+        Write(ELogLevel::Warning, Module, Message);
     }
 
-    void TLogger::Error(std::string_view Module, std::string_view Message)
+    void FLogger::Error(std::string_view Module, std::string_view Message)
     {
-        Write(TLogLevel::Error, Module, Message);
+        Write(ELogLevel::Error, Module, Message);
     }
 
-    void TLogger::Write(TLogLevel Level, std::string_view Module, std::string_view Message)
+    void FLogger::Write(ELogLevel Level, std::string_view Module, std::string_view Message)
     {
         const std::string ModuleText = Module.empty() ? "General" : std::string(Module);
         const std::string MessageText(Message);
         const std::string Formatted = "[" + std::string(GetLevelName(Level)) + "] [" + ModuleText + "] " + MessageText;
 
-        TLoggerStorage&  Storage = GetStorage();
+        FLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
 
-        // Keep terminal output and TDebugUI backed by the exact same formatted entry.
-        std::ostream& Stream = (Level == TLogLevel::Warning || Level == TLogLevel::Error) ? std::cerr : std::cout;
+        // Keep terminal output and FDebugUI backed by the exact same formatted entry.
+        std::ostream& Stream = (Level == ELogLevel::Warning || Level == ELogLevel::Error) ? std::cerr : std::cout;
+
         if (IsTerminal(Stream))
         {
             Stream << GetAnsiColor(Level) << Formatted << "\033[0m\n";
@@ -125,6 +133,7 @@ namespace MDSS
         {
             Stream << Formatted << '\n';
         }
+
         Stream.flush();
 
         if (Storage.Entries.size() >= MaxRetainedEntries)
@@ -139,25 +148,29 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Log_Entry_Access
+// ============================================================
+// 01. Log Entry Access
+// ============================================================
+#pragma region 01_Log_Entry_Access
+// 현재 저장된 로그와 필터에 필요한 항목을 조회한다.
 
-    std::vector<TLogEntry> TLogger::GetEntries()
+    std::vector<FLogEntry> FLogger::GetEntries()
     {
-        TLoggerStorage&  Storage = GetStorage();
+        FLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
         return Storage.Entries;
     }
 
-    std::uint64_t TLogger::GetRevision()
+    std::uint64_t FLogger::GetRevision()
     {
-        TLoggerStorage&  Storage = GetStorage();
+        FLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
         return Storage.Revision;
     }
 
-    void TLogger::Clear()
+    void FLogger::Clear()
     {
-        TLoggerStorage&  Storage = GetStorage();
+        FLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
         Storage.Entries.clear();
         ++Storage.Revision;
@@ -165,25 +178,30 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Log_Level_Names
+// ============================================================
+// 02. Log Level Names
+// ============================================================
+#pragma region 02_Log_Level_Names
+// 로그 level을 UI와 텍스트 출력에서 사용할 이름으로 바꾼다.
 
-    const char* TLogger::GetLevelName(TLogLevel Level) noexcept
+    const char* FLogger::GetLevelName(ELogLevel Level) noexcept
     {
         switch (Level)
         {
-            case TLogLevel::Verbose:
+            case ELogLevel::Verbose:
                 return "VERBOSE";
-            case TLogLevel::Debug:
+            case ELogLevel::Debug:
                 return "DEBUG";
-            case TLogLevel::Info:
+            case ELogLevel::Info:
                 return "INFO";
-            case TLogLevel::Warning:
+            case ELogLevel::Warning:
                 return "WARNING";
-            case TLogLevel::Error:
+            case ELogLevel::Error:
                 return "ERROR";
-            case TLogLevel::Count:
+            case ELogLevel::Count:
                 break;
         }
+
         return "UNKNOWN";
     }
 #pragma endregion
