@@ -1,27 +1,18 @@
-# Universal Agent Vault — Template Changelog
+## v6.1
 
-## v5.9
+- 새 프로젝트와 기존 프로젝트를 구분하는 Setup 절차, **조건부 질문 목록**, 빌드 시스템 선택 기준 추가.
+- `Assets/Build`에 소규모 C용 Make, 일반 C++용 CMake + 선택적 Presets, UnrealBuildTool 타깃 연동 원본 추가.
+- Make/CMake/Unreal별 실제 컴파일 이전 `clang-format → indent_regions.py` 연결과 IDE/CLI/CI 검증·예외 사항 명시.
+- 프로젝트 기존 빌드 파일·엔진 Target.cs 무단 교체 금지, `Project Brief`에 Setup 이력 미기재 원칙 재확인.
+- 기존 포맷 도구 및 Obsidian/VS Code 설정은 변경하지 않음.
 
-- 프로젝트 소유 소스/헤더 파일의 **최상단 역할 주석을 필수화**. C/C++는 한국어 Doxygen `@file`·`@brief`, GLSL·Python·Shell·JS/TS는 각 언어에 맞는 파일 머리말을 사용하며 언어별 첫 줄 제약을 보존.
-- 최상위·중첩 Region은 **시작 마커 바로 아래의 간결한 한 줄 책임 설명**을 기본으로 사용. 역할이 제목만으로 자명하여 중복만 생기는 경우에는 생략 허용.
-- Code Style, Source Comments, Doxygen, 언어별 프로필, Local Numbering, Refactoring, Agent Workflow, 문서 라우팅, 검증 체크리스트 및 README를 동기화.
-- 기존 Obsidian/Blue Topaz 및 VS Code 설정, LF·CRLF 접기 정규식은 그대로 유지.
+## v6.0
 
-
-## v5.8
-
-- VS Code Custom Folding의 GLSL·Shell Region 정규식을 **LF·CRLF 양쪽 줄바꿈**에 대응하도록 변경 (`foldStartRegex` / `foldEndRegex` / `defaultFoldStartRegex`).
-- Custom Folding 설정 객체 안에서 기본 Region의 파일 열기 자동 접기를 활성화. 사용 중인 확장 환경에서 실제 동작 확인 필요.
-- README와 섹션·Region 규칙에 **프로젝트 루트/하위 볼트/사용자 설정 적용 범위** 및 LF·CRLF 회귀 확인 절차를 추가.
-- 문서·Obsidian·기존 코드 스타일 규칙은 유지. VS Code 확장의 실제 실행 동작은 템플릿 생성 환경에서 검증하지 않음.
-
-## v5.7
-
-- 모든 언어에 **의도적 공백 줄과 의미 단위별 그룹화** 원칙 추가. 길고 밀집된 검증·계산·상태 갱신은 읽기 쉬운 단위로 구분한다.
-- 큰 함수·섹션에만 **선택적인 하위 Region** 적용, 모든 블록이나 조건에 Region을 추가하지 않도록 명확화.
-- GLSL의 장문 조건·조기 반환·처리 단계에 대한 읽기 쉬운 서식 예시 및 동기화/계약 보존 주의사항 추가.
-- 코드 리뷰·Document Map·AGENTS에 읽기 쉬운 공백·Region 판단 기준 연결.
-- VS Code Custom Folding의 GLSL 접기 실패 원인은 사용자 환경에서 미확인 상태이므로 확장 동작을 수정했다고 주장하지 않음. v5.6 설정은 보존.
+- Setup 에이전트가 `Assets/Formatting/`의 원본 3개를 프로젝트 루트 `.clang-format` 및 `Tools/`로 배치하는 절차 추가.
+- 모든 빌드 전에 C/C++ `clang-format → indent_regions.py`를 실행하는 빌드 시스템 연결 및 실패 차단 규칙 추가.
+- `format_before_build.py`와 빌드 훅 예시, 별도 검증 체크리스트 제공. VS Code Run On Save는 보조 기능으로 구분.
+- 신규 프로젝트 디렉터리명은 대문자로 시작하도록 규정하고 스크립트는 `Tools/`에 통합.
+- 기존 압축 파일에 있던 명시적 빈 디렉터리 12개를 제외. 기존 문서·설정·Git 메타데이터 등 비어 있지 않은 내용은 보존.
 
 ## v5.5
 

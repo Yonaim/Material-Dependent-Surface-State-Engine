@@ -7,7 +7,6 @@
 
 ## 01. 스타일과 추상화
 
-- 프로젝트 소유 Python 모듈의 최상단에는 **한국어 모듈 docstring으로 파일 역할을 설명**한다. Shebang·인코딩 선언이 필요한 경우 그 뒤에 배치한다.
 - PEP 8 기반의 일관된 서식·이름을 사용한다. 프로젝트에 Ruff/Black 등 포맷터가 있으면 실제 설정을 우선한다.
 - 공개 함수와 중요한 내부 경계에는 유용한 타입 힌트를 작성한다. 프로젝트가 정한 Python 버전에서 지원하는 문법만 사용한다.
 - `main()` 등 최상위 단계는 `load_config() → validate_inputs() → process() → write_results()`처럼 의도를 먼저 드러낸다. 이름은 실제 역할을 따라 구체화한다.
@@ -31,29 +30,3 @@
 ## 주석 규칙
 
 주석과 설명은 [`Source Comments`](../02_Documentation/01_Source-Comments.md)를 따른다. 코드와 주석을 함께 수정하며, 이미 이름으로 드러나는 동작을 반복하지 않는다.
-
-## 섹션 Region 마커
-
-큰 Python 파일에서 책임별 접기가 필요한 경우 [공통 표기법](../00_Core/01_Local-Numbering-and-Navigation.md)을 따른다. `#region`은 **Python 주석**이며, VS Code의 기본 Region 마커로 사용할 수 있다.
-
-```python
-"""프로젝트의 실행 순서를 조율한다."""
-
-# ============================================================
-# 00. Main Process
-# ============================================================
-#region 00_Main_Process
-# 설정을 불러오고 파이프라인을 실행한다.
-
-def main():
-    load_config()
-    run_pipeline()
-
-#endregion
-```
-
-짧은 파일이나 개별 함수마다 마커를 강제하지 않는다.
-
-## 큰 모듈/클래스의 단계적 책임 분리
-
-[공통 2단계 리팩터링 지침](../00_Core/03_Section-and-Responsibility-Refactoring.md)을 따른다. 1단계는 주석과 `#region`으로 탐색을 개선한다. 2단계는 관련 상태·동작을 함수, 클래스, `dataclass`, 모듈로 추출하되 초기화, import 순환, 가변 기본값, 호출 API를 점검한다.

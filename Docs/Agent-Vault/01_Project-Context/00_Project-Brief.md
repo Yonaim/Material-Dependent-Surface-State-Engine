@@ -37,4 +37,4 @@
 
 ## 처음 읽을 문서
 
-프로젝트 구성과 실행 경로는 [[02_Architecture/03_System-Map|System Map]], 상위 함수의 탐색 순서는 [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]]에서 시작한다. 구체적인 용어와 요구사항·제약은 [[01_Project-Context/01_Glossary|Glossary]], [[01_Project-Context/02_Requirements|Requirements]], [[01_Project-Context/03_Constraints|Constraints]]를 참조한다.
+프로젝트 구성과 실행 경로는 [[02_Architecture/04_System-Map|System Map]], 상위 함수의 탐색 순서는 [[02_Architecture/05_Code-Reading-Guide|Code Reading Guide]]에서 시작한다. 구체적인 용어와 요구사항·제약은 [[01_Project-Context/01_Glossary|Glossary]], [[01_Project-Context/02_Requirements|Requirements]], [[01_Project-Context/03_Constraints|Constraints]]를 참조한다.

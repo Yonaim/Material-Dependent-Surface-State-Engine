@@ -55,7 +55,7 @@
 
 ## 애플리케이션 최상위 실행
 
-`FApplication::MainLoop`는 반복 조건과 종료를 담당한다. `ExecuteFrame`이 이벤트 폴링, UI 입력 처리, Contact 제출, 프레임 시간 갱신, Scene 애니메이션 및 렌더 프레임 실행을 조율한다. 프레임 내부 GPU 명령 순서는 `FRenderer::RecordCommandBuffer`에서 읽고 [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]]에서 관련 하위 함수로 내려간다.
+`FApplication::MainLoop`는 반복 조건과 종료를 담당한다. `ExecuteFrame`이 이벤트 폴링, UI 입력 처리, Contact 제출, 프레임 시간 갱신, Scene 애니메이션 및 렌더 프레임 실행을 조율한다. 프레임 내부 GPU 명령 순서는 `FRenderer::RecordCommandBuffer`에서 읽고 [[02_Architecture/05_Code-Reading-Guide|Code Reading Guide]]에서 관련 하위 함수로 내려간다.
 
 ## 생성과 설정의 추상화 경계
 

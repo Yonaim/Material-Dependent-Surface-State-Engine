@@ -60,4 +60,4 @@ flowchart LR
 
 ## 다음 단계
 
-상위 함수만 따라 읽으려면 [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]], 원하는 기능의 코드 위치를 찾으려면 [[02_Architecture/02_Source/00_Source-Map|Source Map]]을 연다.
+상위 함수만 따라 읽으려면 [[02_Architecture/05_Code-Reading-Guide|Code Reading Guide]], 원하는 기능의 코드 위치를 찾으려면 [[02_Architecture/02_Source/00_Source-Map|Source Map]]을 연다.

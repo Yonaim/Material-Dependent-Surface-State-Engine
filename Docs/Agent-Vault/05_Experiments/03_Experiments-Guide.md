@@ -1,6 +1,6 @@
 # 실험 문서의 역할
 
-이 폴더는 구현이 끝난 변경이나 검증 가능한 가설을 **테스트·검증·측정한 조건과 증거**를 보관한다. 미완료 구현 과제는 [[04_Development/00_Current-Work|Current Work]], 현행 동작 계약은 [[02_Architecture/03_System-Map|Architecture]]에 둔다.
+이 폴더는 구현이 끝난 변경이나 검증 가능한 가설을 **테스트·검증·측정한 조건과 증거**를 보관한다. 미완료 구현 과제는 [[04_Development/00_Current-Work|Current Work]], 현행 동작 계약은 [[02_Architecture/04_System-Map|Architecture]]에 둔다.
 
 | 문서 | 기록 내용 |
 |---|---|

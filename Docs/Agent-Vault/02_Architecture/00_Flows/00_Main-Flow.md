@@ -2,7 +2,7 @@
 
 이 폴더는 **실제 실행 순서와 데이터 이동**을 다룬다. State 의미·수식·GPU ABI의 정본은 [[02_Architecture/01_Contracts/01_State-and-Profile|Contracts]]에 있고, 구현 파일 위치는 [[02_Architecture/02_Source/00_Source-Map|Source]]에서 찾는다.
 
-> **C++ 상위 경로:** `FApplication::MainLoop` → `FRenderer::RenderFrame` → `FRenderer::RecordCommandBuffer`. GPU 패스 실행 순서는 아래 흐름과 [[02_Architecture/03_System-Map|System Map]]을 참고한다.
+> **C++ 상위 경로:** `FApplication::MainLoop` → `FRenderer::RenderFrame` → `FRenderer::RecordCommandBuffer`. GPU 패스 실행 순서는 아래 흐름과 [[02_Architecture/04_System-Map|System Map]]을 참고한다.
 
 ## 전체 실행 경로
 
@@ -42,4 +42,4 @@ flowchart TD
 4. 값의 정합성은 Contracts, 검증 방법은 [[05_Experiments/01_Validation-and-Tests|Validation]]에서 확인한다.
 
 
-> 주요 구성 관계는 [[02_Architecture/03_System-Map|System Map]]을 참고한다.
+> 주요 구성 관계는 [[02_Architecture/04_System-Map|System Map]]을 참고한다.

@@ -6,6 +6,12 @@
 |---|---|---|---|---|
 | `YYYY-MM-DD` | `{{TASK_AND_CODE_PATHS}}` | `{{READ_DOCS}}` | `{{UPDATED_DOCS_OR_NO_IMPACT_REASON}}` | `{{COMMAND_AND_RESULT_OR_NOT_RUN}}` |
 
+## 2026-11-11 — VS Code Explorer 잡음 파일 숨김
+- **읽은 문서:** Agent-Vault AGENTS·Document Map·Code Style·Document Workflow·Local Numbering, 기존 `.vscode/settings.json` 및 `.gitignore`.
+- **설정:** `.vscode/settings.json`의 `files.exclude`에 Python 캐시·컴파일 산출물·Build 전체·Cache·ThirdParty·로컬 Universal-Agent-Vault를 추가. 프로젝트 소스·문서는 계속 표시한다.
+- **문서 동기화:** 편집기 전용 보기 설정으로 요구사항·계약·흐름·Source Map 영향 없음. Work Log에 반영.
+- **검증:** JSON 파싱 및 설정 패턴/실제 대상 경로를 확인. 빌드·테스트 미실행(Explorer 표시 설정 변경).
+
 ## 작성 원칙
 
 - 소규모 작업은 한 줄이면 충분하다. 여러 파일의 동일 작업은 하나로 묶을 수 있다.
@@ -24,21 +30,21 @@
 ## 2026-11-09 — Engineering Standards 준수 감사 및 네이밍 프로필 확정
 - **읽은 문서:** AGENTS·Document Map, Code Style·Local Numbering·Architecture Organization, C++·GLSL·Python·Shell, Source Comments·Doxygen·Markdown, Workflow·Verification·Commit Style, Project Brief·Constraints, Source Map·CPU–GPU Interface 및 기존 Work Log.
 - **코드 변경:** 없음. 사용자 결정에 따라 목표 프로필을 Unreal-Inspired로 문서화하고 현재 소스의 미준수 항목을 감사했다. 소스 리네이밍·자동 포맷 미수행.
-- **문서 동기화:** Project Brief의 활성 네이밍·빌드/포맷 설정, Constraints의 실제 파일 존재 여부 갱신. [준수 감사 보고서](10_Engineering-Standards-Audit.md)에 근거·전수 패턴 검사와 수동 검토 한계·전환 순서 기록. API·ABI·실행 흐름이 바뀌지 않아 Architecture 변경 없음.
+- **문서 동기화:** Project Brief의 활성 네이밍·빌드/포맷 설정, Constraints의 실제 파일 존재 여부 갱신. 준수 감사 보고서 (과거 운영 기록: 원본 `Archive.zip`의 `04_Development/10_Engineering-Standards-Audit.md`)에 근거·전수 패턴 검사와 수동 검토 한계·전환 순서 기록. API·ABI·실행 흐름이 바뀌지 않아 Architecture 변경 없음.
 - **검증:** Python AST 44/44, Bash 구문 5/5 통과. clang-format 20.1.8: C++ 195개 중 35개 불일치. 실제 Manifest의 셰이더 75개 엔트리·변형을 검증 매크로 0/1로 컴파일하고 spirv-val 검사: 150/150 통과. C++ 빌드·CTest·GPU 실행·성능·ABI Reflection은 미실행. 명명/주석 집계는 정적 패턴 검사이며 완전한 컴파일러 AST/의미 검증이 아님.
 
 
 ## 2026-11-09 — Code Style 구조·의미 체크리스트 후속 리뷰
 - **읽은 문서:** AGENTS·Document Map·Code Style, Scene/Input/Debug UI 및 Application/Frame Source 문서. 기존 규칙 감사 결과와 실제 Scene/Camera/DemoAnimation/Application/Renderer 흐름 대조.
 - **코드 변경:** 없음. 접두어와 별개로 상위 흐름·추상화 수준·책임·오류 경로를 리뷰했다.
-- **문서 동기화:** [규칙 감사 보고서](10_Engineering-Standards-Audit.md)에 §05의 6개 체크리스트 판정, 구체적 미준수와 준수 사례, 보존할 순서/계약 및 검토 범위를 추가. API/ABI/동작 변경이 없어 Architecture 변경 없음.
+- **문서 동기화:** 규칙 감사 보고서 (과거 운영 기록: 원본 `Archive.zip`의 `04_Development/10_Engineering-Standards-Audit.md`)에 §05의 6개 체크리스트 판정, 구체적 미준수와 준수 사례, 보존할 순서/계약 및 검토 범위를 추가. API/ABI/동작 변경이 없어 Architecture 변경 없음.
 - **검증:** 정적 소스 수동 리뷰만 수행. 이번 후속 작업에서 빌드·테스트·GPU 실행·성능 검증 미실행. 기존 셰이더 검사 결과와 구분한다.
 
 
 ## 2026-11-09 — GLSL 규칙 후속 리뷰
 - **읽은 문서:** AGENTS·Document Map·GLSL, CPU–GPU Interface 및 Debug/Shared Shader Source 문서. 기존 Code Style 감사 기준과 함께 Debug/Solver/Overlay 및 CPU pipeline/draw 경로 대조.
 - **코드 변경:** 없음. Shader 구조 패턴 전수 검색, 주요 entry/helper의 책임·로컬 계약·경계/barrier 조건을 수동 리뷰했다.
-- **문서 동기화:** [감사 보고서](10_Engineering-Standards-Audit.md)에 GLSL 규칙별 근거, SurfaceDebug.vert/frag 개선 대상, bounds 전제조건 확인 과제, 정상 사례 및 검토 한계 추가. API/ABI/실행 변경이 없어 Architecture 변경 없음.
+- **문서 동기화:** 감사 보고서 (과거 운영 기록: 원본 `Archive.zip`의 `04_Development/10_Engineering-Standards-Audit.md`)에 GLSL 규칙별 근거, SurfaceDebug.vert/frag 개선 대상, bounds 전제조건 확인 과제, 정상 사례 및 검토 한계 추가. API/ABI/실행 변경이 없어 Architecture 변경 없음.
 - **검증:** 이번 작업은 정적 리뷰만 수행. 새 shader 컴파일·Reflection·Pipeline 생성·GPU 실행·성능 측정 미실행. 이전 150개 compile/spirv-val 결과와 구조·안전성 리뷰를 구분함.
 
 
@@ -159,7 +165,7 @@
 - **읽은 문서:** 프로젝트/최신 AGENTS·Document Map, v5.8 CHANGELOG·Code Style·Local Numbering·단계적 구조화·C++/GLSL/Python/Shell·Source Comments·Workflow·Verification, Project Brief·Constraints·Source Map·Rendering Flow·GPU Layout·CPU–GPU 계약과 이전 v5.5 작업 기록.
 - **코드:** 추적 구현 323개 대조, Source 126·Shaders 58·Scripts 49·Tests 9 = 242개 정리. 의미 단위 공백·긴 조건/조기 반환 서식과 GLSL 중괄호를 보완하고, 조명·솔버·Renderer API·View Settings의 6개 큰 영역에만 선택적 하위 Region 추가. 새 타입/함수 추출·명명 전환·GPU 인터페이스 변경 없음. 미추적 test.glsl 보존.
 - **호환성:** 현재 MSVC가 원본의 08/09 Region 라벨을 C2041로 거부해 해당 파일과 새 하위 Region C++ 파일의 이름을 인용했다. GLSL에는 Shaders/.clang-format 추가. 사용자 전역 설정은 변경하지 않고 root/vault 접기 설정을 v5.8 LF/CRLF 정규식으로 병합했다. root .vscode는 기존 ignore 정책 유지.
-- **문서 동기화:** 공통 규칙 변경 6개·AGENTS·Document Map·Changelog, Project Brief·Constraints·README·Current Work·Source Map·Validation 및 [v5.8 파일별 적용표](13_Vault-5.8-Readability-Coverage.md) 갱신. upstream은 HEAD 93dbbed 위의 v5.8 작업 트리를 기준으로 함. Contracts/Flows는 실행/데이터 의미가 같아 정의 변경 불필요. 검증 문서의 표를 끊던 설명 위치도 보완.
+- **문서 동기화:** 공통 규칙 변경 6개·AGENTS·Document Map·Changelog, Project Brief·Constraints·README·Current Work·Source Map·Validation 및 v5.8 파일별 적용표 (과거 운영 기록: 원본 `Archive.zip`의 `04_Development/13_Vault-5.8-Readability-Coverage.md`) 갱신. upstream은 HEAD 93dbbed 위의 v5.8 작업 트리를 기준으로 함. Contracts/Flows는 실행/데이터 의미가 같아 정의 변경 불필요. 검증 문서의 표를 끊던 설명 위치도 보완.
 - **검증:** C++ 201개 토큰·Python 44개 AST 대조 통과, GLSL은 제어문 중괄호 추가 외 기존 토큰 유지. 최종 Debug 전체 build 성공. shader 150개 컴파일/spirv-val 통과·SPIR-V 바이트 동일. CTest 변경 전/후 7 통과·7 기존 실패. 실제 Maptz parser 74개 LF/CRLF 148회 통과(133 shader·2 shell Region). Python formatter check 및 CRLF 대응 공백/Region 검사 수행. [증거](../../../Build/Validation/20261110-vault58/summary.md).
 - **한계:** 기존 테스트 실패 수정, 별도 성능·전체 렌더 캡처·다른 GPU/OS·실제 편집기 접힘 UI 검증은 범위에 포함하지 않았다. commit/push 없음.
 
@@ -168,7 +174,7 @@
 - **읽은 문서:** AGENTS·Document Map·Code Style·Local Numbering·GLSL·Source Comments·Verification, Project Brief·Shader Source Index·CPU–GPU 경계 및 실제 shader의 함수·resource·진입점·전처리/동기화 구조.
 - **검토/변경:** 디스크와 Git shader 목록 69개 일치 확인. 35개 파일에 하위 Region 115개 추가, 기존 4개 중첩 파일 유지, 나머지 30개는 파일별 미추가 근거 기록. Debug record/적층/normal·뷰 종류, Overlay coverage/geometry/compositing, scalar/vector sampling, solver layout/geometry/transport/scheduling을 실제 책임으로 구획. 최상위 유지·한 줄 하위 제목·연결 번호·논리적 들여쓰기·총 2단계 준수. 함수별·검증문별 기계적 생성은 하지 않았다.
 - **보존:** 기존 미커밋 변경, 계산 토큰·선언/함수 순서·layout/binding·매크로/오류 경로·barrier 호출 순서·줄바꿈 유지. shared halo/schedule reset의 barrier는 진입점 구획 사이에 보이며, synchronization helper 구획은 제목에 명시.
-- **문서:** [69개 파일별 검토표](14_Shader-Nested-Region-Coverage.md), README·Project Brief·Shader Source Index·Current Work·최초 v5.8 적용표의 후속 안내·Validation 갱신. Contracts/Flows 검토 결과 ABI·데이터/실행 의미의 변경이 없어 본문 변경 불필요.
+- **문서:** 69개 파일별 검토표 (과거 운영 기록: 원본 `Archive.zip`의 `04_Development/14_Shader-Nested-Region-Coverage.md`), README·Project Brief·Shader Source Index·Current Work·최초 v5.8 적용표의 후속 안내·Validation 갱신. Contracts/Flows 검토 결과 ABI·데이터/실행 의미의 변경이 없어 본문 변경 불필요.
 - **검증:** 69개 비주석 토큰 동일. Region 짝/포함/상하위 번호/들여쓰기·최대 2단계 및 새 범위의 brace/전처리 경계 검사 통과. shader 150개 glslc/spirv-val 통과·전후 SPIR-V 바이트 동일. 실제 Maptz parser LF/CRLF 138회 통과(각 248영역). CRLF-aware diff check 통과. [원자료](../../../Build/Validation/20261110-shader-regions/summary.md).
 - **미실행:** 실제 편집기 접힘 UI, 전체 C++ build/CTest·별도 GPU 성능/렌더 캡처는 주석만 추가한 이번 작업에서 반복하지 않았다. commit/push 없음.
 
@@ -191,7 +197,7 @@
 
 - **읽은 문서:** AGENTS·Map·Code Style·C++/GLSL·Source Comments·Verification, Reaction·GPU Layout·CPU–GPU 계약, Simulation Flow·GPU/Rendering Source와 WIP 첫 부모 대비 코드.
 - **코드:** 기존 F/E 명명·private 상태 추출·중첩 Region을 보존하며 descriptor 재연결, opt-in Reaction ledger와 추가 scratch, frozen/full geometry 제어, 초기 입력 observer·동일 step 이미지/State/geometry 캡처, geometry_feedback 설정 반영. 연구 CMake 타깃·shader 의존성 및 생성 소스 타입명 복구. descriptor 수명 회귀·compact vertex 기준 기하 테스트 수정, Bash 빌드/앱 인자 분리·실행 복원. 기존 자산 복원 작업은 유지.
-- **문서:** Reaction·GPU Layout 계약, Simulation Flow, GPU/Rendering Source, README·Current Work·Validation 및 [이식 범위·검증 보고서](15_WIP-Recovery.md) 동기화. 기존 descriptor binding·push constant 크기·제품 Reaction 수식은 유지하고 연구용 추가 allocation/flags·readback 수명만 명시했다.
+- **문서:** Reaction·GPU Layout 계약, Simulation Flow, GPU/Rendering Source, README·Current Work·Validation 및 이식 범위·검증 보고서 (과거 운영 기록: 원본 `Archive.zip`의 `04_Development/15_WIP-Recovery.md`) 동기화. 기존 descriptor binding·push constant 크기·제품 Reaction 수식은 유지하고 연구용 추가 allocation/flags·readback 수명만 명시했다.
 - **검증:** 최종 전체 Debug build 및 연구 executable 2개 성공, shader 150개 compile/spirv-val 통과. CTest 15개 중 9 통과/6 기존 실패: 새 descriptor 수명 검사와 수정한 SharedSurfaceGeometry 통과. headless 4조건 각 15 step 성공·ledger ON/OFF State 비트 동일·extent 누적 확인. AuthoringProbe 2사례 통과. 일반 비교 씬 123 step의 State 3개가 이식 전과 비트 동일, 0/15/60 checkpoint 및 geometry_feedback=false 반영 확인. Bash 구문·LF fixture 인자 전달, CRLF 대응 diff check 통과. [원자료](../../../Build/Validation/20261110-wip-port/runtime-summary.json).
 - **한계:** 기존 6개 실패 수정·장시간/다른 GPU·OS·독립 시각 품질·성능 재측정·과거 WIP 바이너리와 전체 동등성 검증은 미수행. commit/push 없음.
 
@@ -208,7 +214,7 @@
 - **읽은 문서:** 현재/최신 AGENTS·Document Map, v5.9 CHANGELOG·Code Style·Local Numbering·책임 분리·Source Comments·Doxygen·활성 언어·Verification, Project Brief·Source Map과 기존 GPU/Reaction 계약·검증·이관 기록.
 - **정정:** 앞선 복원에서 폐기된 MDSSP-Agent-Vault 문서까지 누락 파일로 취급한 판단을 바로잡았다. 원본 일치를 확인한 구 문서 20개·보관 안내 1개를 Docs에서 제거하고 Git 제외 검증 경로에만 보관한다. 운영 볼트는 Docs/Agent-Vault 하나다. 데모 에셋 13개·실험 자료 126개 복원은 유지한다. 연구/보고 Python 11개와 Raw Archive 안내의 활성 경로를 실제 재번호화된 현재 문서로 이관했다.
 - **코드:** 구현 323개·Region 656개 전수 대조. 246개 파일에서 역할·설명을 보완, 머리말 171개 갱신. Region 설명은 시작 바로 아래에 654개 추가·기존 1개 유지·실행 없는 예약 구획 1개는 근거를 두고 생략. CMake 구성 4개에도 역할 머리말 추가. C++ @file 불일치 5개 수정. 기존 EOL·Region 경계·함수/선언 순서·ABI·알고리즘과 이전 WIP 기능은 유지한다.
-- **문서:** 공통 Standards 12개·AGENTS·Map·CHANGELOG·README와 Context·Source Map·Current Work·Validation 및 [v5.9 적용표](16_Vault-5.9-Comment-Coverage.md) 동기화. 프로젝트 네이밍/MSVC 예외 유지. Contracts/Flows 검토 결과 실행·데이터 정의 추가 변경 불필요. 과거 판정·manifest는 역사 원본으로 보존한다.
+- **문서:** 공통 Standards 12개·AGENTS·Map·CHANGELOG·README와 Context·Source Map·Current Work·Validation 및 v5.9 적용표 (과거 운영 기록: 원본 `Archive.zip`의 `04_Development/16_Vault-5.9-Comment-Coverage.md`) 동기화. 프로젝트 네이밍/MSVC 예외 유지. Contracts/Flows 검토 결과 실행·데이터 정의 추가 변경 불필요. 과거 판정·manifest는 역사 원본으로 보존한다.
 - **검증:** 최종 configure/전체 Debug build 성공. C++ 201·GLSL 69 비주석 토큰 동일. Python 44 AST는 모듈 docstring·승인된 문서 경로 외 동일, Bash 5 구문/토큰·PowerShell 4 parser/비주석 토큰 통과. shader 150개 compile/spirv-val·이전 WIP SPIR-V와 바이트 동일. 실제 Maptz LF/CRLF 148회 통과(각 252영역). Region 짝/깊이 2·설명 인접성/들여쓰기·문서 대상 존재·CRLF 대응 diff check 확인. [원자료](../../../Build/Validation/20261110-vault59/summary.json).
 - **미실행:** 주석·문서 라우팅 변경이므로 전체 CTest·렌더·성능·전체 연구 파이프라인은 반복하지 않았다. Python __doc__/help는 한국어 역할 설명을 반영한다. IDE 실제 접힘 UI·다른 GPU/OS는 미검증. commit/push 없음.
 

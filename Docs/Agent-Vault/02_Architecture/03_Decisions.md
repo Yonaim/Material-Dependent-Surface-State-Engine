@@ -1,6 +1,32 @@
-# 현행 설계 판단
+# Architecture Decisions — 현행 판단과 변경 제약
 
-> 2026-10-26 작업 트리 기준의 짧은 이유 목록이다. 실제 동작은 코드·테스트, 계산 정의는 [[02_Architecture/03_System-Map|Architecture]]로 확인한다. 과거 Decision 번호는 개인 볼트와 구버전 보관본의 이력 식별자다.
+> **이 문서 하나가 Agent Vault의 결정 요약 정본**이다. `02_Architecture/00_Flows/`는 실행 순서, `01_Contracts/`는 정확한 계약, `02_Source/`는 실제 구현 위치의 정본이다. 이 문서는 *왜 선택했는가/어떤 선택이 유효한가*만 기록한다. 상세 대안·회고·논문·연구 판정은 개인 볼트의 `05_Design/Decisions/`에서 관리한다.
+>
+> **근거 시점:** 제공된 `Archive.zip`의 `01_Current-Decision-Summary.md` (문서 자체 2026-10-26 기준) 및 2026-11-09~10 작업 로그. 이번 병합에서는 엔진 저장소 코드를 새로 검사하지 않았다.
+
+## 결정 관리 규약
+
+- ID가 없는 기존 선택에는 임의의 공식 Decision 번호를 부여하지 않는다. `Decision 0021/0022/0025/0029` 등 역사적 번호는 원자료가 확인된 경우에만 사용한다.
+- **채택/구현/비교 경로/연구 제안**을 구분한다. 성능상 우위를 미측정 상태에서 주장하지 않는다.
+- 결정이 바뀌면 변경 날짜, 동기가 된 실험과 관련 Contract/Source, supersedes 관계를 기록한다. 구현 계약 자체는 Contracts를 갱신한다.
+
+## 빠른 결정 탐색
+
+| 쟁점 | 현재 문서에 기록된 선택 | 확인할 정본 |
+|---|---|---|
+| State / Capacity | State는 texel별 총량, Capacity는 포화도 기준이며 저장 상한 아님 | [[02_Architecture/01_Contracts/01_State-and-Profile|State & Profile]] |
+| Simulation UV / Seam | 실제 표면의 seam 이웃 topology 고려, Render UV와 역할 구분 | [[02_Architecture/01_Contracts/03_Geometry|Geometry]] |
+| GPU Solver | 2-pass gather, barrier, A/B state, source outgoing 제한 | [[02_Architecture/01_Contracts/04_Solver|Solver]] |
+| Reaction | v5 `reactions` consumes/produces; 공통 자원 제한 | [[02_Architecture/01_Contracts/06_Reactions|Local Reactions]] |
+| Dynamic Geometry | State 기반 적층에 따른 동적 위치·법선·전파 가중치 업데이트 | [[02_Architecture/01_Contracts/03_Geometry|Geometry]] |
+| GPU storage / cache | Raw Flux Cache·FP16·Sparse는 모드별 선택; 측정 없이 최적 경로 단정 금지 | [[02_Architecture/01_Contracts/05_GPU-Layout|GPU Layout]], [[05_Experiments/02_Performance-Measurements|Performance]] |
+| Compile-Time GPU A/B | Decision 0029 구현 기록, 성능·화질 A/B 결과는 대기 | [[04_Development/00_Current-Work|Current Work]] |
+
+---
+
+# 현행 설계 판단 — 과거 Agent 문서에서 이관
+
+> 2026-10-26 작업 트리 기준의 짧은 이유 목록이다. 실제 동작은 코드·테스트, 계산 정의는 [[02_Architecture/04_System-Map|Architecture]]로 확인한다. 과거 Decision 번호는 개인 볼트와 구버전 보관본의 이력 식별자다.
 
 ## State와 보존
 
@@ -40,3 +66,10 @@ State는 texel별 총량이며 **저장 상한을 두지 않는 기존 계약을
 
 - 게임 Physics adapter와 Surface-bound 공개 Contact wrapper는 없다.
 - 성능 A/B 경로의 채택은 같은 조건의 기준·변경 후 측정과 정확성 확인을 거쳐 결정한다. 근거 없는 속도·메모리 절감률을 현행 판단으로 쓰지 않는다.
+
+
+## 변경 전 확인할 조건
+
+- **Asset 버전:** `.SRProfile` v5와 `.Surface`/`.Scene`의 로더·셰이더 ABI를 Source/Contracts에서 확인한다.
+- **시점:** '현행'은 *문서 스냅샷의 현행*이다. 실제 체크아웃의 코드가 다르면 수정 전 차이를 기록한다.
+- **개인 볼트의 ADR:** 최신 구현 계약보다 개인 ADR의 과거 판단을 우선시하지 않는다. 상세 설계에 영향을 주는 결정을 새로 승인한 경우에만 개인 ADR 보충을 제안한다.

@@ -19,55 +19,38 @@
 ## 01. 기본 서식과 선언 순서
 
 - C/C++처럼 명확한 들여쓰기, 일관된 중괄호·공백, 응집된 헬퍼 함수를 사용한다. 기본 예시는 **4칸 들여쓰기**, 함수·변수 `snake_case`, 타입 `PascalCase`, 상수 `UPPER_SNAKE_CASE`이며 기존 프로젝트 관례가 우선한다.
-- 프로젝트 소유 셰이더 파일의 최상단에는 **해당 Shader Stage의 주요 책임을 요약하는 한국어 주석**을 필수로 작성한다. `#version` 앞에 주석을 두더라도, `#version`이 첫 GLSL 전처리 지시문이라는 조건을 유지한다.
 - 버전 및 확장 지시문을 파일 앞쪽에 유지한다. **`#version`은 GLSL의 전처리 규칙에 따라 다른 전처리 명령·토큰보다 먼저** 둔다. 섹션 주석은 `#version` 다음에 놓는 것을 기본으로 한다.
 - `layout(location=...)`, `layout(set=..., binding=...)`, `layout(local_size_*=...)`, `layout(std430)` 등은 해당 리소스 또는 실행 단계의 선언 가까이에 둔다.
 - 권장 논리적 순서: **버전/확장 → 인터페이스·리소스 선언 → 헬퍼 선언(prototype) → `main()` → 세부 구현**. GLSL의 선언 순서 제약으로 컴파일이 안 된다면 프로토타입 추가 또는 헬퍼 정의 위치 조정을 사용한다.
 - `main()`만 읽어도 주요 실행 단계와 유효 범위 처리가 보이게 하되, 짧은 계산까지 무조건 함수로 추출하지 않는다.
 
-## 02. 섹션 주석과 주석 기반 Region
+## 02. 섹션 주석 (Region 지시문을 강제하지 않음)
 
-GLSL에서는 세 줄 섹션 주석 바로 아래에 **`// #region` / `// #endregion`**을 함께 사용한다. 이 마커는 GLSL 주석이므로 셰이더 컴파일러에 특별한 pragma 지원을 요구하지 않는다. VS Code에서 실제로 접기 영역으로 인식하려면 언어 확장 또는 [Custom Folding 설정](../../.vscode/settings.json)이 필요할 수 있다.
+GLSL에서는 C/C++용 `#pragma region`이 표준화된 접기 지시문이 아니므로 **섹션 주석을 기본**으로 사용한다. 편집기에서 접기 마커를 지원한다면 실제 컴파일러 호환성을 확인한 경우에만 선택적으로 사용한다.
 
 ```glsl
-// SurfaceUpdate.comp — 셰이더 입력을 검사하고 다음 상태를 계산한다.
 #version 450
 
 // ============================================================
 // 00. Configuration & Resources
 // ============================================================
-// #region 00_Configuration_And_Resources
-// 리소스와 실행 크기, CPU 측 인터페이스 계약을 선언한다.
 
 // ...
-
-// #endregion
 
 // ============================================================
 // 01. Main Process
 // ============================================================
-// #region 01_Main_Process
-// Invocation의 유효 범위를 확인하고 셀 계산으로 제어를 넘긴다.
 
 // ...
-
-// #endregion
 
 // ============================================================
 // 02. Detailed Implementation
 // ============================================================
-// #region 02_Detailed_Implementation
-// 개별 셀의 상태를 읽고 다음 값을 계산한다.
 
 // ...
-
-// #endregion
 ```
 
 - 섹션 번호는 파일마다 `00, 01, 02...`로 다시 시작하며, 책임 단위로만 나눈다.
-- Region 설명은 마커 **다음 줄에 한 줄**로 작성하되, 제목을 단순 반복하지 않는다.
-- `#version`은 해당 GLSL 버전 규칙에 따라 유효한 위치에 두며, `#extension` 등 선행 선언의 제약을 확인한다.
-- **`#pragma region`을 GLSL 기본 형식으로 사용하지 않는다.** 주석 마커는 접기 확장이 없어도 일반 소스 주석으로 남는다.
 - GPU 단계나 컴파일 조건으로 인해 섹션 배치에 제약이 있으면 **유효한 셰이더 코드**를 우선한다.
 
 ## 03. 컴퓨트 셰이더 예시 — Vulkan GLSL
@@ -75,14 +58,11 @@ GLSL에서는 세 줄 섹션 주석 바로 아래에 **`// #region` / `// #endre
 아래 예시는 **구조를 보여 주는 최소 예제**다. 실제 Set/Binding 값, Workgroup Size, 버퍼 구조 및 Push Constant는 프로젝트에서 검증한 CPU 측 계약과 일치시켜야 한다.
 
 ```glsl
-// SurfaceUpdate.comp — 셰이더 입력을 검사하고 다음 상태를 계산한다.
 #version 450
 
 // ============================================================
 // 00. Configuration & Resources
 // ============================================================
-// #region 00_Configuration_And_Resources
-// 리소스와 실행 크기, CPU 측 인터페이스 계약을 선언한다.
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
@@ -105,13 +85,9 @@ layout(push_constant) uniform Parameters {
 
 void update_cell(uint index);
 
-// #endregion
-
 // ============================================================
 // 01. Main Process
 // ============================================================
-// #region 01_Main_Process
-// Invocation의 유효 범위를 확인하고 셀 계산으로 제어를 넘긴다.
 
 void main() {
     uvec2 cell = gl_GlobalInvocationID.xy;
@@ -123,20 +99,14 @@ void main() {
     update_cell(index);
 }
 
-// #endregion
-
 // ============================================================
 // 02. Detailed Implementation
 // ============================================================
-// #region 02_Detailed_Implementation
-// 개별 셀의 상태를 읽고 다음 값을 계산한다.
 
 void update_cell(uint index) {
     float current_value = input_data.values[index];
     output_data.values[index] = max(current_value - 0.01, 0.0);
 }
-
-// #endregion
 ```
 
 이 예시에는 Workgroup Barrier가 없으므로 범위를 벗어난 Invocation의 조기 반환이 가능하다. **모든 Invocation의 참여가 필요한 `barrier()`가 있다면 동일한 방식의 조기 반환을 적용해서는 안 된다.**
@@ -174,60 +144,3 @@ void update_cell(uint index) {
 - Host–GPU 계약 변경 시 **셰이더 선언/주석 + CPU 측 코드 + Architecture/Contracts + 관련 테스트/Work Log**를 함께 검토한다.
 - 관련 규칙: [Source Comments](../02_Documentation/01_Source-Comments.md), [Document Workflow](../03_Workflow/00_Document-Workflow.md), [Verification and Review](../03_Workflow/01_Verification-and-Review.md).
 - 실행하지 않은 컴파일·실행·성능 테스트의 성공을 기록하지 않는다.
-
-## 큰 셰이더의 단계적 책임 분리
-
-[공통 2단계 리팩터링 지침](../00_Core/03_Section-and-Responsibility-Refactoring.md)을 따른다. 1단계에서 Resources / Main Process / Helpers의 구획을 만들되 `#version`·`#extension`·`layout` 선언과 GPU 실행 제약을 보존한다. 2단계에서는 보조 함수, 공유 셰이더 코드, 패스 책임의 추출을 검토한다. **리소스 바인딩·Push Constant·Buffer Layout, Workgroup Barrier 및 CPU–GPU 계약을 단순한 코드 이동으로 바꿔서는 안 된다.**
-
-## 08. 큰 셰이더의 가독성: 의도적 빈 줄과 단계별 Region
-
-- 구조체 필드, 입력 검증, 리소스 조회, 수치 계산, 상태 기록을 **의미 있는 그룹**으로 정렬한다. 수십 개의 명령을 빈 줄 없이 이어 쓰지 않는다.
-- 긴 `if`와 `return`을 한 줄에 몰아 쓰지 않는다. 읽기 쉬운 조건 줄바꿈과 명시적인 중괄호를 기본으로 한다.
-- 큰 함수에서 독립적인 작업 그룹을 선택적으로 접을 가치가 있을 때 `// #region`과 `// #endregion`을 사용한다. **각 검증문마다 Region을 만들지 않는다.**
-- GLSL 함수 내부에서는 `// 00.00. Input Validation`처럼 **들여쓰기된 한 줄 하위 섹션 주석**을 사용한다. 번호는 외부 섹션 번호와 연결한다. 최상위 3줄 주석은 함수 내부에서 반복하지 않는다.
-- 함수 추출이 더 적합하면 Region을 늘리기보다 함수를 분리한다. `barrier()` 참여 조건, 메모리 가시성, 입력·출력 계약과 실행 순서를 바꾸지 않는다.
-
-### 예시 — 입력 검증과 계산을 구분
-
-아래는 **서식 예시**이며 실제 Shader 인터페이스·자원 선언은 생략했다.
-
-```glsl
-// ============================================================
-// 01. Per-Invocation Processing
-// ============================================================
-// #region 01_Per_Invocation_Processing
-// 하나의 Invocation이 담당할 입력 검사·계산·쓰기 과정을 묶는다.
-
-void process_cell(uint index) {
-    // 01.00. Input Validation
-    // #region 01_00_Input_Validation
-    // 유효하지 않은 인덱스 접근을 방지한다.
-
-    if (index >= uint(input_data.values.length())) {
-        return;
-    }
-
-    // #endregion
-
-    // 01.01. Read & Compute
-    // #region 01_01_Read_And_Compute
-    // 현재 상태를 읽고 다음 값을 계산한다.
-
-    float current_value = input_data.values[index];
-    float next_value = max(current_value - 0.01, 0.0);
-
-    // #endregion
-
-    // 01.02. Commit Result
-    // #region 01_02_Commit_Result
-    // 계산 결과를 출력 버퍼에 기록한다.
-
-    output_data.values[index] = next_value;
-
-    // #endregion
-}
-
-// #endregion
-```
-
-이 예시는 기능 단위 구획의 형태를 보여 주기 위해 **의도적으로 Region을 많이 표시**했다. 실제로 이 정도로 짧은 함수라면 빈 줄만으로 충분하며, **Region 없이 작성하는 편을 우선 추천한다.** 반대로 긴 셰이더에서 각 그룹이 상당한 세부 구현을 가질 때 Region 도입을 검토한다.

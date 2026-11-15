@@ -8,7 +8,6 @@
 
 ## 01. 읽기 쉬운 실행 흐름
 
-- **프로젝트 소유 스크립트에는 파일 역할을 설명하는 한국어 헤더 주석이 필수**다. shebang을 첫 줄에 두고 바로 다음에 파일의 책임과 주요 효과를 적는다.
 - 스크립트 맨 위에서 목적·필요 도구·입력·출력·실행 위치·파괴적 효과를 확인할 수 있게 한다.
 - 상위 함수나 `main`에서 `check_prerequisites → prepare → run → verify`처럼 작업 순서를 보여준다.
 - 경로·인자 처리 등 세부 구현을 명확히 명명한 함수에 둔다. 단순 한 줄 명령을 무의미하게 감싸지 않는다.
@@ -31,33 +30,3 @@
 ## 주석 규칙
 
 주석과 설명은 [`Source Comments`](../02_Documentation/01_Source-Comments.md)를 따른다. 코드와 주석을 함께 수정하며, 이미 이름으로 드러나는 동작을 반복하지 않는다.
-
-## 섹션 Region 마커
-
-큰 스크립트에서는 [공통 표기법](../00_Core/01_Local-Numbering-and-Navigation.md)의 `#region` / `#endregion`을 사용할 수 있다. Shell에서는 **실행에 영향을 주지 않는 주석**이고, VS Code에서는 Custom Folding 등 접기 지원을 확인해야 한다. **shebang을 파일 첫 줄**에 유지한다.
-
-```bash
-#!/usr/bin/env bash
-# 실행 전제조건을 검사하고 핵심 파이프라인을 시작한다.
-
-# ============================================================
-# 00. Main Process
-# ============================================================
-#region 00_Main_Process
-# 의존성 검사 후 실제 작업을 실행한다.
-
-main() {
-    check_prerequisites
-    run_pipeline
-}
-
-main "$@"
-
-#endregion
-```
-
-프로젝트가 POSIX sh를 사용하는 경우 Bash 전용 기능을 넣지 않는다.
-
-## 큰 스크립트의 단계적 책임 분리
-
-[공통 2단계 리팩터링 지침](../00_Core/03_Section-and-Responsibility-Refactoring.md)을 따른다. 1단계에서는 주요 실행 단계·헬퍼 함수·환경 설정을 구획하고 shebang과 실제 실행 순서를 유지한다. 2단계에서는 독립된 동작을 함수·별도 스크립트·공통 라이브러리로 나눌 수 있으나 종료 코드, `trap`, 전역 변수, source 관계, Bash/POSIX 차이를 검증한다.
