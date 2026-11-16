@@ -13,6 +13,13 @@
 - **Docs:** No contracts, flows, or runtime behavior changed; this is editor analysis configuration and static typing cleanup.
 - **Validation:** `npx --yes pyright --project pyrightconfig.json Scripts` reported 0 errors, 0 warnings. Python AST parsing and `pyrightconfig.json` parsing passed. VS Code Problems showed “No problems have been detected in the workspace” after the IntelliSense configuration refreshed. Research scripts and C++ builds/tests were not run.
 
+## 2026-11-16 — Agent Vault Explorer settings
+
+- **읽은 문서:** Agent Entry·Document Map·Markdown·Document Workflow·Commit Style 및 기존 편집기 설정.
+- **설정:** 볼트 `.vscode/settings.json`에서 관리 파일과 `.obsidian`을 Explorer 숨김 대상으로 추가했다.
+- **문서 영향:** 편집기 표시 설정으로 엔진 동작·계약·흐름 영향 없음.
+- **검증:** JSON 파싱 통과. 커밋 분리 작업에서 엔진 빌드·테스트는 재실행하지 않았다.
+
 ## 2026-11-16 — Scene 패널 선택·동작 영역 재배치
 
 - **읽은 문서:** AGENTS·Document Map·Code Style·C++·Document Workflow·Pre-Build Formatting·Scene/Input/DebugUI Source·Validation 안내, 기존 UI 레이아웃·style·Scene 교체 경로.

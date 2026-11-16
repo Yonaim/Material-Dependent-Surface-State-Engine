@@ -1,6 +1,12 @@
 {
   "explorer.sortOrder": "filesFirst",
   "files.exclude": {
+    ".gitignore": true,
+    "AGENTS.md": true,
+    "CHANGELOG.md": true,
+    "README.md": true,
+    "sortspec.md": true,
+    ".obsidian": true,
     "Docs/*/.gitignore": true,
     "Docs/*/AGENTS.md": true,
     "Docs/*/CHANGELOG.md": true,
@@ -46,6 +52,7 @@
     "**/Binaries": true,
     "**/Intermediate": true,
     "**/DerivedDataCache": true,
-    "**/Saved": true
+    "**/Saved": true,
+    ".gitignore": true
   }
 }
