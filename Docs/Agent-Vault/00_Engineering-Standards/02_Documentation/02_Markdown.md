@@ -20,7 +20,7 @@
 | 현재 실행 단계·계약·핵심 모듈 | `02_Architecture` |
 | 현재 진행 중 작업·작업 로그 | `04_Development` |
 | 실제 검증 및 재현 정보 | `05_Experiments` |
-| 설계 의사결정의 맥락·대안·근거 | `02_Architecture/03_Decisions.md` |
+| 설계 의사결정의 맥락·대안·근거 | `03_Decisions/` |
 
 ## 문서 상태
 

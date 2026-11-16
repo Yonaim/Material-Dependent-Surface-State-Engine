@@ -108,8 +108,8 @@ def format_regions(source: str, width: int = 4) -> str:
     rows = [split_nl(s) for s in source.splitlines(keepends=True)]
     n = len(rows)
     regions: list[Region] = []
-    region_line = [None] * n
-    marker = [None] * n
+    region_line: list[int | None] = [None] * n
+    marker: list[tuple[str, int, str] | None] = [None] * n
     protected = [False] * n
     scope = [0] * n
     stack: list[int] = []
@@ -145,7 +145,9 @@ def format_regions(source: str, width: int = 4) -> str:
             raw_end = ')' + raw.group(1) + '"'
         # Record syntax nesting BEFORE this line; a leading close-brace is outdented.
         cleaned, block_comment = clean_braces(body, block_comment)
-        begin_close = len(re.match(r'^\s*}*', cleaned).group(0).lstrip())
+        leading_close = re.match(r'^\s*}*', cleaned)
+        assert leading_close is not None
+        begin_close = len(leading_close.group(0).lstrip())
         scope[i] = max(0, braces - begin_close) * width
         braces = max(0, braces + cleaned.count('{') - cleaned.count('}'))
         m_start = START.match(body)
@@ -208,8 +210,9 @@ def format_regions(source: str, width: int = 4) -> str:
         if protected[i] or not body.strip():
             result.append(body + nl)
             continue
-        if marker[i] is not None:
-            kind, idx, text = marker[i]
+        line_marker = marker[i]
+        if line_marker is not None:
+            kind, idx, text = line_marker
             result.append(' ' * regions[idx].start_indent + text + nl)
             continue
         idx = region_line[i]

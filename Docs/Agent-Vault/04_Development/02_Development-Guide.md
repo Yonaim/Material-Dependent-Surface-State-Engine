@@ -5,6 +5,6 @@
 | 문서 | 들어갈 내용 |
 |---|---|
 | [[04_Development/00_Current-Work|Current Work]] | 진행 중인 구현, 다음 변경, 남은 통합 작업 |
-| [[02_Architecture/03_Decisions|Current Choices]] | 현재 구현에서 유지하는 선택과 변경 시 재검토할 이유 |
+| [[03_Decisions/01_Current-Decisions|Current Choices]] | 현재 구현에서 유지하는 선택과 변경 시 재검토할 이유 |
 
 구현이 끝나고 검증이 완료되면 확정된 데이터·수식·지원 경계는 Architecture의 해당 Contract로 옮긴다. 완료 증거와 측정 해석은 Experiments에 기록하고, Current Work에서는 끝난 항목을 정리한다.

@@ -29,7 +29,7 @@
 | 공개 API·ABI·불변조건 변경 | [`Contract Register`](../../02_Architecture/01_Contracts/00_Contract-Register.md), Doxygen, 테스트 |
 | 모듈 책임·경로·진입점 변경 | [`Source Map`](../../02_Architecture/02_Source/00_Source-Map.md), Document Map |
 | 검증/성능 측정 | [`Validation & Tests`](../../05_Experiments/01_Validation-and-Tests.md), [`Performance`](../../05_Experiments/02_Performance-Measurements.md) |
-| 주요 아키텍처 결정 | [`ADR Index`](../../02_Architecture/03_Decisions.md) 및 변경 시 해당 결정 요약 갱신 |
+| 주요 아키텍처 결정 | [`ADR Index`](../../03_Decisions/00_ADR-Index.md) 및 변경 시 해당 결정 요약 갱신 |
 
 - **코드 변경 작업마다 무조건** [`01_Work-Log.md`](../../04_Development/01_Work-Log.md)에 1건을 추가한다. 여러 파일의 하나의 논리적 작업은 한 건으로 묶는다.
 - 다른 문서가 변경되지 않더라도 `영향 없음 — 근거`를 기록한다.

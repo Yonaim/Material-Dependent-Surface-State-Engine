@@ -1,6 +1,6 @@
 # MDSS Engine Agent Vault — 범용 템플릿에서 생성된 프로젝트 사본
 
-> 기본 운영 규칙과 00_Engineering-Standards는 `Universal-Agent-Vault.zip` 기반이다. `01_Project-Context`는 사용자가 제공한 실제 컨텍스트로 교체했다. `02_Architecture/03_Decisions.md`는 프로젝트별 단일 결정 요약이며, 연구 노트는 개인 볼트에서 관리한다.
+> 기본 운영 규칙과 `00_Engineering-Standards`는 `Universal-Agent-Vault` 기반이며, 공통 규칙은 v6.4까지 동기화되어 있다. `01_Project-Context`는 프로젝트 사실로 구성하고 `03_Decisions/`에서 결정 요약과 ADR을 관리한다. 연구 노트는 개인 볼트에 둔다.
 
 # Universal Agent Vault — 프로젝트 초기화 체크리스트
 
@@ -67,7 +67,7 @@ Before every code task, read `Docs/Agent-Vault/AGENTS.md` and
 - [ ] 작업 시작 시 `AGENTS.md` + `01_Document-Map.md` + 관련 문서를 읽는다.
 - [ ] 코드를 수정하고 실제 실행한 검증만 기록한다.
 - [ ] 영향 문서를 검토·갱신하고 [`Work Log`](04_Development/01_Work-Log.md)에 **작업 단위 1건**을 남긴다.
-- [ ] 설계상 중요한 결정이면 [`ADR`](02_Architecture/03_Decisions.md)에 기록한다.
+- [ ] 설계상 중요한 결정이면 [`ADR Index`](03_Decisions/00_ADR-Index.md)에 등록하고 기록한다.
 - [ ] 마지막으로 Markdown 링크, 소스 경로, 활성 언어 프로필, VS Code 설정을 확인한다.
 
 ## 범용 템플릿과 프로젝트 사본

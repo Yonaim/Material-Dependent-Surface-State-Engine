@@ -28,7 +28,7 @@
 | 버그, crash, regression, 오류 | 관련 Source, [`Validation & Tests`](05_Experiments/01_Validation-and-Tests.md), 관련 Contract | 테스트 / Source / Contract / Work Log |
 | 성능, benchmark, memory, latency | [`Performance Measurements`](05_Experiments/02_Performance-Measurements.md), Constraints, 관련 Source | 성능 근거 / ADR(필요 시) / Work Log |
 | 새 모듈·기능 단위 문서 구조, Flows/Contracts/Source 그룹화 | [`Architecture Organization`](00_Engineering-Standards/00_Core/02_Architecture-Organization.md), [`Source Map`](02_Architecture/02_Source/00_Source-Map.md) | 관련 하위 문서 / Map / 지역 Index(필요 시) |
-| 구조 선택, 의존성 방향, 트레이드오프 | 관련 Flow/Contract/Source, [`ADR Index`](02_Architecture/03_Decisions.md) | ADR / Architecture / Work Log |
+| 구조 선택, 의존성 방향, 트레이드오프 | 관련 Flow/Contract/Source, [`ADR Index`](03_Decisions/00_ADR-Index.md) | ADR / Architecture / Work Log |
 | Markdown, 문서 이동, 탐색 맵 | [`Markdown`](00_Engineering-Standards/02_Documentation/02_Markdown.md), 관련 문서 | 링크 / Map / 실제 변경 문서 |
 | 검증 계획, 변경 영향, 코드 리뷰 | [`Verification and Review`](00_Engineering-Standards/03_Workflow/01_Verification-and-Review.md), 관련 Requirements/Contracts | 검증 결과 / Work Log |
 | 커밋 작성 | [`Commit Style`](00_Engineering-Standards/03_Workflow/02_Commit-Style.md) | 해당 기록 (커밋 실행 여부와 별개) |
@@ -42,6 +42,8 @@
 | `Reaction`, consumes, produces, inflowFraction | `Shaders/*reaction*`, reaction 관련 C++ | [[02_Architecture/01_Contracts/06_Reactions|Reaction]], [[02_Architecture/01_Contracts/07_CPU-GPU-Interface|CPU–GPU]] | Reaction Contract / Integration Tests |
 | `Geometry`, `UV Seam`, `Meso`, `Dirty`, `Overlay` | geometry/overlay C++ 및 GLSL | [[02_Architecture/01_Contracts/03_Geometry|Geometry]], [[02_Architecture/00_Flows/03_Rendering/00_Render-Overview|Rendering]] | Geometry / Source / Perf |
 | `Vulkan`, `Descriptor`, `Shader ABI` | GPU Resource / Pipeline / GLSL | [[02_Architecture/01_Contracts/05_GPU-Layout|GPU Layout]], [[02_Architecture/02_Source/01_Shaders/00_Index|Shader Map]] | Layout / Source / GPU Regression |
+| 빌드, CMake, preset, shader manifest | `CMakeLists.txt`, `CMake/*`, `CMakePresets.json`, `Scripts/build.*` | [[01_Project-Context/03_Constraints|Constraints]], [[00_Engineering-Standards/03_Workflow/03_Pre-Build-Formatting|Pre-Build Formatting]], [[00_Engineering-Standards/03_Workflow/05_Build-System-Selection|Build-System Selection]] | Current Work의 포맷 훅 상태 / Validation |
+| Python 성능·연구 분석, PowerShell/Bash 실행 | `Scripts/**/*.py`, `Scripts/**/*.ps1`, `Scripts/**/*.sh`, `Tools/*.py` | 해당 언어 규칙, [[02_Architecture/02_Source/00_Source-Map|Source Map]], [[05_Experiments/01_Validation-and-Tests|Validation]] | 관련 실험 기록 / Work Log |
 
 > 소스 경로 패턴은 탐색 힌트이며 실제 저장소의 파일 존재를 확인한 뒤 따른다.
 

@@ -1,10 +1,15 @@
 # Contract Register
 
-> **상태: 초기 스켈레톤.** 현재 시스템의 인터페이스, 불변식, 데이터·상태 의미를 한곳에 복제하지 않고 관련 상세 계약으로 연결한다.
+> 상세 계약을 모아 찾는 인덱스다. 계약 본문은 각 하위 문서에 두며, 요구·테스트 링크는 탐색용으로만 연결한다.
 
 | 계약 ID / 이름 | 필수 보장·경계 | 실제 코드 / 상세 문서 | 관련 요구·검증 |
 |---|---|---|---|
-| `{{CONTRACT_ID}}` | `{{INVARIANT_OR_API_RULE}}` | `{{SOURCE_OR_DOC}}` | `{{REQUIREMENT_OR_TEST}}` |
+| State & Profile | State는 texel별 총량이며 Capacity는 저장 상한이 아닌 포화 기준이다. Profile v5와 상태 registry의 데이터 의미를 확인한다. | [State & Profile](01_State-and-Profile.md), [Assets & Profiles](02_Assets-and-Profiles.md); `Source/SurfaceState/Types/`, `Shaders/Shared/SurfaceState/` | FR-002, FR-004; `Tests/SurfaceStateContractTests.cpp` |
+| Geometry | Simulation UV graph, seam topology, 정적 공유 geometry와 instance 동적 geometry의 경계를 지킨다. | [Geometry](03_Geometry.md); `Source/SurfaceState/Mapping/`, `Source/SurfaceState/Geometry/`, `Shaders/Simulation/Geometry/` | FR-001, FR-003; `Tests/SurfaceMappingTests.cpp`, `Tests/SharedSurfaceGeometryTests.cpp` |
+| Solver | Pass 순서, Flux/Gather/Reaction 실행 조건, State A/B와 step 간 barrier를 보존한다. | [Solver](04_Solver.md); `Source/SurfaceState/Solver/`, `Shaders/Simulation/Solver/` | FR-002; `Tests/SimulationTransportTests.cpp` |
+| GPU Layout | C++ packing, descriptor/binding, push constants와 GLSL layout 및 자원 수명을 함께 맞춘다. | [GPU Layout](05_GPU-Layout.md); `Source/SurfaceState/GPU/`, `Shaders/Shared/SurfaceState/` | NFR-001; `Tests/SurfaceGPUResourceTests.cpp` |
+| Reactions | Profile v5 `consumes`/`produces`, 공급량 제한과 Reaction Pass의 결과 규칙을 지킨다. | [Reactions](06_Reactions.md); `Source/SurfaceState/Types/SurfaceReactions.cpp`, `Shaders/Simulation/Solver/SurfaceReaction.comp` | FR-004; `Tests/SurfaceStateContractTests.cpp`, `Tests/SimulationTransportTests.cpp` |
+| CPU–GPU Interface | CPU 자원 설정·dispatch·barrier와 GLSL 단계/리소스 사용의 연결을 확인한다. | [CPU–GPU Interface](07_CPU-GPU-Interface.md); `Source/SurfaceState/GPU/`, `Source/SurfaceState/Solver/`, `Shaders/` | NFR-001; 관련 GPU/solver 테스트 및 Validation 기록 |
 
 ## 우선 확인할 계약
 

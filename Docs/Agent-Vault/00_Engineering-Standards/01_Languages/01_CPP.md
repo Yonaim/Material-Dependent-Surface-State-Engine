@@ -73,6 +73,29 @@ Epic Games의 [공식 C++ 코딩 표준](https://dev.epicgames.com/documentation
 - 헤더 가드는 프로젝트 관례와 도구 호환성을 따른다. Unreal에서는 `#pragma once` 관례를 따른다.
 - C++ 파일의 섹션은 상위 흐름 → 조율 → 하위 구현 순으로 배치하되 불필요한 파일/섹션 분할은 피한다.
 - 섹션 구분은 [`Local Numbering`](../00_Core/01_Local-Numbering-and-Navigation.md)의 **세 줄 주석 + `#pragma region 00_Main_Process`** 형식을 따른다. `#pragma region`은 비표준 확장이므로 IDE·컴파일러 호환성이 확인된 경우에만 사용하고, 그렇지 않으면 섹션 주석만 사용한다.
+- 한 `.cpp` 파일 안에서만 사용하는 함수·타입·상수 등의 유틸은 익명 네임스페이스 안에 둔다. 헤더에 두거나 외부 연결을 노출하지 않는다.
+- **익명 네임스페이스도 반드시 Region으로 감싼다.** 파일 크기나 내부 항목 수와 관계없이 `namespace {` 앞에 세 줄 섹션 주석과 `#pragma region`을 두고, 네임스페이스의 닫는 중괄호 뒤에 `#pragma endregion`을 둔다. Region 미지원 환경에서는 아래 호환성 규칙에 따라 섹션 주석을 사용한다.
+- 네임스페이스 내부에서도 필요하면 책임별 Region을 추가할 수 있다. 익명 네임스페이스를 감싸는 바깥 Region 안에 내부 Region을 중첩할 수 있으며, 각 내부 Region은 해당 네임스페이스 안에서 시작하고 끝나도록 배치한다.
+- 파일 내부 유틸은 관련 항목을 종류별로 묶어 Region으로 감싼다. 여러 종류가 있으면 JSON 로딩, 그래픽 계산처럼 책임별 Region을 나누고, 각 종류의 함수와 타입 이름에는 일관된 공통 접두어를 붙인다. 예: `JsonLoad_`, `GraphicsCalc_`.
+- Region의 제목·번호·호환성은 [`Source Comments`](../02_Documentation/01_Source-Comments.md)와 [`Local Numbering`](../00_Core/01_Local-Numbering-and-Navigation.md)의 규칙을 따른다. Region 미지원 환경에서도 익명 네임스페이스와 섹션 주석으로 범위와 책임이 드러나야 한다.
+
+```cpp
+// ============================================================
+// 01. JSON Loading Utilities
+// ============================================================
+#pragma region 01_JSON_Loading_Utilities
+
+namespace {
+
+bool JsonLoad_IsSupportedVersion(int Version) {
+    return Version >= 1;
+}
+
+} // namespace
+
+#pragma endregion
+```
+
 - 패키지·빌드·소스 경로에 영향을 미치면 파일명 숫자 접두어를 강요하지 않는다.
 
 ## 04. 주석·API 문서·검증

@@ -13,6 +13,20 @@
 - **Docs:** No contracts, flows, or runtime behavior changed; this is editor analysis configuration and static typing cleanup.
 - **Validation:** `npx --yes pyright --project pyrightconfig.json Scripts` reported 0 errors, 0 warnings. Python AST parsing and `pyrightconfig.json` parsing passed. VS Code Problems showed “No problems have been detected in the workspace” after the IntelliSense configuration refreshed. Research scripts and C++ builds/tests were not run.
 
+## 2026-11-16 — Python 분석용 빌드 산출물 제외
+- **읽은 문서:** Agent-Vault AGENTS·Document Map·Python·Source Map·Validation & Tests·Document Workflow, Project Brief·Constraints, 기존 VS Code 설정.
+- **설정/코드:** 루트 `pyrightconfig.json`에서 생성물·외부 의존성·레거시 보조 스크립트가 포함된 `Build/**` 전체를 `exclude` 및 `ignore`한다. Problems에서 확인한 `Build/_deps/imgui-src`와 `Build/_deps/tinyobjloader-src`의 Python 2용 스크립트 진단도 이 경로에 포함된다. 이어 `Scripts/`의 `sys.path.insert`와 일치하도록 `Build/PerformanceLab/PythonPackages` 및 `Build/ResearchPython`을 `extraPaths`로 추가해 실행 의존성을 찾게 한다. 프로젝트 스크립트는 캡처 부재/None 검사, Matplotlib 저장 경로 타입과 플롯 데이터, SciPy 인덱스 반환, 결과 레코드 타입을 명시적으로 보강했다. showcase import 도구는 문서화된 `uv --with trimesh` 의존성을 import 단위로 표시했다. 프로젝트 `Scripts/`와 `Tools/`는 제외하지 않는다.
+- **문서 동기화:** 편집기 진단 범위 조정으로 엔진 코드·API/ABI·요구사항·실행 흐름 영향 없음.
+- **검증:** JSON 파싱, Python AST 파싱, 제외·추가 경로가 현재 Build/실행 경로와 일치하는지 확인. UI 캡처의 Problems는 `Build/**` 확대 적용 및 코드 수정 전 상태이므로 적용 후 Pylance 결과는 미확인; 실험 스크립트 실행은 하지 않음.
+
+## 2026-11-16 — Universal-Agent-Vault v6.4 동기화 및 체크아웃 대조
+
+- **읽은 문서:** Universal-Agent-Vault v6.4 CHANGELOG·AGENTS·Document Map·C++·Source Comments·Setup 기준, 현재 볼트의 Markdown/Workflow, Project Brief·Constraints·Contracts·Flows·Source·Current Work·Validation·README.
+- **도구 코드:** `Tools/indent_regions.py`와 `Assets/Formatting/indent_regions.py`를 Universal v6.3 타입/정규식 진단 수정본으로 동기화. 엔진 코드와 GPU 인터페이스는 변경하지 않음.
+- **포맷 진입점:** `Tools/format_before_build.py`를 추가했다. 실제 CMake 타깃 연결은 Current Work에 적힌 미완료 상태를 유지한다.
+- **문서 동기화:** C++ 익명 namespace Region 규칙, v6.4 버전 기록, CMake·프레임 경로, 과거 검증 범위 및 계약 등록부 갱신. 결정 요약을 Universal 구조인 `03_Decisions/`로 이동하고 ADR 색인과 내부 링크를 갱신. 루트 AGENTS의 CMake 부재 주장을 제거. CMake 타깃에 자동 포맷 단계가 없는 현행 상태를 Current Work에 미완료 사항으로 기록.
+- **검증:** 파일·함수 경로와 CMake/README/빌드 스크립트를 정적으로 대조. 빌드·테스트·포맷터 실행은 하지 않음; 이번 작업은 문서 동기화 및 포맷 도구 복사이며, 실행 결과를 주장하지 않는다.
+- **커밋 준비 검증:** Python 도구 3개 AST, 포맷 도구 두 사본의 바이트 일치, 새 포맷 진입점 `--help`, 변경 C++ 두 파일의 Region 검사 및 diff 공백 검사 통과. 이번 커밋·푸시 작업에서는 엔진 빌드·테스트를 재실행하지 않았다.
 
 ## 2026-11-11 — VS Code Explorer 잡음 파일 숨김
 - **읽은 문서:** Agent-Vault AGENTS·Document Map·Code Style·Document Workflow·Local Numbering, 기존 `.vscode/settings.json` 및 `.gitignore`.
