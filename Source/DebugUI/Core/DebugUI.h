@@ -73,7 +73,7 @@ namespace MDSS
         // 00. Lifecycle and Public API
         // ============================================================
 #pragma region "00_Lifecycle_and_Public_API"
-// 외부 호출자가 UI 초기화·프레임·종료 경계를 통해 기능을 사용한다.
+        // 외부 호출자가 UI 초기화·프레임·종료 경계를 통해 기능을 사용한다.
 
         // Debug UI lifecycle
         FDebugUI(const GPU::FVulkanContext&         Context,
@@ -164,7 +164,7 @@ namespace MDSS
         // 01. Scene and Viewport Operations
         // ============================================================
 #pragma region "01_Scene_and_Viewport_Operations"
-// Scene·viewport 입력과 선택 편집을 같은 화면 상태에 연결한다.
+        // Scene·viewport 입력과 선택 편집을 같은 화면 상태에 연결한다.
 
         // Lifecycle internals: initialization order is part of backend ownership contract.
         void InitializeImGuiContext();
@@ -188,8 +188,9 @@ namespace MDSS
         void UpdateHoveredGizmoAxis(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
         void HandleGizmoViewportClick(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
         void DrawSceneWindow(FScene& SceneData);
-        void ReplaceSceneFromPath(FScene& SceneData, const std::filesystem::path& Path);
-        void DrawAnimationWindow(FScene& SceneData);
+        void DrawSceneBrowser(FScene &SceneData);
+        void ReplaceSceneFromPath(FScene &SceneData, const std::filesystem::path &Path);
+        void DrawAnimationWindow(FScene &SceneData);
         void ReplayDemo(FScene& SceneData);
         void TogglePresentationMode();
         void DrawSelectedObjectWindow(FScene& SceneData);
@@ -204,7 +205,7 @@ namespace MDSS
         // 02. Rendering and Performance Controls
         // ============================================================
 #pragma region "02_Rendering_and_Performance_Controls"
-// 렌더 표시와 실행 비용 옵션을 해당 Renderer 설정에 전달한다.
+        // 렌더 표시와 실행 비용 옵션을 해당 Renderer 설정에 전달한다.
 
         // Rendering controls and performance overlays
         void DrawRenderOptionsWindow(FScene& SceneData);
@@ -258,7 +259,7 @@ namespace MDSS
         // 03. Simulation and Diagnostic Panels
         // ============================================================
 #pragma region "03_Simulation_and_Diagnostic_Panels"
-// Solver 설정과 State 진단의 패널 구성 경계를 선언한다.
+        // Solver 설정과 State 진단의 패널 구성 경계를 선언한다.
 
         // Simulation and diagnostic panels
         void DrawSimulationDebugWindow(FScene& SceneData);
@@ -295,7 +296,7 @@ namespace MDSS
         // 04. Shared Layout Helpers
         // ============================================================
 #pragma region "04_Shared_Layout_Helpers"
-// 여러 패널에서 사용하는 크기·배치·공통 widget 처리를 모은다.
+        // 여러 패널에서 사용하는 크기·배치·공통 widget 처리를 모은다.
 
         // Shared layout helpers
         void                      SetupDockspace();
@@ -314,7 +315,7 @@ namespace MDSS
         // 05. Resource References
         // ============================================================
 #pragma region "05_Resource_References"
-// Application이 소유하는 장치·Scene·Renderer를 빌려 사용한다.
+        // Application이 소유하는 장치·Scene·Renderer를 빌려 사용한다.
 
         VkDevice                           Device = VK_NULL_HANDLE;
         GLFWwindow*                        NativeWindow = nullptr;
@@ -327,7 +328,7 @@ namespace MDSS
         // 06. Camera Input and Dock State
         // ============================================================
 #pragma region "06_Camera_Input_and_Dock_State"
-// dock 배치와 카메라 입력 처리에 필요한 UI 상태를 보관한다.
+        // dock 배치와 카메라 입력 처리에 필요한 UI 상태를 보관한다.
 
         bool  bRotatingCamera = false;
         float CameraZoomSpeed = 12.0F;
@@ -340,7 +341,7 @@ namespace MDSS
         // 07. Presentation State
         // ============================================================
 #pragma region "07_Presentation_State"
-// 발표·benchmark 표시 선택을 UI 프레임 사이에 유지한다.
+        // 발표·benchmark 표시 선택을 UI 프레임 사이에 유지한다.
 
         struct FPresentationUIState
         {
@@ -358,7 +359,7 @@ namespace MDSS
         // 08. Simulation and Contact Controls
         // ============================================================
 #pragma region "08_Simulation_and_Contact_Controls"
-// 시간·Solver·접촉 입력 편집 값을 관련 실행 경로에 전달한다.
+        // 시간·Solver·접촉 입력 편집 값을 관련 실행 경로에 전달한다.
 
         struct FSimulationUIState
         {
@@ -388,7 +389,7 @@ namespace MDSS
         // 09. Profile Editing State
         // ============================================================
 #pragma region "09_Profile_Editing_State"
-// Profile 편집 중 선택한 자산·State와 임시 입력 값을 유지한다.
+        // Profile 편집 중 선택한 자산·State와 임시 입력 값을 유지한다.
 
         struct FProfileEditingUIState
         {
@@ -416,7 +417,7 @@ namespace MDSS
         // 10. Selection and Gizmo State
         // ============================================================
 #pragma region "10_Selection_and_Gizmo_State"
-// 선택 객체와 gizmo 조작 중인 변환 상태를 같은 수명으로 보관한다.
+        // 선택 객체와 gizmo 조작 중인 변환 상태를 같은 수명으로 보관한다.
 
         struct FGizmoUIState
         {
@@ -440,14 +441,16 @@ namespace MDSS
         // 11. Scene Dock and Viewport State
         // ============================================================
 #pragma region "11_Scene_Dock_and_Viewport_State"
-// Scene 창과 viewport별 카메라·표시 상태를 관리한다.
+        // Scene 창과 viewport별 카메라·표시 상태를 관리한다.
 
         struct FViewportUIState
         {
             std::string   SceneStatus;
+            std::string   SceneBrowserPath;
+            int           SceneCategory = 0;
             std::string   EditorLayoutPath;
             std::uint32_t DockspaceID = 0;
-            ImFont*       SectionHeaderFont = nullptr;
+            ImFont       *SectionHeaderFont = nullptr;
             struct FViewportPanel
             {
                 std::uint32_t Id = 0;
@@ -468,7 +471,7 @@ namespace MDSS
         // 12. Log State
         // ============================================================
 #pragma region "12_Log_State"
-// 로그 필터·검색·표시 위치를 프레임 사이에 유지한다.
+        // 로그 필터·검색·표시 위치를 프레임 사이에 유지한다.
 
         struct FLogUIState
         {
@@ -486,7 +489,7 @@ namespace MDSS
         // 13. Profiling and Overlay State
         // ============================================================
 #pragma region "13_Profiling_and_Overlay_State"
-// 측정 집계와 overlay 표시 설정을 UI 소비자에게 연결한다.
+        // 측정 집계와 overlay 표시 설정을 UI 소비자에게 연결한다.
 
         FProfilingUIState Profiling;
         bool              bViewportOverlaysVisible = true;

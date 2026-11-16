@@ -11,7 +11,7 @@ namespace MDSS
 // 00. Scene and Camera Controls
 // ============================================================
 #pragma region 00_Scene_and_Camera_Controls
-// Scene 선택·카메라 설정을 사용자 입력에 따라 적용한다.
+    // Scene 선택·카메라 설정을 사용자 입력에 따라 적용한다.
 
     void FDebugUI::SetupDockspace()
     {
@@ -127,28 +127,44 @@ namespace MDSS
         SceneData.RestoreInitialState();
         SceneData.GetMainCamera() = CurrentCamera;
         FrameRenderer->RestartSimulationState();
+        if (SceneData.HasDemoAnimation())
+        {
+            SceneData.PlayDemoAnimation();
+            Simulation.bSimulationPaused = false;
+            Simulation.AnimationTimeScale = 1.0F;
+            Simulation.SimulationTimeScale = 1.0F;
+        }
         ResetProfilingAverages();
         Gizmo.SelectedObject.reset();
         Gizmo.ActiveAxis = -1;
         ViewportState.SceneStatus = Path.empty() ? "Restarted: Scene" : "Restarted: " + Path.filename().string();
     }
 
-    void FDebugUI::DrawSceneWindow(FScene& SceneData)
+    void FDebugUI::DrawSceneWindow(FScene &SceneData)
     {
-        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        ImGuiViewport *Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({330.0F, 180.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({350.0F, 340.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
-        ImGui::Begin("Scene", nullptr, Flags);
-        const auto& SourcePath = SceneData.GetSourcePath();
-        ImGui::TextWrapped("Current Scene: %s",
-                           SourcePath.empty() ? "(unsaved)" : SourcePath.filename().string().c_str());
+        if (!ImGui::Begin("Scene", nullptr, Flags))
+        {
+            ImGui::End();
+            return;
+        }
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {8.0F, 10.0F});
+        const auto &SourcePath = SceneData.GetSourcePath();
+        ImGui::TextDisabled("Active scene");
+        ImGui::TextWrapped("%s", SourcePath.empty() ? "Untitled" : SourcePath.stem().string().c_str());
         if (!SourcePath.empty() && ImGui::IsItemHovered())
         {
             ImGui::SetTooltip("%s", SourcePath.string().c_str());
         }
 
-        if (ImGui::Button("Load Scene"))
+        const float FileButtonWidth =
+            std::max(1.0F, (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5F);
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
+        if (ImGui::Button("Open file...", {FileButtonWidth, 0.0F}))
         {
             // 취소하거나 로딩에 실패해도 대화상자 대기 시간은 시뮬레이션에서 제외한다.
             Simulation.bFrameTimeResetRequested = true;
@@ -160,7 +176,7 @@ namespace MDSS
                     ReplaceSceneFromPath(SceneData, *Path);
                     ViewportState.SceneStatus = "Loaded: " + Path->filename().string();
                 }
-                catch (const std::exception& Error)
+                catch (const std::exception &Error)
                 {
                     ViewportState.SceneStatus = std::string("Load failed: ") + Error.what();
                     FLogger::Error("TDebugUI", ViewportState.SceneStatus);
@@ -170,7 +186,7 @@ namespace MDSS
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Save Scene"))
+        if (ImGui::Button("Save as...", {FileButtonWidth, 0.0F}))
         {
             Simulation.bFrameTimeResetRequested = true;
 
@@ -190,22 +206,28 @@ namespace MDSS
                     SceneData.CaptureInitialState();
                     ViewportState.SceneStatus = "Saved: " + SavePath.filename().string();
                 }
-                catch (const std::exception& Error)
+                catch (const std::exception &Error)
                 {
                     ViewportState.SceneStatus = std::string("Save failed: ") + Error.what();
                 }
             }
         }
 
-        ImGui::SameLine();
+        ImGui::PopStyleColor();
 
-        if (ImGui::Button("Restart Scene"))
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        DrawSceneBrowser(SceneData);
+        ImGui::Spacing();
+
+        if (ImGui::Button("Restart scene", {-1.0F, ImGui::GetFrameHeight() + 4.0F}))
         {
             try
             {
                 RestartScene(SceneData);
             }
-            catch (const std::exception& Error)
+            catch (const std::exception &Error)
             {
                 ViewportState.SceneStatus = std::string("Restart failed: ") + Error.what();
                 FLogger::Error("TDebugUI", ViewportState.SceneStatus);
@@ -213,64 +235,163 @@ namespace MDSS
         }
 
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-            ImGui::SetTooltip("초기 Scene 상태로 복원하고 리소스를 다시 불러오지 않은 채 접촉 입력을 재생합니다.");
-
-        ImGui::Separator();
-
-        const std::filesystem::path SceneDirectory = std::filesystem::path(MDSS_ASSET_DIR) / "Scenes";
-        const auto                  DrawDemoSceneButton = [&](const char* Label, const char* FileName)
-        {
-            if (ImGui::Button(Label))
-            {
-                Simulation.bFrameTimeResetRequested = true;
-                const std::filesystem::path DemoScenePath = SceneDirectory / FileName;
-                try
-                {
-                    ReplaceSceneFromPath(SceneData, DemoScenePath);
-                    ViewportState.SceneStatus = "Loaded: " + DemoScenePath.filename().string();
-                }
-                catch (const std::exception& Error)
-                {
-                    ViewportState.SceneStatus = std::string("Load failed: ") + Error.what();
-                    FLogger::Error("TDebugUI", ViewportState.SceneStatus);
-                }
-            }
-        };
-
-        DrawDemoSceneButton("Mountain", "Mountain.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("BrickCube", "BrickCube.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("Bunny", "Bunny.Scene");
-        DrawDemoSceneButton("State-Driven Geometry", "StateDrivenGeometryDemo.Scene");
-        DrawDemoSceneButton("Transition / Reaction", "ReactionTransitionComparison.Scene");
-        ImGui::TextDisabled("Midterm demos (F9: replay, F10: presentation):");
-        DrawDemoSceneButton("1 Rain / Materials", "MidtermRainMaterials.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("2 Dustpan / Gravity", "MidtermDustpanGravity.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("3 Water / Mud", "MidtermWaterMud.Scene");
-        ImGui::TextDisabled("Showcase scenes:");
-        DrawDemoSceneButton("Lion Head", "Lion Head.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("Marble Bust 01", "Marble Bust 01.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("Rock 07", "Rock 07.Scene");
-        ImGui::TextDisabled("Performance scenes:");
-        DrawDemoSceneButton("3 Cubes", "BrickCube_3.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("5 Cubes", "BrickCube_5.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("9 Cubes", "BrickCube_9.Scene");
-        ImGui::SameLine();
-        DrawDemoSceneButton("Cube 512", "BrickCube_512.Scene");
+            ImGui::SetTooltip("초기 상태를 복원하고 데모 애니메이션을 다시 재생합니다.");
 
         if (!ViewportState.SceneStatus.empty())
         {
-            ImGui::TextWrapped("%s", ViewportState.SceneStatus.c_str());
+            ImGui::PushTextWrapPos(0.0F);
+            ImGui::TextDisabled("%s", ViewportState.SceneStatus.c_str());
+            ImGui::PopTextWrapPos();
         }
 
+        ImGui::PopStyleVar();
         ImGui::End();
+    }
+
+    void FDebugUI::DrawSceneBrowser(FScene &SceneData)
+    {
+        struct FSceneOption
+        {
+            const char *Label;
+            const char *FileName;
+        };
+        constexpr std::array<FSceneOption, 5> StarterScenes = {{
+                {"Mountain", "Mountain.Scene"},
+                {"BrickCube", "BrickCube.Scene"},
+                {"Bunny", "Bunny.Scene"},
+                {"State-Driven Geometry", "StateDrivenGeometryDemo.Scene"},
+                {"Transition / Reaction", "ReactionTransitionComparison.Scene"},
+        }};
+        constexpr std::array<FSceneOption, 3> MidtermScenes = {{
+                {"1 Rain / Materials", "MidtermRainMaterials.Scene"},
+                {"2 Dustpan / Gravity", "MidtermDustpanGravity.Scene"},
+                {"3 Water / Mud", "MidtermWaterMud.Scene"},
+        }};
+        constexpr std::array<FSceneOption, 3> ShowcaseScenes = {{
+                {"Lion Head", "Lion Head.Scene"},
+                {"Marble Bust 01", "Marble Bust 01.Scene"},
+                {"Rock 07", "Rock 07.Scene"},
+        }};
+        constexpr std::array<FSceneOption, 4> PerformanceScenes = {{
+                {"3 Cubes", "BrickCube_3.Scene"},
+                {"5 Cubes", "BrickCube_5.Scene"},
+                {"9 Cubes", "BrickCube_9.Scene"},
+                {"Cube 512", "BrickCube_512.Scene"},
+        }};
+
+        struct FSceneCategory
+        {
+            const char         *Name;
+            const FSceneOption *Options;
+            std::size_t         Count;
+        };
+        const std::array<FSceneCategory, 4> Categories = {{
+                {"Starter", StarterScenes.data(), StarterScenes.size()},
+                {"Midterm demos", MidtermScenes.data(), MidtermScenes.size()},
+                {"Showcase", ShowcaseScenes.data(), ShowcaseScenes.size()},
+                {"Performance", PerformanceScenes.data(), PerformanceScenes.size()},
+        }};
+        const auto                         &SourcePath = SceneData.GetSourcePath();
+        const std::string                   CurrentSceneFile = SourcePath.filename().string();
+        const std::string                   CurrentScenePath = SourcePath.string();
+        if (ViewportState.SceneBrowserPath != CurrentScenePath)
+        {
+            ViewportState.SceneBrowserPath = CurrentScenePath;
+            for (std::size_t CategoryIndex = 0; CategoryIndex < Categories.size(); ++CategoryIndex)
+            {
+                const auto &Category = Categories[CategoryIndex];
+                for (std::size_t Index = 0; Index < Category.Count; ++Index)
+                {
+                    if (CurrentSceneFile == Category.Options[Index].FileName)
+                    {
+                        ViewportState.SceneCategory = static_cast<int>(CategoryIndex);
+                    }
+                }
+            }
+        }
+
+        const char *SelectedFile = nullptr;
+        if (ImGui::BeginTable("Scene browser", 2, ImGuiTableFlags_SizingStretchProp))
+        {
+            ImGui::TableSetupColumn("Labels",
+                                    ImGuiTableColumnFlags_WidthFixed,
+                                    ImGui::CalcTextSize("Category").x + 8.0F);
+            ImGui::TableSetupColumn("Controls", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled("Category");
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-1.0F);
+            if (ImGui::BeginCombo("##SceneCategory", Categories[ViewportState.SceneCategory].Name))
+            {
+                for (std::size_t Index = 0; Index < Categories.size(); ++Index)
+                {
+                    const bool bSelected = ViewportState.SceneCategory == static_cast<int>(Index);
+                    if (ImGui::Selectable(Categories[Index].Name, bSelected))
+                    {
+                        ViewportState.SceneCategory = static_cast<int>(Index);
+                    }
+                    if (bSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            const auto &Category = Categories[ViewportState.SceneCategory];
+            const char *Preview = "Choose a scene...";
+            for (std::size_t Index = 0; Index < Category.Count; ++Index)
+            {
+                if (CurrentSceneFile == Category.Options[Index].FileName)
+                {
+                    Preview = Category.Options[Index].Label;
+                    break;
+                }
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled("Scene");
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-1.0F);
+            if (ImGui::BeginCombo("##SceneChoice", Preview))
+            {
+                for (std::size_t Index = 0; Index < Category.Count; ++Index)
+                {
+                    const auto &Option = Category.Options[Index];
+                    const bool  bSelected = CurrentSceneFile == Option.FileName;
+                    if (ImGui::Selectable(Option.Label, bSelected))
+                    {
+                        SelectedFile = Option.FileName;
+                    }
+                    if (bSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::EndTable();
+        }
+
+        if (SelectedFile != nullptr)
+        {
+            Simulation.bFrameTimeResetRequested = true;
+            const auto ScenePath = std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / SelectedFile;
+            try
+            {
+                ReplaceSceneFromPath(SceneData, ScenePath);
+                ViewportState.SceneStatus = "Loaded: " + ScenePath.filename().string();
+            }
+            catch (const std::exception &Error)
+            {
+                ViewportState.SceneStatus = std::string("Load failed: ") + Error.what();
+                FLogger::Error("TDebugUI", ViewportState.SceneStatus);
+            }
+        }
     }
 
 #pragma endregion
@@ -279,9 +400,9 @@ namespace MDSS
 // 01. Animation and Presentation
 // ============================================================
 #pragma region 01_Animation_and_Presentation
-// 데모 재생·재시작과 발표 화면 상태를 Scene 실행에 전달한다.
+    // 데모 재생·재시작과 발표 화면 상태를 Scene 실행에 전달한다.
 
-    void FDebugUI::ReplayDemo(FScene& SceneData)
+    void FDebugUI::ReplayDemo(FScene &SceneData)
     {
         Simulation.bFrameTimeResetRequested = true;
         SceneData.RestoreInitialState();
@@ -433,7 +554,7 @@ namespace MDSS
 // 02. Selection and Gizmo Interaction
 // ============================================================
 #pragma region 02_Selection_and_Gizmo_Interaction
-// 선택 대상에 gizmo 입력을 적용하고 변환 변경을 이어간다.
+    // 선택 대상에 gizmo 입력을 적용하고 변환 변경을 이어간다.
 
     void FDebugUI::ProcessSelectionAndGizmo(FScene& SceneData)
     {
@@ -884,7 +1005,7 @@ namespace MDSS
 // 03. Object and Camera Editing
 // ============================================================
 #pragma region 03_Object_and_Camera_Editing
-// 객체·카메라 편집 값을 현재 Scene에 반영한다.
+    // 객체·카메라 편집 값을 현재 Scene에 반영한다.
 
     void FDebugUI::DrawSelectedObjectWindow(FScene& SceneData)
     {

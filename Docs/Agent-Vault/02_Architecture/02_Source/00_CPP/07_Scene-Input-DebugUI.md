@@ -12,7 +12,7 @@
 | [StaticMeshInstance.h](../../../../../Source/Scene/StaticMeshInstance.h) | `FStaticMeshInstance` | asset handle, transform, surface runtime handle 등 scene object data |
 | [StaticMeshInstance.cpp](../../../../../Source/Scene/StaticMeshInstance.cpp) | transform·surface handle 변경 | mesh instance의 상태 갱신과 Runtime Surface Data 연결 |
 | [Scene.h](../../../../../Source/Scene/Scene.h) | `FScene`, initial Contact/state, animation API | Scene이 소유하는 mesh instance·camera·초기화 조건 |
-| [Scene.cpp](../../../../../Source/Scene/Scene.cpp) | instance lookup, initial state capture/restore | scene-level object query, restart 시 원래 transform/state 복구 |
+| [Scene.cpp](../../../../../Source/Scene/Scene.cpp) | instance lookup, initial state capture/restore | scene-level object query, restart 시 원래 transform/state와 animation time 복구 |
 | [SceneLoader.h](../../../../../Source/Scene/SceneLoader.h) | `FSceneLoader` | scene asset 파일 load/save API |
 | [SceneLoader.cpp](../../../../../Source/Scene/SceneLoader.cpp) | JSON field parser·validation·save | asset path를 로드하고 instance/profile/camera/initial-contact 정보를 Scene으로 조립 |
 | [DemoAnimation.h](../../../../../Source/Scene/DemoAnimation.h) | animation property/key/track/clip/event 타입 | 파일 기반 demo animation 입력 자료 |
@@ -64,6 +64,7 @@ Scene animation event도 `MainLoop`에서 stable object ID로 instance를 찾아
 
 | UI 작업 | 전달 지점 | 영향 |
 |---|---|---|
+| Scene restart | `DebugUIEditor.cpp::RestartScene` → `FScene::RestoreInitialState` / `FRenderer::RestartSimulationState` | camera 편집 상태는 유지하고 transform·animation을 처음으로 되돌린 뒤 demo animation을 재생; animation이 있는 Scene은 pause와 두 time scale을 기본값으로 복구 |
 | pause·step·reset·time scale | `DebugUI.cpp`의 consume/getter → `FrameCoordinator.cpp` | step 목록과 State/clock 초기화 |
 | Contact shape·strength | `DebugUIContactProfile.cpp`/`DebugUISimulation.cpp` → `InputSystem.cpp` | Contact payload와 다음 step의 InputDelta |
 | Solver term·sparse·geometry toggle | DebugUI → `SurfaceStateSystem.cpp` option setter | step flags, scratch/weight invalidation, shader variant |
@@ -71,6 +72,8 @@ Scene animation event도 `MainLoop`에서 stable object ID로 instance를 찾아
 | viewport·선택 texel | `DebugUIViewport.cpp` → `RendererCommands.cpp` | debug view와 `TexelInspector::Record` |
 
 UI 표시값은 실행 조건을 확인하는 출발점이다. 성능 측정에서는 benchmark runner가 기록한 실제 설정과 자동 출력 원자료를 [[05_Experiments/02_Performance-Measurements|성능 기록]]에 남긴다. `Logger.cpp`의 메시지는 load·Contact 거절·resource 변경의 진단에 쓰되, 수치 결과의 근거는 자동 기록한 결과 파일이다.
+
+Scene 패널은 현재 Scene 이름과 같은 폭의 Open/Save 보조 버튼, Category/Scene 선택 행, Restart 주 버튼 순서로 구성한다. `DrawSceneBrowser`는 Starter·Midterm demos·Showcase·Performance 중 Category를 선택한 뒤 해당 Scene dropdown에서 즉시 교체한다. 라벨은 고정 폭 열에, 선택 컨트롤은 남은 폭에 배치한다. Category 선택 자체는 Scene을 교체하지 않으며, 외부 파일 로드 등으로 경로가 달라지면 해당 Category를 다시 찾는다. UI 소유 `SceneCategory`/`SceneBrowserPath`는 파일에 저장하지 않는다. `Restart Scene`은 초기 transform·animation 시점을 복구하고 simulation state를 초기화한다. Demo animation이 있는 Scene은 재생을 다시 시작하며 simulation pause와 animation/simulation time scale을 기본값으로 돌린다. 현재 camera는 기존처럼 restart 직전 값을 유지한다.
 
 ## 현재 소스의 UI / Debug / Scene 연결 보강
 

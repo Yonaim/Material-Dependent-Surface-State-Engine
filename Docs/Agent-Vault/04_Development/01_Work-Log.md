@@ -13,6 +13,19 @@
 - **Docs:** No contracts, flows, or runtime behavior changed; this is editor analysis configuration and static typing cleanup.
 - **Validation:** `npx --yes pyright --project pyrightconfig.json Scripts` reported 0 errors, 0 warnings. Python AST parsing and `pyrightconfig.json` parsing passed. VS Code Problems showed “No problems have been detected in the workspace” after the IntelliSense configuration refreshed. Research scripts and C++ builds/tests were not run.
 
+## 2026-11-16 — Scene 패널 선택·동작 영역 재배치
+
+- **읽은 문서:** AGENTS·Document Map·Code Style·C++·Document Workflow·Pre-Build Formatting·Scene/Input/DebugUI Source·Validation 안내, 기존 UI 레이아웃·style·Scene 교체 경로.
+- **코드:** `DrawSceneWindow`를 현재 Scene/동일 폭 파일 작업 버튼 → 고정 라벨 열의 Category/Scene 두 dropdown → Restart 주 버튼 순서로 재배치. `DrawSceneBrowser`로 목록·선택·교체를 분리하고 Category 탐색 상태를 UI가 소유한다. 카테고리만 바꿀 때는 로드하지 않으며 Scene 선택 시 popup/table 종료 후 교체한다. 숨겨진 창은 즉시 반환하고 긴 상태 메시지는 줄바꿈한다.
+- **문서 동기화:** Scene/Input/DebugUI Source 갱신. 파일 형식·GPU ABI·Solver/재시작 의미 변경이 없어 Contracts/Flows 추가 수정은 불필요.
+- **검증:** 변경 C++ 범위에 clang-format → Region 후처리 적용, Region 및 diff 공백 검사 통과. MSVC Debug `cmake --build Build --config Debug --target MDSS -- /m /p:OutDir=C:\Users\yonai\Documents\MDSS_Engine\Build\UIReview\Debug\ /verbosity:minimal` 성공. 기존 실행 파일과 충돌하지 않게 별도 출력 경로를 사용했다. 실제 엔진 1280×720 화면에서 Scene 패널의 제목·동일 폭 파일 버튼·Category/Scene 라벨과 선택값·Restart 버튼이 잘리지 않고 정렬됨을 확인했다. 이어진 클릭 시 확인용 창이 도구에서 사라져 dropdown 선택/Scene 교체 조작은 미검증. 기존 getenv/미사용 변수/정수 변환 경고가 있으며 전체 테스트·성능/다른 화면 크기 검증은 하지 않았다. 원자료: `Build/Validation/20261116-scene-ui/build.log`, `runtime.log`, `runtime-error.log`.
+
+## 2026-11-16 — Scene 패널 정리 및 Restart 재생 복구
+- **읽은 문서:** Agent-Vault AGENTS·Document Map·Code Style·Document Workflow·Verification, C++ 규칙, Main Flow·Contact Flow·Scene/Input/DebugUI Source, Validation 안내. 현재 `RestartScene`/`FScene::RestoreInitialState`/frame animation 경로와 autoplay Scene asset을 대조했다.
+- **코드:** Scene 선택 목록을 Starter·Midterm·Showcase·Performance 카테고리별 dropdown으로 정리하고 현재 Scene 이름/Restart 버튼의 시각적 우선순위를 높였다. `Restart Scene`은 기존 camera 유지와 GPU simulation reset을 보존하면서 animation Scene을 재생 상태로 복귀시킨다. 이 경우 simulation pause를 해제하고 animation/simulation time scale을 1.0으로 초기화한다.
+- **문서:** Scene/Input/DebugUI Source에 패널 분류 및 restart/play 동작을 반영했다. GPU/직렬화 계약과 일반 frame step 순서는 바뀌지 않아 Contract·Flow 본문은 추가 변경하지 않았다.
+- **검증:** `python Tools/indent_regions.py --check Source/DebugUI/Editor/DebugUIEditor.cpp` 및 diff/제어 흐름 정적 검토. 빌드·테스트·실행 UI 확인은 하지 않았다.
+
 ## 2026-11-16 — Python 분석용 빌드 산출물 제외
 - **읽은 문서:** Agent-Vault AGENTS·Document Map·Python·Source Map·Validation & Tests·Document Workflow, Project Brief·Constraints, 기존 VS Code 설정.
 - **설정/코드:** 루트 `pyrightconfig.json`에서 생성물·외부 의존성·레거시 보조 스크립트가 포함된 `Build/**` 전체를 `exclude` 및 `ignore`한다. Problems에서 확인한 `Build/_deps/imgui-src`와 `Build/_deps/tinyobjloader-src`의 Python 2용 스크립트 진단도 이 경로에 포함된다. 이어 `Scripts/`의 `sys.path.insert`와 일치하도록 `Build/PerformanceLab/PythonPackages` 및 `Build/ResearchPython`을 `extraPaths`로 추가해 실행 의존성을 찾게 한다. 프로젝트 스크립트는 캡처 부재/None 검사, Matplotlib 저장 경로 타입과 플롯 데이터, SciPy 인덱스 반환, 결과 레코드 타입을 명시적으로 보강했다. showcase import 도구는 문서화된 `uv --with trimesh` 의존성을 import 단위로 표시했다. 프로젝트 `Scripts/`와 `Tools/`는 제외하지 않는다.
