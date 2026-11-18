@@ -3,6 +3,7 @@
 #include "Rendering/Surface/StateTexture/RenderStateSampling.glsl"
 #include "Rendering/Surface/Lighting/Effects/Mud.glsl"
 #include "Rendering/Surface/Lighting/Effects/Heat.glsl"
+#include "Rendering/Surface/Lighting/Effects/Ice.glsl"
 #include "Rendering/Surface/Lighting/Effects/WaterFilm.glsl"
 #include "Rendering/Surface/Lighting/Effects/AbsorbedWetness.glsl"
 #include "Rendering/Surface/Lighting/Effects/Lava.glsl"
@@ -218,8 +219,9 @@ TSurfaceLitResult EvaluateSurfaceMaterial()
                                   FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount),
                               0.0,
                               1.0);
-            Color.rgb = mix(Color.rgb, vec3(0.48, 0.77, 0.86), smoothstep(0.02, 0.5, Ice));
-            Roughness = mix(Roughness, 0.28, Ice);
+            TIceAppearance IceMaterial = EvaluateIceAppearance(Ice, WaterFilm, 0.5, 1.0);
+            Color.rgb = mix(Color.rgb, IceMaterial.Albedo, IceMaterial.Opacity);
+            Roughness = mix(Roughness, IceMaterial.Roughness, IceMaterial.Opacity);
         }
 
         // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.

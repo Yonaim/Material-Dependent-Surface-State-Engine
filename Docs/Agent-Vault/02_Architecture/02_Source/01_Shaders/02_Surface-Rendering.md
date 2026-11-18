@@ -26,9 +26,10 @@
 | [Lighting.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Lighting.glsl) | specular lobe·surface lighting helpers | material normal/roughness에 따른 공통 diffuse/specular 계산 |
 | [Effects/AbsorbedWetness.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Effects/AbsorbedWetness.glsl) | wetness stain coverage | wetness State를 흡수/얼룩 appearance로 변환 |
 | [Effects/Heat.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Effects/Heat.glsl) | heat tint/emission term | Heat channel의 표시 강도를 계산 |
+| [Effects/Ice.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Effects/Ice.glsl) | `TIceAppearance`, `EvaluateIceAppearance` | Ice saturation·WaterFilm·grain·시선각을 공통 표면/overlay의 색·roughness·opacity·서리로 변환; 광학 두께는 렌더링용 근사 |
 | [Effects/Lava.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Effects/Lava.glsl) | `LavaVisualAmount`, `LavaColor`, `LavaEmission` | Lava coverage를 색 ramp와 발광량으로 변환 |
 | [Effects/Mud.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Effects/Mud.glsl) | mud material blend | Mud coverage에 따라 base material을 demo mud appearance로 혼합 |
-| [Effects/WaterFilm.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Effects/WaterFilm.glsl) | `VisibleWaterCoverage` | 연속 WaterFilm State를 물방울 형태의 화면 coverage로 변환 |
+| [Effects/WaterFilm.glsl](../../../../../Shaders/Rendering/Surface/Lighting/Effects/WaterFilm.glsl) | `VisibleWaterCoverage`, `WaterFilmBlend`, `WaterFilmPerceptualRoughness` | 연속 State의 선택적 물방울 표시와 표면/overlay 공통 젖음·얇은 막 roughness 계산 |
 
 ## Scene helper shaders
 

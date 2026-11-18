@@ -267,3 +267,12 @@
 - **서식:** Shader 전체의 중첩 Region 들여쓰기와 종료 마커를 검사·수정하고, 작업 성격이 달라지는 곳에 빈 줄과 목적 주석을 배치했다.
 - **문서:** Code Reading Guide 및 Source별 탐색 경로를 실제 함수명에 맞춰 수정했다. Project Brief와 Architecture 정본에 작업 차수/버전 명칭을 추가하지 않았다.
 - **검사:** ZIP 경로 보존, Region 짝과 중첩 깊이·들여쓰기, 괄호, GLSL 전처리 조건, 문서 링크를 정적 점검했다. 외부 의존성과 완전한 빌드 파일이 없어 컴파일·shader SPIR-V·실행 동등성 검사는 수행하지 못했다.
+
+## 2026-11-18 — Ice·WaterFilm 렌더 외관 개선
+
+- **읽은 문서:** AGENTS·Document Map, Code Style·GLSL·Source Comments·Markdown·Pre-Build Formatting, Rendering Flow·Surface/Overlay Shader Source·Geometry/Reaction 계약과 현재 소스.
+- **코드:** 공통 `Ice.glsl`에서 saturation을 표시용 광학 두께로 근사해 얇은 가장자리의 투과, 두꺼운 부분의 서리, WaterFilm에 따른 roughness·서리 감소를 계산한다. 표면/overlay가 같은 Ice 외관을 사용한다. 수막 착색·불투명도를 낮추고 coverage별 roughness를 적용하며, 직접광 GGX의 Fresnel 중복 적용을 제거하고 LDR 하이라이트를 완만하게 제한해 alpha에 반영한다. 젖은 overlay Mud의 darkening과 퇴화한 미분 footprint의 normal fallback을 추가했다.
+- **범위:** 변경은 렌더링 GLSL 5개 파일이며 C++·GPU binding/layout·시뮬레이션·Reaction·State/Geometry 저장량·에셋·합성 우선순위는 변경하지 않았다. 광학 두께는 물리적 검증값이나 Solver 두께의 재정의가 아니다.
+- **문서 동기화:** Rendering Flow·Surface Rendering Shader Source·Overlay Shading 갱신. Geometry·Reaction·GPU 계약은 입력/실행 의미가 같아 추가 정의 변경 불필요.
+- **정적 검증:** 수정 5개와 include closure 17개 파일의 괄호·전처리 조건·include 경로 및 layout 선언 확인. 갱신 문서 3개의 상대 링크 38개와 CRLF 대응 diff check 통과. 기존 주변 서식을 유지하고 신규 Ice helper의 Region 들여쓰기를 정리했다.
+- **미실행:** 이전 사용자 요청에 따라 로컬 빌드·앱·GPU 실행 중지를 유지했다. Shader compile/SPIR-V 검증, 실제 이미지 비교 및 성능 측정은 아직 수행하지 않았으며 실행 범위를 확인 중이다. 시각적 개선 효과와 최종 밝기·투명도는 런타임 확인이 필요하다.

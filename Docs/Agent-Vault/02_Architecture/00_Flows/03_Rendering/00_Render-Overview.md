@@ -31,6 +31,10 @@ State-driven geometry는 지원되는 모든 적층 State의 Capacity 제한 기
 
 데모 adapter는 Registry에서 `heat`, `mud`, `waterfilm`, `lava`, `ice` channel을 조회한다. Heat는 base albedo를 붉은색으로 보간한다. Mud·WaterFilm·Lava는 공통 윗면에서 합성하며 물이 Mud 위에 있으면 shader가 한 RGBA 결과로 결합한다. Mud 절차적 범프, WaterFilm opacity, color ramp와 smoothing은 렌더링 전용이다. 원본 Normal Map을 Overlay에 중복 적용하지 않는다.
 
+Ice의 표면·overlay 외관은 `EvaluateIceAppearance`를 공유한다. Saturation을 표시용 광학 두께로 근사해 얇은 가장자리의 투과와 두꺼운 부분의 서리를 구분하고, WaterFilm이 있으면 서리·미세 범프와 roughness를 줄인다. 이 값은 실제 광학 두께나 Solver Geometry를 새로 정의하지 않는다.
+
+WaterFilm은 바탕이 비치는 약한 착색과 시선각별 반사를 사용한다. GGX 직접광에 Fresnel을 중복 적용하지 않고 LDR 하이라이트 피크를 완만하게 제한한다. 공통 overlay의 Mud도 물막 coverage에 따라 어두워지며, 합성 우선순위와 State sampling/coverage 준비 경로는 유지한다.
+
 State Heatmap은 `State / Capacity`를 표시하며 100% 초과를 구분한다. 렌더링의 `[0,1]` 제한은 저장량이나 전달용 Saturation에 적용하지 않는다. 실제 State·Capacity·world area·적층량은 Texel Inspector에서 확인한다. [[02_Architecture/01_Contracts/01_State-and-Profile|State 계약]]
 
 범용 State ID→외관 규칙, 물리적 다중 layer와 환경 조명은 현재 구현되지 않았다. 따라서 데모 효과를 모든 Profile에 적용되는 일반적인 물성 모델로 해석하지 않는다.

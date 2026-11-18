@@ -27,11 +27,22 @@ float VisibleWaterCoverage(float Coverage, vec2 UV)
     return Coverage * Drop;
 }
 
+float WaterFilmBlend(float Coverage)
+{
+    return smoothstep(0.02, 0.60, clamp(Coverage, 0.0, 1.0));
+}
+
+float WaterFilmPerceptualRoughness(float Coverage, float FilmRoughness)
+{
+    // Weak films retain a broad highlight rather than a sharp plastic-looking rim.
+    return clamp(FilmRoughness + 0.10 * (1.0 - WaterFilmBlend(Coverage)), 0.045, 1.0);
+}
+
 void ApplyWaterFilm(float Coverage, inout vec3 Albedo, inout float Roughness, float FilmRoughness)
 {
-    float Blend = smoothstep(0.02, 0.85, clamp(Coverage, 0.0, 1.0));
+    float Blend = WaterFilmBlend(Coverage);
     Albedo *= mix(1.0, 1.0 - Material.WaterAppearance.z, Blend);
-    Roughness = mix(Roughness, FilmRoughness, Blend);
+    Roughness = mix(Roughness, WaterFilmPerceptualRoughness(Coverage, FilmRoughness), Blend);
 }
 
 // #endregion

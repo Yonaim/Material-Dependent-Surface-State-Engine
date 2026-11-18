@@ -11,7 +11,7 @@
 | 파일 | 주요 코드 | 역할 |
 |---|---|---|
 | [OverlaySurface.glsl](../../../../../../Shaders/Rendering/Overlay/Shading/OverlaySurface.glsl) | `SamplePixelOverlayNormal`, `SampleSeamPartnerStates`, `HasVisibleOverlayState`, fragment `main` | computed vertices·render state를 샘플해 seam-aware overlay material과 fragment output 구성 |
-| [OverlayAppearance.glsl](../../../../../../Shaders/Rendering/Overlay/Shading/OverlayAppearance.glsl) | `MudValueNoise`, `ApplyMudMicroBump`, `ShadeWaterFilmLayer` | 물·진흙 demo appearance의 작은 패턴·normal bump 계산 |
+| [OverlayAppearance.glsl](../../../../../../Shaders/Rendering/Overlay/Shading/OverlayAppearance.glsl) | `MudValueNoise`, `ApplyMudMicroBump`, `ShadeWaterFilmLayer` | 물·진흙의 패턴·normal bump와 약하게 착색된 수막 반사/투명도; 퇴화한 미분 footprint는 기하 normal을 유지 |
 | [OverlayCombined.frag](../../../../../../Shaders/Rendering/Overlay/Shading/OverlayCombined.frag) | combined material entry | 여러 enabled overlay State를 한 fragment path에서 shading |
 | [OverlayMud.frag](../../../../../../Shaders/Rendering/Overlay/Shading/OverlayMud.frag) | mud entry/variant | Mud overlay shading entry; 공통 구현을 `OverlaySurface.glsl`에서 사용 |
 | [OverlayLava.frag](../../../../../../Shaders/Rendering/Overlay/Shading/OverlayLava.frag) | lava entry/variant | Lava overlay shading entry; 공통 구현을 `OverlaySurface.glsl`에서 사용 |
@@ -24,4 +24,6 @@
 
 ## Combined fragment 실행 단계
 
-`OverlaySurface.glsl`의 main은 재질 variant와 초기 coverage discard를 선택한다. Combined는 `ShadeCombinedOverlay`에서 State sampling → Ice coverage/초기 discard → seam normal/State 조정 → 최종 discard/진단 → layer composition을 조율한다. 세부 계산은 `SampleCombinedOverlayStates`, `ResolveCombinedOverlayNormal`, `CompositeOverlayLayers`에 둔다. 기존 Mud → Ice → Water → Lava 합성 우선순위·alpha·discard 조건은 유지한다.
+`OverlaySurface.glsl`의 main은 재질 variant와 초기 coverage discard를 선택한다. Combined는 `ShadeCombinedOverlay`에서 State sampling → Ice coverage/초기 discard → seam normal/State 조정 → 최종 discard/진단 → layer composition을 조율한다. 세부 계산은 `SampleCombinedOverlayStates`, `ResolveCombinedOverlayNormal`, `CompositeOverlayLayers`에 둔다. Mud → Ice → Water → Lava 합성 우선순위와 초기 discard 조건은 유지한다.
+
+Ice는 [공통 Ice 외관](../../../../../../Shaders/Rendering/Surface/Lighting/Effects/Ice.glsl)의 opacity·roughness·서리를 사용한다. 물막이 있으면 Mud를 어둡게 하고 Ice의 서리와 미세 범프를 줄인다. 수막 직접광 GGX에는 이미 Fresnel이 포함되므로 환경 반사에만 별도로 Fresnel을 적용하며, LDR 하이라이트를 완만하게 제한해 source-over alpha에 반영한다. 이러한 appearance 계산은 Solver State·Reaction·형상이나 물질의 층 순서를 갱신하지 않는다.

@@ -51,7 +51,11 @@
         float Det = dot(dPdx, R1);
         vec3 Gradient = sign(Det) * (dFdx(Height) * R1 + dFdy(Height) * R2);
 
-        return normalize(abs(Det) * N - (0.025 * Amount) * Gradient);
+        vec3 BumpedNormal = abs(Det) * N - (0.025 * Amount) * Gradient;
+        float LengthSquared = dot(BumpedNormal, BumpedNormal);
+
+        // A degenerate screen-space footprint must retain the geometric normal.
+        return LengthSquared > 1e-20 ? BumpedNormal * inversesqrt(LengthSquared) : N;
     }
 
     // #endregion
@@ -65,18 +69,9 @@
         // 화면의 바탕색은 이미 그려져 있다. 정면에서는 대부분 비치고,
         // 비스듬히 볼수록 물 표면의 반사가 커지도록 source-over 색과 alpha를 만든다.
         float Amount = clamp(Coverage, 0.0, 1.0);
-        float NoV = max(dot(N, V), 0.0);
+        float NoV = clamp(dot(N, V), 0.0, 1.0);
         float Fresnel = 0.02 + 0.98 * pow(1.0 - NoV, 5.0);
-
-        // The presentation toggle strengthens only the optical layer. Coverage and
-        // accumulation geometry still come from the same simulated WaterFilm state.
-        float Absorption = Material.ExtraDemoBindings.y != 0u ? 0.30 + 0.55 * Amount : 0.04 + 0.24 * Amount;
-        float OpticalAlpha = Fresnel + (1.0 - Fresnel) * Absorption;
-
-        // A thin film appears early, then gains opacity across most of the range.
-        float CoverageFade = smoothstep(0.02, 0.85, Amount);
-        float Alpha =
-            clamp(Material.DemoEffectOptions.z * Material.WaterAppearance.y * CoverageFade * OpticalAlpha, 0.0, 0.98);
+        float Roughness = WaterFilmPerceptualRoughness(Amount, Material.DemoEffectOptions.w);
 
         vec3 L = normalize(vec3(0.35, 0.55, 1.0));
         vec3 Sum = V + L;
@@ -85,11 +80,25 @@
                                                max(dot(N, L), 0.0),
                                                max(dot(N, H), 0.0),
                                                max(dot(V, H), 0.0),
-                                               Material.DemoEffectOptions.w,
+                                               Roughness,
                                                0.02);
-        vec3 Reflection = EvaluateWaterFilmEnvironment(reflect(-V, N), Material.DemoEffectOptions.w) + vec3(Highlight);
-        vec3 Tint = MapEffectColor(2u, Amount);
-        vec3 Color = (Fresnel * Reflection + (1.0 - Fresnel) * Absorption * Tint) / max(OpticalAlpha, 1e-5);
+
+        // The GGX lobe already contains Fresnel. Compress its LDR peak and include
+        // it in the alpha budget instead of multiplying Fresnel a second time.
+        Highlight = 0.30 * Highlight / max(0.30 + Highlight, 1e-6);
+        vec3 Reflection = Fresnel * EvaluateWaterFilmEnvironment(reflect(-V, N), Roughness) + vec3(Highlight);
+        float ReflectionCoverage = clamp(Fresnel + Highlight, 0.0, 1.0);
+
+        // A film mostly reveals the substrate. The presentation toggle increases
+        // its optical density, without turning the color ramp into an opaque coat.
+        float Absorption = Material.ExtraDemoBindings.y != 0u ? 0.06 + 0.20 * Amount : 0.025 + 0.095 * Amount;
+        float OpticalAlpha = ReflectionCoverage + (1.0 - ReflectionCoverage) * Absorption;
+        float Alpha =
+            clamp(Material.DemoEffectOptions.z * Material.WaterAppearance.y * WaterFilmBlend(Amount) * OpticalAlpha,
+                  0.0,
+                  0.98);
+        vec3 Tint = mix(vec3(1.0), clamp(MapEffectColor(2u, Amount), vec3(0.0), vec3(1.0)), 0.18);
+        vec3 Color = (Reflection + (1.0 - ReflectionCoverage) * Absorption * Tint) / max(OpticalAlpha, 1e-5);
 
         return vec4(min(Color, vec3(1.0)), Alpha);
     }

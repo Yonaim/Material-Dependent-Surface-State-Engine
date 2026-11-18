@@ -6,6 +6,7 @@
 #include "Rendering/Surface/Lighting/Lighting.glsl"
 #include "Rendering/Surface/Lighting/Effects/Lava.glsl"
 #include "Rendering/Surface/Lighting/Effects/WaterFilm.glsl"
+#include "Rendering/Surface/Lighting/Effects/Ice.glsl"
 
 #ifdef OVERLAY_COMBINED
 #define SURFACE_DEBUG_SET 1
@@ -342,6 +343,7 @@ void main()
         // The base surface has already been drawn. Emit one straight-alpha color
         // for this shared accumulation surface; water is composited over mud here.
         float MudCoverage = (EnabledEffects & 2u) != 0u ? clamp(States.y, 0.0, 1.0) : 0.0;
+        float WaterCoverage = (EnabledEffects & 4u) != 0u ? VisibleWaterCoverage(clamp(States.z, 0.0, 1.0), FragUV) : 0.0;
 
         if (ShadingDiagnostic == 7u)
         {
@@ -366,8 +368,10 @@ void main()
         // GGX peak while preserving weak reflections on the interior.
         float NormalFootprintFade = FragIsSide == 0u ? smoothstep(0.75, 1.0, NormalSampleWeight) : 1.0;
         float MudSpecularLimit = 0.015 * NormalFootprintFade * smoothstep(Cutoff, 0.50, MudCoverage);
+        vec3 MudAlbedo = MapEffectColor(1u, MudCoverage);
+        MudAlbedo *= mix(1.0, 1.0 - Material.WaterAppearance.z, WaterFilmBlend(WaterCoverage));
         vec3 MudColor = ShadeSurface(
-            MapEffectColor(1u, MudCoverage), MudNormal, V, MudRoughness, Material.AmbientLight, 0.0, MudSpecularLimit);
+            MudAlbedo, MudNormal, V, MudRoughness, Material.AmbientLight, 0.0, MudSpecularLimit);
         if (ShadingDiagnostic == 8u || ShadingDiagnostic == 9u)
         {
             vec3 Specular = ShadeSurface(vec3(0.0), MudNormal, V, MudRoughness, 0.0, 0.0, MudSpecularLimit) *
@@ -382,18 +386,15 @@ void main()
 
         if (IceCoverage > Cutoff)
         {
-            float IceAlpha = smoothstep(Cutoff, 0.20, IceCoverage);
-
-            // Blue scattering tint, frosted grain and broad dielectric highlights.
             float Grain = 0.7 * MudValueNoise(FragWorldPosition * 4.0) + 0.3 * MudValueNoise(FragWorldPosition * 15.0);
-            vec3 IceAlbedo = mix(vec3(0.18, 0.48, 0.66), vec3(0.70, 0.89, 0.94), 0.45 + 0.35 * Grain);
-            vec3 IceNormal = ApplyMudMicroBump(N, FragWorldPosition, 0.035);
-            vec3 IceColor = ShadeSurface(IceAlbedo, IceNormal, V, 0.24 + 0.12 * Grain, Material.AmbientLight, 0.35, 0.25);
+            TIceAppearance IceMaterial = EvaluateIceAppearance(IceCoverage, WaterCoverage, Grain, max(dot(N, V), 0.0));
+            float IceAlpha = IceMaterial.Opacity;
+            vec3 IceNormal = normalize(mix(N, ApplyMudMicroBump(N, FragWorldPosition, 0.015), IceMaterial.Frost));
+            vec3 IceColor = ShadeSurface(
+                IceMaterial.Albedo, IceNormal, V, IceMaterial.Roughness, Material.AmbientLight, 0.0, 0.12);
             PremultipliedColor = IceColor * IceAlpha + PremultipliedColor * (1.0 - IceAlpha);
             SurfaceAlpha = IceAlpha + SurfaceAlpha * (1.0 - IceAlpha);
         }
-
-        float WaterCoverage = (EnabledEffects & 4u) != 0u ? VisibleWaterCoverage(clamp(States.z, 0.0, 1.0), FragUV) : 0.0;
 
         if (WaterCoverage > 0.0)
         {
