@@ -18,6 +18,10 @@
 | 주요 빌드 진입점 | `Scripts/build.ps1`, `Scripts/build.sh`; CMake configure/build preset은 `CMakePresets.json` 참조 |
 | 현재 검증 기준 | 최근 소스 변경의 실행 검증은 Work Log와 Validation 기록을 확인한다. 이번 대조에서 빌드·테스트는 실행하지 않음 |
 
+## 연구 참고
+
+- [[01_Related-Work|Related Work / 선행 연구]] — 문헌 검토와 열람 수준을 기록한 참고 문서. 현재 구현이나 신규성 주장을 대신하지 않는다.
+
 ## 시작 순서
 
 1. [[AGENTS|Agent Entry]] → [[01_Document-Map|Document Routing Map]]; **전체 볼트를 한꺼번에 읽지 않는다.**

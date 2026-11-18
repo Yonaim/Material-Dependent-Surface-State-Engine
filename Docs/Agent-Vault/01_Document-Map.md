@@ -43,6 +43,7 @@
 | `Geometry`, `UV Seam`, `Meso`, `Dirty`, `Overlay` | geometry/overlay C++ 및 GLSL | [[02_Architecture/01_Contracts/03_Geometry|Geometry]], [[02_Architecture/00_Flows/03_Rendering/00_Render-Overview|Rendering]] | Geometry / Source / Perf |
 | `Vulkan`, `Descriptor`, `Shader ABI` | GPU Resource / Pipeline / GLSL | [[02_Architecture/01_Contracts/05_GPU-Layout|GPU Layout]], [[02_Architecture/02_Source/01_Shaders/00_Index|Shader Map]] | Layout / Source / GPU Regression |
 | 빌드, CMake, preset, shader manifest | `CMakeLists.txt`, `CMake/*`, `CMakePresets.json`, `Scripts/build.*` | [[01_Project-Context/03_Constraints|Constraints]], [[00_Engineering-Standards/03_Workflow/03_Pre-Build-Formatting|Pre-Build Formatting]], [[00_Engineering-Standards/03_Workflow/05_Build-System-Selection|Build-System Selection]] | Current Work의 포맷 훅 상태 / Validation |
+| 선행 연구, Related Work, 신규성 근거 | [`Related Work`](01_Related-Work.md) | 연구 문헌의 확인 수준과 과거 판단을 참조할 때 사용 | 인용 전 원문 확인 범위와 문서의 열람 수준을 함께 확인 |
 | Python 성능·연구 분석, PowerShell/Bash 실행 | `Scripts/**/*.py`, `Scripts/**/*.ps1`, `Scripts/**/*.sh`, `Tools/*.py` | 해당 언어 규칙, [[02_Architecture/02_Source/00_Source-Map|Source Map]], [[05_Experiments/01_Validation-and-Tests|Validation]] | 관련 실험 기록 / Work Log |
 
 > 소스 경로 패턴은 탐색 힌트이며 실제 저장소의 파일 존재를 확인한 뒤 따른다.

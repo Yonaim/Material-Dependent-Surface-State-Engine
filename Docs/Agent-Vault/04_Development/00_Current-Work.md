@@ -20,6 +20,7 @@ Debug/Release 각각 대상 43개 SPIR-V, Debug 전체 MDSS 빌드, BrickCube.Sc
 
 ## 연구·아이디어와 실제 구현 지시의 구분
 
+- 2026-11-18 대화의 최신 연구 판정과 미실행 검증 순서는 개인 볼트의 [Reaction·Geometry 기여 검토](../../../../MDSSP-Personal-Vault/07_Learning-Notes/0002_Reaction-Geometry-Contribution-Review.md)에 정리했다. 문헌·현재 계약 대조가 우선이며 새 Solver·Modifier 구현 지시가 아니다. 로컬 앱·GPU·빌드·벤치마크·학습은 명시적 재개 요청 전 중지한다.
 - `Surface Water Wetting`, `Angle-Sampled Gravity Cache`는 이 자료의 수집 시점에 **검토안/미채택**이었다. 이번 Agent Vault의 현재 구현 작업에는 포함하지 않았다.
 - 해당 아이디어의 검토 맥락은 개인 `MDSS Engine` 볼트의 `05_Design/Ideas/`에서 관리한다. 실행을 위한 명시적 승인 전에는 새로운 기능 요구사항으로 취급하지 않는다.
 - 코드 상태 및 최근 Work Log는 저장소와 대조하여 갱신한다. 이 볼트의 스냅샷을 현재 소스 검증 결과라고 주장하지 않는다.
