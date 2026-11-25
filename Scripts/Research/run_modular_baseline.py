@@ -123,8 +123,8 @@ def archive():
     ]:
         files.extend((ROOT / rel).rglob(pattern))
     for rel in [
-        "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
-        "Assets/SurfaceProfiles/DemoMud.SRProfile",
+        "Scripts/Research/Fixtures/IceReactionLab.SRProfile",
+        "Scripts/Research/Fixtures/DemoMud.SRProfile",
         "Assets/Meshes/MarbleCube/MarbleCube.obj",
         "Assets/Meshes/MarbleCube/MarbleCube.mtl",
     ]:

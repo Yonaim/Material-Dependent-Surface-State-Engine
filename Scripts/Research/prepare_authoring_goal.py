@@ -17,10 +17,10 @@ import subprocess
 from authoring_study import ROOT, STUDY, digest, read, stamp, write
 
 OUT = STUDY / 'goal-v1'
-SOURCE_SCENE = ROOT / 'Assets/Scenes/IceReactionLab.Scene'
-SOURCE_ANIMATION = ROOT / 'Assets/Animations/IceReactionLab.DemoAnim'
-SOURCE_PROFILE = ROOT / 'Assets/SurfaceProfiles/IceReactionLab.SRProfile'
-SOURCE_MAP = ROOT / 'Assets/SurfaceProfileMaps/IceReactionLab.SurfaceProfileMap'
+SOURCE_SCENE = ROOT / 'Scripts/Research/Fixtures/AuthoringScene.json'
+SOURCE_ANIMATION = ROOT / 'Scripts/Research/Fixtures/IceReactionLab.DemoAnim'
+SOURCE_PROFILE = ROOT / 'Scripts/Research/Fixtures/IceReactionLab.SRProfile'
+SOURCE_MAP = ROOT / 'Scripts/Research/Fixtures/IceReactionLab.SurfaceProfileMap'
 
 
 # endregion
@@ -40,6 +40,7 @@ def prepare():
     if OUT.exists():
         raise RuntimeError('Refusing to overwrite an existing task specification or submission')
     scene = read(SOURCE_SCENE)
+    scene['version'] = 1
     animation = read(SOURCE_ANIMATION)
     # This is a new, disclosed task input, not a re-analysis of the six old renders.
     animation['durationSeconds'] = 16

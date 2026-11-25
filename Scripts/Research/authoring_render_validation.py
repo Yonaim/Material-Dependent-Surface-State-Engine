@@ -125,7 +125,7 @@ def run():
     ]:
         files.update(p for p in (ROOT / directory).rglob('*') if p.is_file())
     files.update(p for p in (ROOT / 'Config').glob('*') if p.is_file())
-    files.add(ROOT / 'Assets/Animations/IceReactionLab.DemoAnim')
+    files.add(ROOT / 'Scripts/Research/Fixtures/IceReactionLab.DemoAnim')
     files.update(p for p in (OUT / 'raw').rglob('*') if p.is_file())
     hashes = {str(p.relative_to(ROOT)): digest(p) for p in sorted(files)}
     archive = OUT / 'raw/inputs'

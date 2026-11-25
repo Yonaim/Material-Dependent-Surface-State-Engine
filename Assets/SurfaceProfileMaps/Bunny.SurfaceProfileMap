@@ -1,6 +1,0 @@
-{
-  "type": "SurfaceProfileMap",
-  "version": 1,
-  "profiles": ["../SurfaceProfiles/Bunny.SRProfile"],
-  "surfaces": [{ "surfaceId": 0, "profileIndex": 0 }]
-}

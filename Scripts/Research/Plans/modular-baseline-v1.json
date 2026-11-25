@@ -17,8 +17,8 @@
     "Source/SurfaceState/Types/SurfaceStateRegistry.cpp": "1ce804d2118a4fea2a712fd3265046d00b5c676791031e4f65f9fd12bb762795",
     "Source/AssetManager/Loaders/SRProfileLoader.cpp": "5a82aed783b443ae9334b0f18463c2f43edbb2df1c236f973c7a05b6a129ff3a",
     "Scripts/Research/CouplingStudy.cpp": "c7b737bf52110086652b4a18f613b46b39cafb0221cdc57ce2996f9c0f9d8cf4",
-    "Assets/SurfaceProfiles/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
-    "Assets/SurfaceProfiles/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6",
+    "Scripts/Research/Fixtures/IceReactionLab.SRProfile": "03e15cf7480ee3d27bccfcc9419dd8acf898513c6ba948a7a8ea41fc7faf45a1",
+    "Scripts/Research/Fixtures/DemoMud.SRProfile": "6055b6f6ed78727a9d0b7df75bf5d650c1309e152018cae30726973e3e3eade6",
     "Assets/Meshes/MarbleCube/MarbleCube.obj": "3c6f4eda9d30b9d35d3be67a4582c5488c6a9f77036f63930c0b3ae852fa3492",
     "Docs/MDSSP-Agent-Vault/03_Development/04_Modular-Baseline-Spec.md": "d242698136aac81243f023d29b3b0aaceb86bd8f0e8db7cd8806279df5ffc391",
     "Performance-Data/20261026-coupling-study/PERF-041-coupling/plan.json": "59a8e10bbe2c5e3775a53576a84a4aac9dfc9fa5162b0a244851927736f7b2cb"
@@ -46,7 +46,7 @@
     "resolution": 128,
     "hz": 60,
     "seconds": 14,
-    "profile": "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+    "profile": "Scripts/Research/Fixtures/IceReactionLab.SRProfile",
     "mesh": "Assets/Meshes/MarbleCube/MarbleCube.obj",
     "scale": [
       1.65,
@@ -102,7 +102,7 @@
         "D"
       ],
       "profile_changes": {
-        "add_mud_from": "Assets/SurfaceProfiles/DemoMud.SRProfile",
+        "add_mud_from": "Scripts/Research/Fixtures/DemoMud.SRProfile",
         "mud_overrides": {
           "cavityFillFactor": 0,
           "cavityDecayProtectionFactor": 0,
