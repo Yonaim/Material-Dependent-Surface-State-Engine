@@ -8,6 +8,7 @@
 | [[02_Architecture/02_Source/01_Shaders/02_Surface-Rendering|Surface Rendering]] | state texture, material lighting, scene mesh rendering | `Shaders/Rendering/Surface/`, `Rendering/Scene/` |
 | [[02_Architecture/02_Source/01_Shaders/01_Overlay/00_Index|Overlay]] | texel geometry·coverage·top/side mesh·overlay shading | `Shaders/Rendering/Overlay/` |
 | [[02_Architecture/02_Source/01_Shaders/04_Debug-and-Shared|Debug and Shared Data]] | debug visualization, shared CPU/GPU structures, shader-only data helpers | `Shaders/Debug/`, `Shaders/Shared/` |
+| [Surface Simulation](../03_Surface-Simulation.md) | 박막 수송과 반응, 표시 수면, 진단 뷰와 체적 효과 | `Shaders/Simulation/Surface/`, `Shaders/Rendering/Surface/Simulation/` |
 
 ## CPU 연결점
 
@@ -33,4 +34,6 @@
 
 ## 소스 탐색과 Region folding
 
-GLSL의 번호가 있는 기존 섹션에는 `// #region 00_Resource_Interface` / `// #endregion` 형식의 주석 마커를 사용한다. 형식의 정본은 [Local Numbering](../../../00_Engineering-Standards/00_Core/01_Local-Numbering-and-Navigation.md)과 [GLSL 규칙](../../../00_Engineering-Standards/01_Languages/02_GLSL.md)이다. 저장소 루트 또는 볼트의 VS Code 설정에서 glsl 언어 모드와 Custom Folding 공급자를 사용한다. 사용자 지정 MDSS 정책에 따라 작은 include wrapper/helper/placeholder에도 마커를 적용한다. 현재 69개 파일·248개 영역(하위 126개, 최대 깊이 2)이며, GLSL 언어 프로필의 일반적인 작은 파일 예외보다 Project Brief의 설정을 우선한다. CRLF 대응 정규식과 기본 접기 지정은 볼트 README를 따른다. 접기 마커 변경만으로 계산·바인딩·pass/barrier 순서가 바뀌지 않는다.
+GLSL 섹션은 `// #region 00_Resource_Interface`와 `// #endregion` 주석으로 접을 수 있다. Surface Simulation의 짧은 진입 파일도 같은 마커를 사용한다. 형식은 [Local Numbering](../../../00_Engineering-Standards/00_Core/01_Local-Numbering-and-Navigation.md)과 [GLSL 규칙](../../../00_Engineering-Standards/01_Languages/02_GLSL.md)을 따른다.
+
+VS Code는 Shader languages support 확장의 `glsl` 언어 모드와 Maptz Region Folding 공급자를 사용한다. 저장소 루트에서 작업할 때는 [볼트 설정](../../../.vscode/settings.json)의 `maptz.regionfolder`를 루트 `.vscode/settings.json`에 병합한다. 같은 설정이 LF와 CRLF 개행을 모두 처리한다.
