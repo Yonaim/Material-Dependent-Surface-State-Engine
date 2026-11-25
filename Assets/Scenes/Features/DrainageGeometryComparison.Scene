@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Drainage Geometry Comparison",
+  "koreanTitle": "배수 형상 비교",
+  "description": "같은 테라코타·급수·기울기·열린 출구에서 계단형 수로와 표면을 곡선으로 연결한 수로를 비교한다.",
+  "cases": [
+    {
+      "scene": "../BrickRunoff.Scene",
+      "label": "Stepped Channel"
+    },
+    {
+      "scene": "../BrickRunoff_Smooth.Scene",
+      "label": "Smooth Channel"
+    }
+  ]
+}

@@ -62,6 +62,7 @@ namespace MDSS
                 "Tilt-Driven Drainage",
                 "Animated Tilt",
                 u8"기울기가 바뀌면 물이 홈을 따라 이동한다."},
+            {TransportBoundaries, "Features/DrainageGeometryComparison.Scene"},
             {TransportBoundaries, "Features/SillOverflow.Scene"},
             {TransportBoundaries, "Features/BasinSplitting.Scene"},
             {TransportBoundaries, "Features/OutletDrainage.Scene"},
