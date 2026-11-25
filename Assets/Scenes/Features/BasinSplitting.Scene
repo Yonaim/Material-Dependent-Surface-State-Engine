@@ -1,0 +1,25 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Automatic Basin Splitting",
+  "koreanTitle": "홈 자동 분할",
+  "description": "같은 급수에서 각진 바닥과 매끄러운 바닥을 비교한다. 각 형상의 앞면 눈금은 1 mm 간격이다. 분할 ON에서는 왼쪽 물이 3 mm 턱에 도달한 뒤 오른쪽으로 넘어간다.",
+  "cases": [
+    {
+      "scene": "../FeatureCases/BasinSplittingOn.Scene",
+      "label": "Stepped · Split ON"
+    },
+    {
+      "scene": "../FeatureCases/BasinSplittingOff.Scene",
+      "label": "Stepped · Split OFF"
+    },
+    {
+      "scene": "../FeatureCases/BasinSplittingSmoothOn.Scene",
+      "label": "Smooth · Split ON"
+    },
+    {
+      "scene": "../FeatureCases/BasinSplittingSmoothOff.Scene",
+      "label": "Smooth · Split OFF"
+    }
+  ]
+}

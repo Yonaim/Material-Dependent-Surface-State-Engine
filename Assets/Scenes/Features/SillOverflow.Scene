@@ -1,0 +1,21 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Sill Overflow",
+  "koreanTitle": "턱 넘침",
+  "description": "홈이 차고 수면이 턱을 넘으면 물이 다음 구역으로 이동한다.",
+  "cases": [
+    {
+      "scene": "../CavityFillAndSpill.Scene",
+      "label": "Single Pocket"
+    },
+    {
+      "scene": "../CavityFillAndSpill_TwinPockets.Scene",
+      "label": "Twin Pockets"
+    },
+    {
+      "scene": "../CavityFillAndSpill_TerracedChannel.Scene",
+      "label": "Terraced Channel"
+    }
+  ]
+}

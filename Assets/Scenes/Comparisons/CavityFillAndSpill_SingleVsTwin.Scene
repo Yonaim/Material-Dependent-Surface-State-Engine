@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Cavity Fill & Spill · Single vs Twin Pockets",
+  "koreanTitle": "홈 채움과 넘침 · 홈 하나와 두 개",
+  "description": "같은 급수에서 첫 홈을 넘은 물이 두 번째 홈에 얼마나 남는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../CavityFillAndSpill.Scene",
+      "label": "Single pocket"
+    },
+    {
+      "scene": "../CavityFillAndSpill_TwinPockets.Scene",
+      "label": "Twin pockets"
+    }
+  ]
+}

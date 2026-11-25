@@ -1,0 +1,32 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "BasinSplittingOff",
+  "geometry": "CavityChart",
+  "geometrySamples": [14, 10],
+  "simulationCells": [1, 1],
+  "sizeM": [0.035, 0.025],
+  "splitSubgridBasins": false,
+  "smoothDisplay": false,
+  "openOutlet": false,
+  "pourKg": 0.0008,
+  "pourSeconds": 4,
+  "maxTiltRadians": 0,
+  "initialPlaybackRate": 0.5,
+  "bodyThicknessM": 0.003,
+  "sectionWindow": {
+    "frontV": 0.25,
+    "heightM": 0.006,
+    "graduationM": 0.001,
+    "solidBedRangeU": [0.35714285714285715, 0.6428571428571429]
+  },
+  "heightMap": {
+    "texture": "../../Geometry/basin-splitting.height.png",
+    "heightRangeM": 0.005
+  },
+  "surfaceProfile": "WaterRunoff",
+  "scheduledInlet": {
+    "centerM": [-0.01, 0],
+    "sizeM": [0.01, 0.02]
+  }
+}
