@@ -64,28 +64,6 @@ namespace MDSS
 #pragma endregion
 
 // ============================================================
-// 01. Simulation Recording
-// ============================================================
-#pragma region 01_Simulation_Recording
-// 정해진 step 수와 시간 간격으로 Surface Solver 명령을 기록한다.
-
-    void FFrameCoordinator::RecordSimulation(VkCommandBuffer CommandBuffer,
-                                             VkQueryPool     QueryPool,
-                                             std::uint32_t   FirstStepQuery,
-                                             std::uint32_t   QueriesPerStep)
-    {
-        for (std::size_t Step = 0; Step < Steps.size(); ++Step)
-            SurfaceStateSystem.RecordStep(CommandBuffer,
-                                          Steps[Step],
-                                          QueryPool,
-                                          FirstStepQuery + static_cast<std::uint32_t>(Step) * QueriesPerStep,
-                                          Step + 1U == Steps.size());
-        StepSerial += Steps.size();
-    }
-
-#pragma endregion
-
-// ============================================================
 // 02. Clock and State Lifecycle
 // ============================================================
 #pragma region 02_Clock_and_State_Lifecycle
@@ -95,7 +73,6 @@ namespace MDSS
     {
         Clock.Reset();
         Steps.clear();
-        StepSerial = 0;
         MaximumStep = SurfaceState::FixedSimulationStepSeconds;
         DroppedSeconds = 0.0F;
     }

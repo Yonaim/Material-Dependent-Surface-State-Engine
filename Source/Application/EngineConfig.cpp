@@ -3,9 +3,7 @@
  * @brief 실행 위치와 무관하게 설정 경로를 찾고 시작 Scene을 선택한다.
  */
 #include "Application/EngineConfig.h"
-
 #include "Logger/Logger.h"
-
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -18,7 +16,7 @@ namespace MDSS
 {
     namespace
     {
-        std::string Trim(const std::string& Value)
+        std::string Trim(const std::string &Value)
         {
             const auto Begin = Value.find_first_not_of(" \t\r\n");
 
@@ -26,20 +24,20 @@ namespace MDSS
                 return {};
             return Value.substr(Begin, Value.find_last_not_of(" \t\r\n") - Begin + 1);
         }
-    }
+    } // namespace
 
 // ============================================================
 // 00. std Implementation
 // ============================================================
 #pragma region 00_std_Implementation
-// 실행 위치와 무관하게 설정 경로를 찾고 시작 Scene을 선택한다.
+    // 실행 위치와 무관하게 설정 경로를 찾고 시작 Scene을 선택한다.
 
     std::filesystem::path GetEngineConfigDirectory()
     {
         return std::filesystem::absolute(std::filesystem::path(MDSS_ASSET_DIR)).parent_path() / "Config";
     }
 
-    std::filesystem::path LoadStartupScenePath(const std::filesystem::path& ConfigPath)
+    std::filesystem::path LoadStartupScenePath(const std::filesystem::path &ConfigPath)
     {
         const auto    AbsoluteConfig = std::filesystem::absolute(ConfigPath).lexically_normal();
         std::ifstream File(AbsoluteConfig);
@@ -48,10 +46,7 @@ namespace MDSS
         {
             if (std::filesystem::exists(AbsoluteConfig))
                 throw std::runtime_error("Cannot read engine config: " + AbsoluteConfig.string());
-            FLogger::Warning("EngineConfig", "Config missing; using Assets/Scenes/ReactionTransitionComparison.Scene.");
-            return std::filesystem::absolute(std::filesystem::path(MDSS_ASSET_DIR) /
-                                             "Scenes/ReactionTransitionComparison.Scene")
-                .lexically_normal();
+            return {};
         }
 
         std::string Section, Line, SceneValue;
@@ -87,7 +82,7 @@ namespace MDSS
         }
 
         if (!bFound || Trim(SceneValue).empty())
-            throw std::runtime_error("Missing or empty [Application] StartupScene in " + AbsoluteConfig.string());
+            return {};
         std::filesystem::path ScenePath(SceneValue);
 
         if (ScenePath.is_relative())
@@ -95,4 +90,4 @@ namespace MDSS
         return ScenePath.lexically_normal();
     }
 #pragma endregion
-}
+} // namespace MDSS

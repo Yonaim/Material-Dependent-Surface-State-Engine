@@ -3,8 +3,11 @@
  * @brief Renderer 내부에서 사용하는 grid·축·이동/회전 gizmo의 정점 생성.
  */
 #pragma once
+#include "GPU/Vulkan/Pipeline/GraphicsPipeline.h"
+#include "ShaderCatalog.h"
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -17,7 +20,7 @@ namespace MDSS::Rendering
 // 00. World Reference and Gizmo Geometry
 // ============================================================
 #pragma region 00_World_Reference_and_Gizmo_Geometry
-// 기준 grid·축·gizmo의 정점과 draw 범위를 생성한다.
+        // 기준 grid·축·gizmo의 정점과 draw 범위를 생성한다.
 
         struct FGizmoVertex
         {
@@ -39,15 +42,37 @@ namespace MDSS::Rendering
                                                               glm::vec4(0.10F, 0.95F, 0.20F, 1.0F),
                                                               glm::vec4(0.12F, 0.35F, 1.0F, 1.0F)};
 
-        std::vector<FGizmoVertex> BuildWorldReferenceVertices(std::uint32_t& GridVertexCount,
-                                                              std::uint32_t& AxisVertexCount)
+        GPU::FGraphicsPipelineConfig BuildWorldReferencePipelineConfig()
+        {
+            using Shaders::EShader;
+            GPU::FGraphicsPipelineConfig Config{};
+            Config.ShaderStages = {
+                {VK_SHADER_STAGE_VERTEX_BIT, Shaders::Path(EShader::Rendering_Scene_WorldReference_vert)},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, Shaders::Path(EShader::Rendering_Scene_WorldReference_frag)},
+            };
+            Config.VertexBindings = {{0, sizeof(FGizmoVertex), VK_VERTEX_INPUT_RATE_VERTEX}};
+            Config.VertexAttributes = {{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(FGizmoVertex, Position)},
+                                       {1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(FGizmoVertex, Color)},
+                                       {2, 0, VK_FORMAT_R32_SFLOAT, offsetof(FGizmoVertex, EdgeCoordinate)}};
+            Config.PushConstantRanges = {{VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(FGizmoPushConstants)}};
+            Config.CullMode = VK_CULL_MODE_NONE;
+            Config.bDepthTestEnabled = true;
+            Config.bDepthWriteEnabled = false;
+            Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+            Config.bBlendingEnabled = true;
+            return Config;
+        }
+
+        std::vector<FGizmoVertex> BuildWorldReferenceVertices(std::uint32_t &GridVertexCount,
+                                                              std::uint32_t &AxisVertexCount,
+                                                              float          GridExtent = 50.F,
+                                                              float          GridOpacity = 1.F)
         {
             std::vector<FGizmoVertex> Vertices;
-            constexpr float           GridExtent = 50.0F;
             constexpr float           GridHalfWidth = 0.008F;
             constexpr float           GridEdgeCoordinate = 1.25F;
             constexpr float           AxisHalfWidth = 0.035F;
-            const glm::vec4           GridColor(1.0F);
+            const glm::vec4           GridColor(1.F, 1.F, 1.F, GridOpacity);
             auto                      AddQuad = [&](glm::vec3            A,
                                                     glm::vec3            B,
                                                     glm::vec3            C,
@@ -117,7 +142,7 @@ namespace MDSS::Rendering
             const std::array<glm::vec3, 3> Axes = {glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)};
             const std::array<glm::vec3, 3> U = {glm::vec3(0, 1, 0), glm::vec3(0, 0, 1), glm::vec3(1, 0, 0)};
             const std::array<glm::vec3, 3> V = {glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0)};
-            const auto&                    Colors = WorldAxisColors;
+            const auto                    &Colors = WorldAxisColors;
             Vertices.reserve(3U * static_cast<std::size_t>(Segments) * 9U);
 
             for (std::size_t Axis = 0; Axis < Axes.size(); ++Axis)
@@ -189,5 +214,5 @@ namespace MDSS::Rendering
         }
 
 #pragma endregion
-    }
-}
+    } // namespace
+} // namespace MDSS::Rendering

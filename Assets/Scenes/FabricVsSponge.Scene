@@ -1,0 +1,26 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "FabricVsSponge",
+  "geometry": "MaterialSpecimens",
+  "surfaceProfile": "SpongeAbsorptionSample",
+  "comparisonSurfaceProfiles": [
+    "SteelAbsorptionSample"
+  ],
+  "geometrySamples": [64, 32],
+  "simulationCells": [
+    16,
+    8
+  ],
+  "sizeM": [
+    0.2,
+    0.1
+  ],
+  "bodyThicknessM": 0.025,
+  "comparisonGapM": 0.026,
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "initialLiquidKg": 0.04,
+  "pourKg": 0,
+  "maxTiltRadians": 0
+}

@@ -1,0 +1,6 @@
+# 재사용할 국소 규칙의 모델과 계수. 적용 상태와 입력은 SurfaceProfile에서 연결한다.
+version: 1
+id: SurfaceAbsorption
+model: Absorption
+# 접촉한 표면 물을 흡수수로 옮기는 1차 계수 [1/s]. 실제 이동은 바탕의 남은 용량으로 제한한다.
+ratePerSecond: 0.6

@@ -1,0 +1,30 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "GlacierCut_ShortHeatPulse",
+  "geometry": "GlacialBed",
+  "geometrySamples": [
+    64,
+    48
+  ],
+  "simulationCells": [
+    16,
+    12
+  ],
+  "sizeM": [
+    0.176,
+    0.122
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "states": {
+    "layer": [
+      "SurfaceWater",
+      "Ice"
+    ],
+    "substrate": []
+  },
+  "contactHeatFadeSeconds": 1.2
+}

@@ -1,0 +1,14 @@
+# 재사용하는 재질의 물성 및 외관을 정의한다.
+version: 1
+id: Steel
+# PBR 외관과 텍스처. 이 값으로 수송이나 반응 속도를 바꾸지 않는다.
+appearance:
+  metallic: true
+  # 바닥 온도 상태를 공용 PBR 열발광 곡선의 입력으로 사용한다.
+  thermalEmission: true
+  colorTexture: AmbientCG/Metal010.png
+  normalTexture: AmbientCG/Metal010Normal.png
+# 바탕의 열물성. 밀도와 비열은 유효 두께와 함께 면적당 열용량 계산에 쓰인다.
+thermal:
+  densityKgM3: 7850
+  specificHeatJkgK: 490

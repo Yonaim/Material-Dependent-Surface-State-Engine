@@ -1,0 +1,42 @@
+# 표면의 상태, 입력 필드 및 계산 규칙을 연결한다.
+version: 1
+id: IceGate
+# 표면을 받치는 재질의 ID. Materials에서 물성과 바탕 외관을 읽는다.
+substrate: Stone
+# 표면의 저장 칸을 정의한다. material과 phase는 Materials의 물성을 참조한다.
+states:
+  # 아래층부터 위층 순서다. 각 층은 kg을 저장하며 각 표본에서 아래층과 기준 형상 중 높은 쪽을 수송 바닥으로 쓴다.
+  layer:
+    - id: ice
+      quantity: mass
+      unit: kg
+      material: Water
+      phase: ice
+      color: [0.28, 0.63, 0.86]
+      displayName: Ice
+      thicknessDisplayMaxMm: 12
+    - id: SurfaceWater
+      quantity: mass
+      unit: kg
+      material: Water
+      phase: liquid
+      color: [1.0, 0.16, 1.0]
+      displayName: Surface water
+      displayMax: 1.0
+      thicknessDisplayMaxMm: 4.0
+  # 바탕에 남는 상태. 온도는 K, 흡수수는 kg, 탄화율은 0~1로 선언한다.
+  substrate:
+    - id: SubstrateTemperature
+      quantity: temperature
+      unit: K
+      source: temperature
+      displayName: Substrate temperature
+      displayMax: 1500
+# 층 순서는 아래에서 위다. state는 급수와 기본 수심 표시가 사용하는 액체다.
+transport:
+  state: SurfaceWater
+# use에 공유 규칙 ID를 쓰고 from, to, inputs 등으로 이 프로파일의 상태와 필드에 연결한다.
+interactions:
+  - use: IceGateMelt
+    from: ice
+    to: SurfaceWater

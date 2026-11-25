@@ -11,99 +11,11 @@ namespace MDSS
 // 00. Simulation Debug Panels
 // ============================================================
 #pragma region 00_Simulation_Debug_Panels
-// Solver 시간·storage·sparse 옵션과 진단 값을 한 화면에 연결한다.
-
-    void FDebugUI::DrawSimulationDebugWindow(FScene& SceneData)
-    {
-        if (AssetManager == nullptr || FrameRenderer == nullptr)
-        {
-            return;
-        }
-
-        ImGuiViewport*  Viewport = ImGui::GetMainViewport();
-        constexpr float Width = 360.0F;
-        const ImVec2    WindowSize{Width, 520.0F};
-        const ImVec2    WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
-                                       Viewport->WorkPos.y + 150.0F};
-        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
-
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-
-        if (ImGui::Begin("Simulation Debug", nullptr, Flags))
-        {
-            DrawSimulationCommonControls();
-            ImGui::Dummy({0.0F, 10.0F});
-            ImGui::Separator();
-            ImGui::Dummy({0.0F, 10.0F});
-
-            // 본문 배경은 부모 패널을 그대로 사용하고, 각 탭의 본문만 스크롤한다.
-            if (ImGui::BeginTabBar("SimulationTabs"))
-            {
-                if (ImGui::BeginTabItem("Settings"))
-                {
-                    if (ImGui::BeginChild("SimulationSettingsContent",
-                                          {0.0F, 0.0F},
-                                          ImGuiChildFlags_None,
-                                          ImGuiWindowFlags_NoBackground))
-                    {
-                        DrawSimulationSettingsTab(SceneData);
-                        DrawPerformanceTab(false);
-                    }
-
-                    ImGui::EndChild();
-                    ImGui::EndTabItem();
-                }
-
-                if (ImGui::BeginTabItem("Solver"))
-                {
-                    if (ImGui::BeginChild(
-                            "SolverContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        ImGui::Dummy({0.0F, 12.0F});
-                        DrawSolverTab();
-                    }
-
-                    ImGui::EndChild();
-                    ImGui::EndTabItem();
-                }
-
-                if (ImGui::BeginTabItem("Input"))
-                {
-                    if (ImGui::BeginChild(
-                            "ContactInputContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        ImGui::Dummy({0.0F, 12.0F});
-                        DrawContactInputTab();
-                    }
-
-                    ImGui::EndChild();
-                    ImGui::EndTabItem();
-                }
-
-                if (ImGui::BeginTabItem("Profiles"))
-                {
-                    if (ImGui::BeginChild(
-                            "ProfileTuningContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        ImGui::Dummy({0.0F, 12.0F});
-                        DrawProfileTuningTab(SceneData);
-                    }
-
-                    ImGui::EndChild();
-                    ImGui::EndTabItem();
-                }
-
-                ImGui::EndTabBar();
-            }
-        }
-
-        ImGui::End();
-    }
+    // Solver 시간·storage·sparse 옵션과 진단 값을 한 화면에 연결한다.
 
     void FDebugUI::DrawDebugStateSelector()
     {
-        const auto& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
+        const auto &Registry = SurfaceDataManager->GetSurfaceStateRegistry();
 
         if (Registry.GetStateCount() == 0)
         {
@@ -139,7 +51,7 @@ namespace MDSS
         TextDescriptionWrapped("Picking uses the Macro mesh. Accumulation is a selected-State preview; it does not "
                                "update Solver geometry.");
         DrawDebugStateSelector();
-        const auto& Selection = FrameRenderer->GetInspectedTexel();
+        const auto &Selection = FrameRenderer->GetInspectedTexel();
 
         if (!Selection)
         {
@@ -157,7 +69,7 @@ namespace MDSS
         ImGui::Text("Texel %u (%u, %u)", Selection->Texel, Selection->XY.x, Selection->XY.y);
         ImGui::Text("Hit triangle %u", Selection->Triangle);
         ImGui::TextWrapped("Profile: %s", Selection->Profile.c_str());
-        const auto& Snapshot = FrameRenderer->GetTexelSnapshot();
+        const auto &Snapshot = FrameRenderer->GetTexelSnapshot();
 
         if (!Snapshot)
         {
@@ -165,13 +77,16 @@ namespace MDSS
             return;
         }
 
-        const auto& S = *Snapshot;
+        const auto &S = *Snapshot;
         ImGui::Text("Completed sample / Step %llu / Buffer %s",
                     static_cast<unsigned long long>(S.Step),
                     S.bStateAB ? "A" : "B");
-        const auto                           Status = static_cast<std::uint32_t>(S.Values[2].w);
-        constexpr std::array<const char*, 5> StatusNames{
-            "Invalid texel", "Unassigned Profile", "Unsupported State", "Valid", "Invalid value / area"};
+        const auto                            Status = static_cast<std::uint32_t>(S.Values[2].w);
+        constexpr std::array<const char *, 5> StatusNames{"Invalid texel",
+                                                          "Unassigned Profile",
+                                                          "Unsupported State",
+                                                          "Valid",
+                                                          "Invalid value / area"};
         ImGui::TextColored(Status == 3 ? ImVec4{0.35F, 0.85F, 0.55F, 1} : ImVec4{1, 0.65F, 0.25F, 1},
                            "%s",
                            StatusNames[std::min(Status, 4U)]);
@@ -183,7 +98,7 @@ namespace MDSS
         {
             ImGui::TableSetupColumn("Field", ImGuiTableColumnFlags_WidthStretch, 1.4F);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 1.0F);
-            const auto Row = [](const char* Label, float Value)
+            const auto Row = [](const char *Label, float Value)
             {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
@@ -237,7 +152,7 @@ namespace MDSS
                 ImGui::SetCursorPosX(ControlColumnX);
             }
         };
-        const auto RadioWidth = [](const char* Label)
+        const auto RadioWidth = [](const char *Label)
         { return ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(Label).x; };
 
         BeginLabeledControlRow("Playback");
@@ -272,11 +187,11 @@ namespace MDSS
         }
 
         BeginLabeledControlRow("Speed");
-        constexpr std::array<std::pair<const char*, float>, 6> SpeedPresets = {
+        constexpr std::array<std::pair<const char *, float>, 6> SpeedPresets = {
             {{"0.25x", 0.25F}, {"0.5x", 0.5F}, {"1x", 1.0F}, {"2x", 2.0F}, {"4x", 4.0F}, {"8x", 8.0F}}};
         bool bFirstPreset = true;
 
-        for (const auto& [Label, Scale] : SpeedPresets)
+        for (const auto &[Label, Scale] : SpeedPresets)
         {
             if (!bFirstPreset)
             {
@@ -296,7 +211,7 @@ namespace MDSS
         SliderFloatWithDoubleClickInput("##Speed", &Simulation.SimulationTimeScale, 0.05F, 8.0F, "%.2fx");
     }
 
-    void FDebugUI::DrawSimulationSettingsTab(FScene& SceneData)
+    void FDebugUI::DrawSimulationSettingsTab(FScene &SceneData)
     {
         DrawSectionHeader("Resolution & Time", 0.0F, 2.0F);
         const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
@@ -307,7 +222,7 @@ namespace MDSS
             SetDescriptionTooltip("표면당 시뮬레이션 해상도입니다. 바꾸면 현재 State가 초기화됩니다.");
         if (bResolutionOpen)
         {
-            for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
+            for (const auto &Preset : SurfaceState::SurfaceSimulationResolutionPresets)
             {
                 const bool        bSelected = Preset.Resolution == CurrentResolution;
                 const std::string PresetLabel =
@@ -318,13 +233,13 @@ namespace MDSS
                     try
                     {
                         FrameRenderer->SetSimulationResolution(SceneData, Preset.Resolution);
-                        ProfileEditing.ResolutionStatus.clear();
+                        Simulation.ResolutionStatus.clear();
                         ResetProfilingAverages();
                     }
-                    catch (const std::exception& Error)
+                    catch (const std::exception &Error)
                     {
-                        ProfileEditing.ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
-                        FLogger::Warning("TDebugUI", ProfileEditing.ResolutionStatus);
+                        Simulation.ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
+                        FLogger::Warning("TDebugUI", Simulation.ResolutionStatus);
                     }
                 }
 
@@ -335,9 +250,9 @@ namespace MDSS
             EndLabeledCombo();
         }
 
-        if (ProfileEditing.ResolutionStatus.starts_with("Resolution change failed:"))
+        if (Simulation.ResolutionStatus.starts_with("Resolution change failed:"))
         {
-            ImGui::TextWrapped("%s", ProfileEditing.ResolutionStatus.c_str());
+            ImGui::TextWrapped("%s", Simulation.ResolutionStatus.c_str());
         }
 
         if (ImGui::Checkbox("Fixed timestep", &Simulation.bFixedSimulationTimestep))
@@ -364,7 +279,7 @@ namespace MDSS
     void FDebugUI::DrawSolverTab()
     {
         const auto DrawSolverTerm =
-            [this](SurfaceState::ESurfaceSolverTerm Term, const char* Label, const char* Description)
+            [this](SurfaceState::ESurfaceSolverTerm Term, const char *Label, const char *Description)
         {
             bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
 

@@ -1,0 +1,11 @@
+# 재사용하는 재질의 물성 및 외관을 정의한다.
+version: 1
+id: LooseSoil
+# 상별 물성. 밀도 [kg/m³]로 질량을 부피로 바꾸고, 동적 점도 [Pa·s]로 수송 저항을 계산한다.
+phases:
+  bulk:
+    densityKgM3: 1500
+    dynamicViscosityPaS: 4
+    yieldStressPa: 2
+    angleOfReposeDeg: 25
+    phaseChange: []

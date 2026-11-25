@@ -1,0 +1,703 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+
+// Surface Simulation의 고정 스텝을 준비, 면별 후보량, 출발량 제한과 상태 반영으로 나눠 실행한다.
+// ============================================================
+// 00. Compute Interface
+// ============================================================
+// #region 00_Compute_Interface
+    // SurfaceSimulationGpu.cpp의 FGpuHeader와 FStepPush 레이아웃을 공유하며 한 invocation이 셀 또는 공유 면 하나를 맡는다.
+
+    layout(local_size_x = 32) in;
+
+    const float Gravity = 9.81;
+    const uint PREPARE = 0u;
+    const uint FACE_CANDIDATES = 1u;
+    const uint OUTFLOW_SCALE = 2u;
+    const uint COMMIT = 3u;
+    const uint SCHEDULE = 4u;
+    shared uint ActiveMasks[3];
+
+    struct CellUpdateParameters
+    {
+        vec4 rates; // absorption / drying fractions per fixed step, capacity [kg/m²], charring [1/s]
+        vec4 thermal; // base T [K], melt, evaporation and freezing coefficients [kg/(m² s K)]
+    };
+
+    struct SurfaceCellState
+    {
+        vec4 layer; // surface kg, absolute level m, exported outlet kg, evaporated kg
+        vec4 substrate; // absorbed kg, ice kg, char fraction, steam kg/s
+        vec4 field; // flame activity, substrate temperature K, inverse cell area [1/m²], combined phase level [m]
+    };
+
+    struct OverflowTransferRecord
+    {
+        float mass_kg;
+        float head_m;
+        uint contact;
+        uint receiver;
+        uint interval;
+        float last_transfer_s;
+    };
+
+    // FGpuHeader 뒤의 워드에는 실제 장면의 셀과 영역만 저장한다.
+    layout(std430, set = 0, binding = 0) buffer SurfaceSimulationData
+    {
+        ivec4 Counts;
+        vec4 Shape;
+        vec2 LiquidProperties;
+        uint LocalRule;
+        float IceDensity;
+        int RegionCount;
+        int CombustionGridColumns;
+        vec2 SubstrateQuench;
+        uint EvaporateAbsorbedWater;
+        int HeightsOffset;
+        int CellsOffset;
+        int FacesOffset;
+        int RegionsOffset;
+        int CellRegionsOffset;
+        int SampleElevationsOffset;
+        int ContactsOffset;
+        int RegionFacesOffset;
+        int FaceCountsOffset;
+        int MaterialsOffset;
+        int StatesOffset;
+        int PrimaryLiquidRegionStateOffset;
+        int CandidatesOffset;
+        int OutScaleOffset;
+        int ScheduledInletWeightsOffset;
+        int EditorLiquidKgOffset;
+        int EditorIceKgOffset;
+        int EditorTemperatureKOffset;
+        int FaceIntegralsOffset;
+        int ContactWeightsOffset;
+        int OverflowOffset;
+        int DispatchOffset;
+        int FaceWorkgroupsOffset;
+        int RegionWorkgroupsOffset;
+        int CellWorkgroupsOffset;
+        uint FaceOperations;
+        int LayerCount;
+        int FilmMaterialOffset;
+        int FilmStateOffset;
+        int FilmInitialMassOffset;
+        int FilmDisplayOffset;
+        int FilmReactionOffset;
+        int FilmReactionCount;
+        int FilmBedCoupling;
+        float FilmBedFreezeStart;
+        int FilmOmittedSupport;
+        int ReactionContactOffset;
+        int DisplayLayers;
+        uint Words[];
+    } Data;
+
+    float liquid_float(int word)
+    {
+        return uintBitsToFloat(Data.Words[word]);
+    }
+
+    vec4 liquid_vec4(int word)
+    {
+        return vec4(liquid_float(word), liquid_float(word + 1), liquid_float(word + 2), liquid_float(word + 3));
+    }
+
+    void store_liquid_vec4(int word, vec4 value)
+    {
+        for (int i = 0; i < 4; ++i)
+            Data.Words[word + i] = floatBitsToUint(value[i]);
+    }
+
+    float load_heights(int i)
+    {
+        int w = Data.HeightsOffset + i;
+        return liquid_float(w);
+    }
+
+    ivec4 load_cells(int i)
+    {
+        int w = Data.CellsOffset + i * 4;
+        return ivec4(int(Data.Words[w]), int(Data.Words[w + 1]), int(Data.Words[w + 2]), int(Data.Words[w + 3]));
+    }
+
+    ivec4 load_faces(int i)
+    {
+        int w = Data.FacesOffset + i * 4;
+        return ivec4(int(Data.Words[w]), int(Data.Words[w + 1]), int(Data.Words[w + 2]), int(Data.Words[w + 3]));
+    }
+
+    ivec4 load_regions(int i)
+    {
+        int w = Data.RegionsOffset + i * 4;
+        return ivec4(int(Data.Words[w]), int(Data.Words[w + 1]), int(Data.Words[w + 2]), int(Data.Words[w + 3]));
+    }
+
+    ivec2 load_cell_regions(int i)
+    {
+        int w = Data.CellRegionsOffset + i * 2;
+        return ivec2(int(Data.Words[w]), int(Data.Words[w + 1]));
+    }
+
+    vec2 load_sample_elevations(int i)
+    {
+        int w = Data.SampleElevationsOffset + i * 2;
+        return vec2(liquid_float(w), liquid_float(w + 1));
+    }
+
+    int load_contacts(int i)
+    {
+        int w = Data.ContactsOffset + i;
+        return int(Data.Words[w]);
+    }
+
+    int load_region_faces(int i)
+    {
+        int w = Data.RegionFacesOffset + i;
+        return int(Data.Words[w]);
+    }
+
+    int load_face_counts(int i)
+    {
+        int w = Data.FaceCountsOffset + i;
+        return int(Data.Words[w]);
+    }
+
+    CellUpdateParameters load_materials(int i)
+    {
+        int w = Data.MaterialsOffset + i * 8;
+        return CellUpdateParameters(liquid_vec4(w), liquid_vec4(w + 4));
+    }
+
+    SurfaceCellState load_states(int i)
+    {
+        int w = Data.StatesOffset + i * 12;
+        return SurfaceCellState(liquid_vec4(w), liquid_vec4(w + 4), liquid_vec4(w + 8));
+    }
+
+    void store_states(int i, SurfaceCellState value)
+    {
+        int w = Data.StatesOffset + i * 12;
+        store_liquid_vec4(w, value.layer);
+        store_liquid_vec4(w + 4, value.substrate);
+        store_liquid_vec4(w + 8, value.field);
+    }
+
+    vec2 load_primary_liquid_region_state(int i)
+    {
+        int w = Data.PrimaryLiquidRegionStateOffset + i * 2;
+        return vec2(liquid_float(w), liquid_float(w + 1));
+    }
+
+    void store_primary_liquid_region_state(int i, vec2 value)
+    {
+        int w = Data.PrimaryLiquidRegionStateOffset + i * 2;
+        Data.Words[w] = floatBitsToUint(value.x);
+        Data.Words[w + 1] = floatBitsToUint(value.y);
+    }
+
+    float load_candidates(int i)
+    {
+        int w = Data.CandidatesOffset + i;
+        return liquid_float(w);
+    }
+
+    void store_candidates(int i, float value)
+    {
+        int w = Data.CandidatesOffset + i;
+        Data.Words[w] = floatBitsToUint(value);
+    }
+
+    float load_out_scale(int i)
+    {
+        int w = Data.OutScaleOffset + i;
+        return liquid_float(w);
+    }
+
+    void store_out_scale(int i, float value)
+    {
+        int w = Data.OutScaleOffset + i;
+        Data.Words[w] = floatBitsToUint(value);
+    }
+
+    float load_scheduled_inlet_weights(int i)
+    {
+        int w = Data.ScheduledInletWeightsOffset + i;
+        return liquid_float(w);
+    }
+
+    float load_editor_liquid_kg(int i)
+    {
+        int w = Data.EditorLiquidKgOffset + i;
+        return liquid_float(w);
+    }
+
+    float load_editor_ice_kg(int i)
+    {
+        int w = Data.EditorIceKgOffset + i;
+        return liquid_float(w);
+    }
+
+    float load_editor_temperature_k(int i)
+    {
+        int w = Data.EditorTemperatureKOffset + i;
+        return liquid_float(w);
+    }
+
+    float load_face_integrals(int i)
+    {
+        int w = Data.FaceIntegralsOffset + i;
+        return liquid_float(w);
+    }
+
+    void store_face_integrals(int i, float value)
+    {
+        int w = Data.FaceIntegralsOffset + i;
+        Data.Words[w] = floatBitsToUint(value);
+    }
+
+    vec2 load_contact_weights(int i)
+    {
+        int w = Data.ContactWeightsOffset + i * 2;
+        return vec2(liquid_float(w), liquid_float(w + 1));
+    }
+
+    void store_contact_weights(int i, vec2 value)
+    {
+        int w = Data.ContactWeightsOffset + i * 2;
+        Data.Words[w] = floatBitsToUint(value.x);
+        Data.Words[w + 1] = floatBitsToUint(value.y);
+    }
+
+    OverflowTransferRecord load_overflow(int i)
+    {
+        int w = Data.OverflowOffset + i * 6;
+        return OverflowTransferRecord(liquid_float(w), liquid_float(w + 1), Data.Words[w + 2], Data.Words[w + 3], Data.Words[w + 4], liquid_float(w + 5));
+    }
+
+    void store_overflow(int i, OverflowTransferRecord value)
+    {
+        int w = Data.OverflowOffset + i * 6;
+        Data.Words[w] = floatBitsToUint(value.mass_kg);
+        Data.Words[w + 1] = floatBitsToUint(value.head_m);
+        Data.Words[w + 2] = value.contact;
+        Data.Words[w + 3] = value.receiver;
+        Data.Words[w + 4] = value.interval;
+        Data.Words[w + 5] = floatBitsToUint(value.last_transfer_s);
+    }
+
+    layout(push_constant) uniform Step
+    {
+        vec2 Pose;
+        float Seconds;
+        float InputMass;
+        uint ReadSlot;
+        uint Phase;
+        float TemperatureOffsetK;
+        float TemperatureTargetWeight;
+        float DoseMassKg;
+        int DoseRegion;
+        uint HasEditorInput;
+        uint DisplayInterval;
+        uint CompletedStep;
+        uint Sparse;
+        float TransportSeconds;
+        float TransferTime;
+        uint TransportOnly;
+    } Push;
+
+// #endregion
+
+// ============================================================
+// 01. Capacity and Liquid Level
+// ============================================================
+// #region 01_Capacity_and_Liquid_Level
+    // 기울어진 표면의 수심을 적분하고 질량에서 수위를 이분법으로 복원한다.
+
+    float height_at(int x, int y)
+    {
+        return load_heights(y * Data.Counts.x + x);
+    }
+
+    float cell_area(ivec4 bounds)
+    {
+        return Data.Shape.x * Data.Shape.y * float((bounds.y - bounds.x) * (bounds.w - bounds.z));
+    }
+
+    float region_elevation(int sample_index)
+    {
+        vec2 sample_point = load_sample_elevations(sample_index);
+        return sample_point.x * Push.Pose.y - sample_point.y * Push.Pose.x;
+    }
+
+    const float NO_FILM_FLOOR = -1e10;
+    float region_wet_area(int index, float level, float depth_band, float floor_level);
+    const float THERMAL_CONTACT_DEPTH_M = 0.00025;
+
+    float sample_mean_depth(float depth, float half_span, float wedge)
+    {
+        float end_depth = max(0.0, depth + half_span);
+        return depth >= half_span ? depth : end_depth * end_depth * wedge;
+    }
+
+    float record_reaction_contact(int region, float mass, float level, bool eligible, float floor_level)
+    {
+        float area = mass > 0.0 && eligible ? region_wet_area(region, level, 0.0, floor_level) : 0.0;
+        store_liquid_vec4(Data.ReactionContactOffset + 4 * region,
+                          vec4(level, area, mass > 0.0 ? (eligible ? 2.0 : 1.0) : 0.0, floor_level));
+        return area;
+    }
+
+    float region_wet_area(int index, float level, float depth_band, float floor_level)
+    {
+        if (level <= floor_level)
+            return 0.0;
+        ivec4 region = load_regions(index);
+        float half_span = 0.5 * Data.Shape.x * abs(Push.Pose.x);
+        float wedge = half_span > 0.0 ? 0.25 / half_span : 0.0;
+        float wet_samples = 0.0;
+        for (int i = 0; i < region.z; ++i)
+        {
+            float depth = level - region_elevation(region.y + i);
+            if (depth_band > 0.0)
+            {
+                // 얇은 표본의 전도율을 선형으로 키우되 실제 접촉 영역을 벗어나지 않는다.
+                wet_samples += depth >= half_span + depth_band && level - floor_level >= depth_band ? 1.0 :
+                    clamp((sample_mean_depth(depth, half_span, wedge) -
+                           sample_mean_depth(depth - min(depth_band, level - floor_level), half_span, wedge)) /
+                          depth_band, 0.0, 1.0);
+            }
+            else
+            {
+                wet_samples += half_span > 0.0 ? clamp((depth + half_span) / (2.0 * half_span), 0.0, 1.0)
+                                               : float(depth > 0.0);
+            }
+        }
+        return Data.Shape.x * Data.Shape.y * wet_samples;
+    }
+
+    float region_depth_sum(ivec4 region, float level, float half_span, float wedge_factor)
+    {
+        float sum = 0.0;
+        for (int i = 0; i < region.z; ++i)
+        {
+            float center_depth = level - region_elevation(region.y + i);
+            // 기울어진 표본에 물가가 걸리면 잘린 삼각형의 평균 깊이를 더한다.
+            sum += sample_mean_depth(center_depth, half_span, wedge_factor);
+        }
+        return sum;
+    }
+
+    float volume(int region, float level)
+    {
+        float half_span = 0.5 * Data.Shape.x * abs(Push.Pose.x);
+        float wedge_factor = half_span > 0.0 ? 0.25 / half_span : 0.0;
+        return Data.Shape.x * Data.Shape.y * Push.Pose.y *
+               region_depth_sum(load_regions(region), level, half_span, wedge_factor);
+    }
+
+    float solve_level_for_density(ivec4 region, float mass, float density, float floor_level)
+    {
+        float half_span = 0.5 * Data.Shape.x * abs(Push.Pose.x);
+        float lo = 1e10;
+        float hi = -1e10;
+        for (int i = 0; i < region.z; ++i)
+        {
+            float z = region_elevation(region.y + i);
+            lo = min(z, lo);
+            hi = max(z, hi);
+        }
+        if (mass <= 0.0)
+            return max(lo - half_span, floor_level);
+
+        // 면적당 체적에 해당하는 총 수심으로 비교해 안쪽 반복에서는 곱셈을 줄인다.
+        float wedge_factor = half_span > 0.0 ? 0.25 / half_span : 0.0;
+        // 기존 적분에 아래층이 차지한 부피를 합하면 절단된 경사 표본도 정확하게 복원된다.
+        float target = mass / (density * Data.Shape.x * Data.Shape.y * Push.Pose.y);
+        if (floor_level > lo - half_span)
+            target += region_depth_sum(region, floor_level, half_span, wedge_factor);
+        float mean_depth = target / float(region.z);
+        if (lo == hi)
+        {
+            float offset = mean_depth < half_span ? sqrt(4.0 * half_span * mean_depth) - half_span : mean_depth;
+            return max(lo + offset, floor_level);
+        }
+        lo = max(lo - half_span, floor_level);
+        hi = max(lo, hi + half_span + mean_depth);
+        for (int iteration = 0; iteration < 27; ++iteration)
+        {
+            float level = (lo + hi) * 0.5;
+            if (region_depth_sum(region, level, half_span, wedge_factor) < target)
+                lo = level;
+            else
+                hi = level;
+        }
+        return (lo + hi) * 0.5;
+    }
+
+    float solve_level(ivec4 region, float mass)
+    {
+        return solve_level_for_density(region, mass, Data.LiquidProperties.x, NO_FILM_FLOOR);
+    }
+
+    float restore_level(int index, float mass)
+    {
+        return solve_level(load_regions(index), mass);
+    }
+
+    float restore_cell_level(int cell, float mass)
+    {
+        // 부모 셀에 놓인 영역들의 표본은 하나의 연속 구간을 이룬다.
+        ivec4 region = load_regions(load_cell_regions(cell).x);
+        ivec4 bounds = load_cells(cell);
+        region.z = (bounds.y - bounds.x) * (bounds.w - bounds.z);
+        return solve_level(region, mass);
+    }
+
+// #endregion
+
+// ============================================================
+// 02. Face Transport and Donor Limit
+// ============================================================
+// #region 02_Face_Transport_and_Donor_Limit
+    // 공유 면을 넘는 후보량과 출발 셀에서 사용할 공통 예산 배율을 계산한다.
+
+    vec2 transport_face_distances(ivec4 face)
+    {
+        ivec4 left = load_cells(load_regions(face.x).x);
+        ivec4 right = face.y < 0 ? left : load_cells(load_regions(face.y).x);
+        vec2 centers = vec2(right.x + right.y - left.x - left.y, right.z + right.w - left.z - left.w);
+        vec2 separation = face.y < 0 ? vec2(float(left.y - left.x) * 0.5) : abs(centers) * 0.5;
+        return Data.Shape.xy * mix(vec2(1.0), separation, greaterThan(separation, vec2(0.0)));
+    }
+
+    float transport_cross_slope(int region, bool axis_x, int state_word, int stride)
+    {
+        int start = load_regions(region).w;
+        int count = load_face_counts(region);
+        float sum = 0.0;
+        int used = 0;
+        for (int i = 0; i < count; ++i)
+        {
+            ivec4 face = load_faces(load_region_faces(start + i));
+            if (face.y < 0 || (load_contacts(face.z) % 2 == 0) == axis_x)
+                continue;
+            int left = state_word + stride * face.x;
+            int right = state_word + stride * face.y;
+            if (liquid_float(left) <= 0.0 || liquid_float(right) <= 0.0)
+                continue;
+            float distance = transport_face_distances(face)[axis_x ? 1 : 0];
+            sum += (liquid_float(left + 1) - liquid_float(right + 1)) / distance;
+            ++used;
+        }
+        return used > 0 ? sum / float(used) : 0.0;
+    }
+
+    // 두 저장 배치 모두 영역 레코드의 첫 두 워드에서 질량과 수위를 읽는다.
+    float transport_mobility(ivec4 face, bool axis_x, float normal_slope, float depth,
+                             vec4 material, int state_word, int stride)
+    {
+        if (material.z <= 0.0 && material.w <= 0.0)
+            return 1.0;
+        float cross_slope = transport_cross_slope(face.x, axis_x, state_word, stride);
+        if (face.y >= 0)
+            cross_slope = 0.5 * (cross_slope + transport_cross_slope(face.y, axis_x, state_word, stride));
+        float slope = length(vec2(normal_slope, cross_slope));
+        float excess = slope - material.w;
+        float stress = material.x * Gravity * depth * excess;
+        if (excess <= 0.0 || stress <= material.z)
+            return 0.0;
+        float ratio = material.z / stress;
+        return excess / slope * (1.0 - ratio) * (1.0 - ratio) * (1.0 + 0.5 * ratio);
+    }
+
+    bool crest_falls_toward(ivec2 origin, ivec2 direction, float crest, float relief)
+    {
+        ivec2 bounds = ivec2(Data.Counts.x, int(round(Data.Shape.w / Data.Shape.y)));
+        for (int offset = 1; offset <= 2; ++offset)
+        {
+            ivec2 sample_at = origin + offset * direction;
+            if (any(lessThan(sample_at, ivec2(0))) || any(greaterThanEqual(sample_at, bounds)))
+                return false;
+            float bed = height_at(sample_at.x, sample_at.y);
+            if (bed + relief < crest)
+                return true;
+            if (bed > crest + relief)
+                return false;
+        }
+        return false;
+    }
+
+    void record_overflow(int face_index, ivec4 face, float amount)
+    {
+        bool forward = amount > 0.0;
+        float integral = load_face_integrals(face_index);
+        int direction = forward ? 0 : 1;
+        uint receiver = uint(forward ? face.y : face.x);
+        // 출발 영역만 쓴다. 역류는 별도 슬롯에 모아 한 표시 구간에서 두 방향을 구별한다.
+        for (int i = 0; i < face.w; ++i)
+        {
+            int contact_index = face.z + i;
+            vec2 weight = load_contact_weights(contact_index);
+            float transferred = abs(amount) * (weight.y / integral);
+            if (transferred > 0.0)
+            {
+                int slot = 2 * contact_index + direction;
+                OverflowTransferRecord flow = load_overflow(slot);
+                bool same_interval = flow.interval == Push.DisplayInterval;
+                float mass = same_interval ? flow.mass_kg : 0.0;
+                float head = same_interval ? flow.head_m : 0.0;
+                store_overflow(slot, OverflowTransferRecord(mass + transferred, max(head, weight.x), uint(load_contacts(contact_index)), receiver,
+                                 Push.DisplayInterval, Push.TransferTime));
+            }
+        }
+    }
+
+// #endregion
+
+#include "SurfaceLocalUpdates.glsl"
+
+// ============================================================
+// 03. Active Workgroup Scheduling
+// ============================================================
+// #region 03_Active_Workgroup_Scheduling
+    // A dry endpoint cannot donate, but it can receive from a wet neighbor in the same step.
+    bool region_is_wet(int region, int read_base)
+    {
+        return region >= 0 && load_primary_liquid_region_state(read_base + region).x > 0.0;
+    }
+
+    bool cell_is_active(int cell, int read_base)
+    {
+        SurfaceCellState state = load_states(int(Push.ReadSlot) * Data.Counts.y + cell);
+        if (state.layer.x > 0.0 || state.substrate.x > 0.0 || state.substrate.y > 0.0 ||
+            state.substrate.w != 0.0 || state.field.x != 0.0)
+            return true;
+
+        ivec2 regions = load_cell_regions(cell);
+        for (int i = 0; i < regions.y; ++i)
+        {
+            int region = regions.x + i;
+            if (region_is_wet(region, read_base))
+                return true;
+            int start = load_regions(region).w;
+            int count = load_face_counts(region);
+            for (int j = 0; j < count; ++j)
+            {
+                ivec4 face = load_faces(load_region_faces(start + j));
+                int neighbor = face.x == region ? face.y : face.x;
+                if (region_is_wet(neighbor, read_base))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    int workgroup_list_offset(uint phase)
+    {
+        if (phase == FACE_CANDIDATES)
+            return Data.FaceWorkgroupsOffset;
+        if (phase == OUTFLOW_SCALE)
+            return Data.RegionWorkgroupsOffset;
+        return Data.CellWorkgroupsOffset;
+    }
+
+    void schedule_workgroups(int id, int read_base)
+    {
+        uint lane = gl_LocalInvocationIndex;
+        if (lane < 3u)
+            ActiveMasks[lane] = 0u;
+        barrier();
+
+        uint bit = 1u << lane;
+        if (id < Data.Counts.z)
+        {
+            ivec4 face = load_faces(id);
+            if (region_is_wet(face.x, read_base) || region_is_wet(face.y, read_base))
+                atomicOr(ActiveMasks[0], bit);
+            else
+                store_candidates(id, 0.0);
+        }
+        if (id < Data.RegionCount)
+        {
+            if (region_is_wet(id, read_base))
+                atomicOr(ActiveMasks[1], bit);
+            else
+                store_out_scale(id, 1.0);
+        }
+        if (id < Data.Counts.y && cell_is_active(id, read_base))
+            atomicOr(ActiveMasks[2], bit);
+        barrier();
+
+        if (lane < 3u && ActiveMasks[lane] != 0u)
+        {
+            uint slot = atomicAdd(Data.Words[Data.DispatchOffset + int(lane) * 3], 1u);
+            int entry = workgroup_list_offset(lane + FACE_CANDIDATES) + int(slot) * 2;
+            Data.Words[entry] = gl_WorkGroupID.x;
+            Data.Words[entry + 1] = ActiveMasks[lane];
+        }
+    }
+
+    int active_index()
+    {
+        int entry = workgroup_list_offset(Push.Phase) + int(gl_WorkGroupID.x) * 2;
+        uint lane = gl_LocalInvocationIndex;
+        if ((Data.Words[entry + 1] & (1u << lane)) == 0u)
+            return -1;
+        return int(Data.Words[entry] * gl_WorkGroupSize.x + lane);
+    }
+// #endregion
+
+// ============================================================
+// 04. Dispatch Entry Point
+// ============================================================
+// #region 04_Dispatch_Entry_Point
+    // 디스패치별 대상 범위를 확인한다. 단계 사이에서 필요한 메모리 가시성은 호스트의 배리어가 보장한다.
+
+    #include "FilmStep.glsl"
+
+    void main()
+    {
+        int id = int(gl_GlobalInvocationID.x);
+        int slot = int(Push.ReadSlot);
+        if (Push.Phase == SCHEDULE)
+        {
+            schedule_workgroups(id, slot * Data.RegionCount);
+            return;
+        }
+        if (Push.Sparse != 0u)
+        {
+            id = active_index();
+            if (id < 0)
+                return;
+        }
+        if (Push.Phase == FACE_CANDIDATES)
+        {
+            if (id < Data.LayerCount * Data.Counts.z)
+            {
+                int face = id % Data.Counts.z;
+                store_candidates(id, film_face_mass(slot, id / Data.Counts.z, face, load_faces(face)));
+            }
+            return;
+        }
+        if (Push.Phase == COMMIT)
+        {
+            if (id < Data.Counts.y)
+                commit_film(slot, id);
+            return;
+        }
+        if (Push.Phase == PREPARE)
+        {
+            if (id < Data.RegionCount)
+                prepare_film(slot, id);
+            return;
+        }
+        if (id >= Data.LayerCount * Data.RegionCount)
+            return;
+        int layer = id / Data.RegionCount, region = id % Data.RegionCount;
+        store_out_scale(id, film_scale(slot, layer, region));
+    }
+
+// #endregion

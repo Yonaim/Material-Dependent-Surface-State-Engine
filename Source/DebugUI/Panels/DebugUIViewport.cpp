@@ -11,9 +11,9 @@ namespace MDSS
 // 00. Viewport Panels
 // ============================================================
 #pragma region 00_Viewport_Panels
-// viewport별 입력·표시 범위를 처리하고 관련 진단 패널을 구성한다.
+    // viewport별 입력·표시 범위를 처리하고 관련 진단 패널을 구성한다.
 
-    void FDebugUI::DrawViewportPanels(FScene&)
+    void FDebugUI::DrawViewportPanels(FScene &)
     {
         ViewportState.HoveredViewportId = 0;
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
@@ -21,7 +21,7 @@ namespace MDSS
         if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || ViewportState.ViewportPanels.empty())
             return;
 
-        const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
+        const ImGuiViewport *MainViewport = ImGui::GetMainViewport();
         const ImVec2 WorkspacePos{MainViewport->Pos.x + ViewportState.ViewportWorkspaceRectNormalized.x * DisplaySize.x,
                                   MainViewport->Pos.y +
                                       ViewportState.ViewportWorkspaceRectNormalized.y * DisplaySize.y};
@@ -42,7 +42,7 @@ namespace MDSS
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
             ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus;
-        const auto GetViewportModeName = [](Rendering::ERenderViewMode Mode) -> const char*
+        const auto GetViewportModeName = [](Rendering::ERenderViewMode Mode) -> const char *
         {
             const auto Value = static_cast<std::uint32_t>(Mode);
 
@@ -55,30 +55,30 @@ namespace MDSS
             switch (Mode)
             {
                 case Rendering::ERenderViewMode::SolverTransferWeight:
-                    return "Solver Transfer Weights";
+                return "Solver Transfer Weights";
                 case Rendering::ERenderViewMode::MesoHeight:
                 case Rendering::ERenderViewMode::MesoOffset:
-                    return "Meso Geometry";
+                return "Meso Geometry";
                 case Rendering::ERenderViewMode::MacroGeometry:
-                    return "Base Geometry";
+                return "Base Geometry";
                 case Rendering::ERenderViewMode::SurfaceTexelGrid:
-                    return "Texel Grid";
+                return "Texel Grid";
                 case Rendering::ERenderViewMode::SurfaceTexelArea:
-                    return "Texel Area Heatmap";
+                return "Texel Area Heatmap";
                 case Rendering::ERenderViewMode::SurfaceAccumulation:
-                    return "State Height Heatmap";
+                return "State Height Heatmap";
                 case Rendering::ERenderViewMode::SurfaceFinalGeometry:
-                    return "Meso + State Geometry";
+                return "Meso + State Geometry";
                 case Rendering::ERenderViewMode::TotalSimulationHeight:
-                    return "Total Simulation Height";
+                return "Total Simulation Height";
                 default:
-                    return "Lit";
+                return "Lit";
             }
         };
 
         for (std::size_t Index = 0; Index < Count; ++Index)
         {
-            FViewportUIState::FViewportPanel& Panel = ViewportState.ViewportPanels[Index];
+            FViewportUIState::FViewportPanel &Panel = ViewportState.ViewportPanels[Index];
             const std::size_t                 Column = Index % Columns;
             const std::size_t                 Row = Index / Columns;
             const float                       Left =
@@ -105,8 +105,9 @@ namespace MDSS
                 if (CanvasSize.x >= 1.0F && CanvasSize.y >= 1.0F)
                 {
                     ImGui::SetCursorScreenPos({Left, CanvasTop});
-                    ImGui::InvisibleButton(
-                        "##Canvas", CanvasSize, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+                    ImGui::InvisibleButton("##Canvas",
+                                           CanvasSize,
+                                           ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
                     if (ImGui::IsItemHovered())
                     {
                         ViewportState.HoveredViewportId = Panel.Id;
@@ -120,9 +121,9 @@ namespace MDSS
                 const ImVec2 PanelMinimum{Left, Top};
                 const ImVec2 PanelMaximum{Right, Bottom};
                 const bool   bActive = Panel.Id == ViewportState.ActiveViewportId;
-                const ImU32  BorderColor = ImGui::GetColorU32(bActive ? ImVec4{0.35F, 0.78F, 1.0F, 0.95F}
-                                                                      : ImVec4{0.55F, 0.60F, 0.67F, 0.55F});
-                ImDrawList*  DrawList = ImGui::GetWindowDrawList();
+                const ImU32  BorderColor =
+                    bActive ? ImGui::GetColorU32(ImGuiCol_CheckMark, 0.95F) : ImGui::GetColorU32(ImGuiCol_Border);
+                ImDrawList *DrawList = ImGui::GetWindowDrawList();
                 DrawList->AddRect(PanelMinimum, PanelMaximum, BorderColor, 0.0F, 0, bActive ? 2.0F : 1.0F);
                 const std::string Label = "View " + std::to_string(Index + 1U) + "  ·  " +
                                           GetViewportModeName(FrameRenderer->GetRenderViewMode(Index));
@@ -130,8 +131,10 @@ namespace MDSS
                 const ImVec2      LabelTextSize = ImGui::CalcTextSize(Label.c_str());
                 const ImVec2      LabelMaximum{LabelMinimum.x + LabelTextSize.x + 12.0F,
                                                LabelMinimum.y + LabelTextSize.y + 8.0F};
-                DrawList->AddRectFilled(
-                    LabelMinimum, LabelMaximum, ImGui::GetColorU32({0.04F, 0.05F, 0.07F, 0.74F}), 3.0F);
+                DrawList->AddRectFilled(LabelMinimum,
+                                        LabelMaximum,
+                                        ImGui::GetColorU32({0.04F, 0.05F, 0.07F, 0.74F}),
+                                        3.0F);
                 DrawList->AddText(
                     {LabelMinimum.x + 6.0F, LabelMinimum.y + 4.0F},
                     ImGui::GetColorU32(bActive ? ImVec4{0.72F, 0.88F, 1.0F, 1.0F} : ImVec4{0.86F, 0.88F, 0.91F, 1.0F}),
@@ -146,70 +149,12 @@ namespace MDSS
 #pragma endregion
 
 // ============================================================
-// 01. Mesh Notices
-// ============================================================
-#pragma region 01_Mesh_Notices
-// 현재 메시·Surface 구성의 제한과 진단 안내를 표시한다.
-
-    void FDebugUI::DrawBrickCubeTexelMeshNotice(const FScene& SceneData)
-    {
-        if (FrameRenderer == nullptr || AssetManager == nullptr)
-            return;
-        const auto& Instances = SceneData.GetStaticMeshInstances();
-        bool        bBrickCubeTexelMesh = false;
-
-        for (std::size_t Index = 0; Index < Instances.size(); ++Index)
-        {
-            const auto Mesh = Instances[Index].GetMesh();
-
-            if (Mesh != Asset::InvalidAssetHandle && AssetManager->GetMesh(Mesh).GetName() == "BrickCube" &&
-                FrameRenderer->IsLitTexelMeshBaseRendered(SceneData, Index))
-            {
-                bBrickCubeTexelMesh = true;
-                break;
-            }
-        }
-
-        if (!bBrickCubeTexelMesh)
-            return;
-
-        constexpr const char* Message = "LIT 뷰: BrickCube를 텍셀 메시로 렌더링 중";
-        const ImVec2          DisplaySize = ImGui::GetIO().DisplaySize;
-        const glm::vec4       Rect = GetViewportRectNormalized(GetActiveViewportIndex());
-
-        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || Rect.z <= 0.0F || Rect.w <= 0.0F ||
-            Rect.z * DisplaySize.x < ImGui::CalcTextSize(Message).x + 36.0F)
-            return;
-        const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
-        const ImVec2 TopRight{Origin.x + (Rect.x + Rect.z) * DisplaySize.x - 10.0F,
-                              Origin.y + Rect.y * DisplaySize.y + 10.0F};
-        ImGui::SetNextWindowPos(TopRight, ImGuiCond_Always, {1.0F, 0.0F});
-        ImGui::SetNextWindowBgAlpha(0.84F);
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
-                                           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                                           ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
-        if (ImGui::Begin("BrickCube Texel Mesh##ViewportNotice", nullptr, Flags))
-        {
-            ImGui::TextUnformatted(Message);
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("원본 메시와 비교하려면 Base Geometry 뷰를 선택하세요.");
-            ViewportState.bMouseOverViewportOverlay |=
-                ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-        }
-
-        ImGui::End();
-    }
-
-#pragma endregion
-
-// ============================================================
 // 02. Render Settings
 // ============================================================
 #pragma region 02_Render_Settings
-// 선택한 외형·overlay 실행 옵션을 Renderer 설정과 연결한다.
+    // 선택한 외형·overlay 실행 옵션을 Renderer 설정과 연결한다.
 
-    void FDebugUI::DrawRenderSettingsWindow(FScene& SceneData)
+    void FDebugUI::DrawRenderSettingsWindow(FScene &SceneData)
     {
         if (FrameRenderer == nullptr)
         {
@@ -257,15 +202,16 @@ namespace MDSS
     void FDebugUI::DrawVisualRenderSettings()
     {
         // Visual 탭의 재질 효과와 공통 쉐이딩 옵션을 한 곳에서 편집한다.
-        if (ImGui::BeginChild(
-                "VisualSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+        if (ImGui::BeginChild("VisualSettingsContent",
+                              {0.0F, 0.0F},
+                              ImGuiChildFlags_None,
+                              ImGuiWindowFlags_NoBackground))
         {
             ImGui::Dummy({0.0F, 12.0F});
             auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
             bool bEffectsChanged = false;
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{8.0F, 7.0F});
-            const auto Bindings =
-                Rendering::ResolveDemoSurfaceStates(SurfaceDataManager->GetSurfaceStateRegistry());
+            const auto Bindings = Rendering::ResolveDemoSurfaceStates(SurfaceDataManager->GetSurfaceStateRegistry());
             DrawVisualEffectToggles(Effects, Bindings, bEffectsChanged);
             DrawVisualEffectDetails(Effects, Bindings, bEffectsChanged);
             DrawVisualHeightFade(Effects, bEffectsChanged);
@@ -279,11 +225,12 @@ namespace MDSS
         ImGui::EndChild();
     }
 
-    void FDebugUI::DrawVisualEffectToggles(Rendering::FDemoSurfaceEffectSettings& Effects, const Rendering::FDemoSurfaceStateBindings& Bindings, bool& bChanged)
+    void FDebugUI::DrawVisualEffectToggles(Rendering::FDemoSurfaceEffectSettings      &Effects,
+                                           const Rendering::FDemoSurfaceStateBindings &Bindings,
+                                           bool                                       &bChanged)
     {
         // 사용 가능한 State별 표시 효과를 한 묶음에서 켜고 끈다.
-        const auto DrawEffectToggle =
-            [&](const char* Label, bool& bEnabled, bool bAvailable, const char* Description)
+        const auto DrawEffectToggle = [&](const char *Label, bool &bEnabled, bool bAvailable, const char *Description)
         {
             ImGui::PushID("Toggle");
             ImGui::PushID(Label);
@@ -310,31 +257,25 @@ namespace MDSS
                          Effects.bMudDisplacement,
                          Bindings.Mud != SurfaceState::InvalidStateId,
                          "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.");
-        DrawEffectToggle(
-            "Ice",
-            Effects.bIceDisplacement,
-            Bindings.Ice != SurfaceState::InvalidStateId,
-            "Ice 적층을 푸른 산란색과 서리 표면으로 표시합니다. 녹은 물은 같은 표면 위에 합성됩니다.");
+        DrawEffectToggle("Ice",
+                         Effects.bIceDisplacement,
+                         Bindings.Ice != SurfaceState::InvalidStateId,
+                         "Ice 적층을 푸른 산란색과 서리 표면으로 표시합니다. 녹은 물은 같은 표면 위에 합성됩니다.");
         DrawEffectToggle("Lava",
                          Effects.bLavaDisplacement,
                          Bindings.Lava != SurfaceState::InvalidStateId,
                          "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.");
-
     }
 
-    void FDebugUI::DrawVisualEffectDetails(Rendering::FDemoSurfaceEffectSettings& Effects, const Rendering::FDemoSurfaceStateBindings& Bindings, bool& bChanged)
+    void FDebugUI::DrawVisualEffectDetails(Rendering::FDemoSurfaceEffectSettings      &Effects,
+                                           const Rendering::FDemoSurfaceStateBindings &Bindings,
+                                           bool                                       &bChanged)
     {
         // 활성화된 표시 효과의 재질별 색상과 쉐이딩 계수를 편집한다.
-        const auto DrawRamp = [&](Rendering::FDemoStateColorMapping& Mapping)
-        {
-            bChanged |=
-                LabeledRangeSliderFloat("Color ramp", &Mapping.RampStart, &Mapping.RampEnd);
-        };
-        const auto DrawEffectSettings = [&](const char* Label,
-                                            bool&       bEnabled,
-                                            bool        bAvailable,
-                                            const char* Description,
-                                            auto&&      DrawSettings)
+        const auto DrawRamp = [&](Rendering::FDemoStateColorMapping &Mapping)
+        { bChanged |= LabeledRangeSliderFloat("Color ramp", &Mapping.RampStart, &Mapping.RampEnd); };
+        const auto DrawEffectSettings =
+            [&](const char *Label, bool &bEnabled, bool bAvailable, const char *Description, auto &&DrawSettings)
         {
             if (!bEnabled || !bAvailable)
                 return;
@@ -362,72 +303,61 @@ namespace MDSS
                            "높이를 쌓지 않습니다.",
                            [&]()
                            {
-                               bChanged |= LabeledSliderFloat(
-                                   "Strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
+                               bChanged |= LabeledSliderFloat("Strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
                                DrawRamp(Effects.HeatColorMap);
                            });
-        DrawEffectSettings(
-            "WaterFilm",
-            Effects.bWaterFilmDisplacement,
-            Bindings.WaterFilm != SurfaceState::InvalidStateId,
-            "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
-            [&]()
-            {
-                bChanged |=
-                    ImGui::Checkbox("Teal visibility mode", &Effects.bEmphasizeWaterFilm);
-                if (ImGui::IsItemHovered())
-                    SetDescriptionTooltip("WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 "
-                                          "높이는 바꾸지 않습니다.");
-                bChanged |=
-                    LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
-                DrawRamp(Effects.WaterFilmColorMap);
-            });
-        DrawEffectSettings(
-            "Mud",
-            Effects.bMudDisplacement,
-            Bindings.Mud != SurfaceState::InvalidStateId,
-            "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.",
-            [&]()
-            {
-                bChanged |=
-                    LabeledSliderFloat("Roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
-                bChanged |=
-                    LabeledSliderFloat("Noise amount", &Effects.MudNoiseAmount, 0.0F, 1.0F, "%.2f");
-                if (ImGui::IsItemHovered())
-                    SetDescriptionTooltip("머드 표면의 절차적 미세요철 강도를 조절합니다. 0이면 "
-                                          "매끈하고 1이면 요철이 가장 강합니다.");
-                DrawRamp(Effects.MudColorMap);
-            });
+        DrawEffectSettings("WaterFilm",
+                           Effects.bWaterFilmDisplacement,
+                           Bindings.WaterFilm != SurfaceState::InvalidStateId,
+                           "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
+                           [&]()
+                           {
+                               bChanged |= ImGui::Checkbox("Teal visibility mode", &Effects.bEmphasizeWaterFilm);
+                               if (ImGui::IsItemHovered())
+                                   SetDescriptionTooltip("WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 "
+                                                         "높이는 바꾸지 않습니다.");
+                               bChanged |= LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
+                               DrawRamp(Effects.WaterFilmColorMap);
+                           });
+        DrawEffectSettings("Mud",
+                           Effects.bMudDisplacement,
+                           Bindings.Mud != SurfaceState::InvalidStateId,
+                           "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.",
+                           [&]()
+                           {
+                               bChanged |= LabeledSliderFloat("Roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
+                               bChanged |=
+                                   LabeledSliderFloat("Noise amount", &Effects.MudNoiseAmount, 0.0F, 1.0F, "%.2f");
+                               if (ImGui::IsItemHovered())
+                                   SetDescriptionTooltip("머드 표면의 절차적 미세요철 강도를 조절합니다. 0이면 "
+                                                         "매끈하고 1이면 요철이 가장 강합니다.");
+                               DrawRamp(Effects.MudColorMap);
+                           });
         DrawEffectSettings("Lava",
                            Effects.bLavaDisplacement,
                            Bindings.Lava != SurfaceState::InvalidStateId,
                            "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.",
                            [&]()
                            {
-                               bChanged |= LabeledSliderFloat(
-                                   "Lava threshold", &Effects.LavaThreshold, 0.0F, 1.0F, "%.2f");
+                               bChanged |=
+                                   LabeledSliderFloat("Lava threshold", &Effects.LavaThreshold, 0.0F, 1.0F, "%.2f");
                                if (ImGui::IsItemHovered())
-                                   SetDescriptionTooltip(
-                                       "포화도가 이 값 이하이면 Lava 색과 발광을 적용하지 않습니다.");
+                                   SetDescriptionTooltip("포화도가 이 값 이하이면 Lava 색과 발광을 적용하지 않습니다.");
                                DrawRamp(Effects.LavaColorMap);
                            });
-
     }
 
-    void FDebugUI::DrawVisualHeightFade(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged)
+    void FDebugUI::DrawVisualHeightFade(Rendering::FDemoSurfaceEffectSettings &Effects, bool &bChanged)
     {
         // 적층량이 낮을 때 시각적 높이를 줄이는 계수를 편집한다.
         ImGui::Dummy({0.0F, 4.0F});
-        bChanged |= LabeledSliderFloat(
-            "Height fade threshold", &Effects.LowAmountHeightFade, 0.0F, 0.5F, "%.2f");
+        bChanged |= LabeledSliderFloat("Height fade threshold", &Effects.LowAmountHeightFade, 0.0F, 0.5F, "%.2f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip(
-                "0이면 기존 높이를 그대로 표시합니다. 기준값을 높이면 그보다 농도가 낮은 쌓임 효과의 "
-                "화면 높이를 부드럽게 줄입니다. 시뮬레이션 상태와 이동에는 영향을 주지 않습니다.");
-
+            SetDescriptionTooltip("0이면 기존 높이를 그대로 표시합니다. 기준값을 높이면 그보다 농도가 낮은 쌓임 효과의 "
+                                  "화면 높이를 부드럽게 줄입니다. 시뮬레이션 상태와 이동에는 영향을 주지 않습니다.");
     }
 
-    void FDebugUI::DrawVisualShadingControls(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged)
+    void FDebugUI::DrawVisualShadingControls(Rendering::FDemoSurfaceEffectSettings &Effects, bool &bChanged)
     {
         // 조명 혼합·기본 거칠기·Normal Map 강도를 편집한다.
         ImGui::Dummy({0.0F, 6.0F});
@@ -443,8 +373,7 @@ namespace MDSS
                 SetDescriptionTooltip("0은 직접광 중심, 1은 표면색 기반 주변광 중심으로 섞습니다. 광원 "
                                       "방향과 색은 현재 고정입니다.");
 
-            bChanged |=
-                LabeledSliderFloat("Dry surface roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
+            bChanged |= LabeledSliderFloat("Dry surface roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
 
             float NormalStrength = FrameRenderer->GetNormalStrength();
 
@@ -460,14 +389,15 @@ namespace MDSS
                                       "켜짐으로 전처리됩니다.");
             ImGui::Unindent();
         }
-
     }
 
-    void FDebugUI::DrawDisplayRenderSettings(FScene& SceneData)
+    void FDebugUI::DrawDisplayRenderSettings(FScene &SceneData)
     {
         // Display 탭의 overlay 표기·진단 및 렌더 경로를 제어한다.
-        if (ImGui::BeginChild(
-                "DebugSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+        if (ImGui::BeginChild("DebugSettingsContent",
+                              {0.0F, 0.0F},
+                              ImGuiChildFlags_None,
+                              ImGuiWindowFlags_NoBackground))
         {
             ImGui::Dummy({0.0F, 12.0F});
             bool bOverlayOnly = FrameRenderer->IsOverlayOnlyDebugEnabled();
@@ -548,13 +478,11 @@ namespace MDSS
             if (LabeledSliderFloat("Lit height display scale", &LitHeightDisplayScale, 0.0F, 10.0F, "%.2f"))
                 FrameRenderer->SetSceneLitHeightDisplayScale(SceneData, LitHeightDisplayScale);
             if (ImGui::IsItemHovered())
-                SetDescriptionTooltip(
-                    "Lit 뷰에 표시하는 적층 높이 배율입니다. 시뮬레이션 데이터는 바꾸지 않습니다.");
+                SetDescriptionTooltip("Lit 뷰에 표시하는 적층 높이 배율입니다. 시뮬레이션 데이터는 바꾸지 않습니다.");
         }
 
         ImGui::EndChild();
     }
-
 
 #pragma endregion
 

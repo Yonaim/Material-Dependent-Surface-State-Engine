@@ -9,14 +9,12 @@
 #include "GPU/Vulkan/Resource/GPUImage.h"
 #include "GPU/Vulkan/Resource/GPUImageView.h"
 #include "GPU/Vulkan/Resource/GPUSampler.h"
-
-#include <vulkan/vulkan.h>
-
 #include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 namespace MDSS::GPU
 {
@@ -28,19 +26,19 @@ namespace MDSS::Asset
 
     class FTextureAsset final : public FAsset
     {
-    public:
+      public:
         // Texture resource construction and access
         /**
-         * @brief RGBA8 픽셀을 Vulkan image에 업로드하고 view와 sampler를 생성한다.
+         * @brief RGBA8 또는 RGBA16F 픽셀을 Vulkan image에 업로드하고 view와 sampler를 생성한다.
          * @throws std::runtime_error 이미지 자원 생성, layout 전환 또는 upload가 실패한 경우.
          */
         FTextureAsset(FAssetID                         ID,
                       std::string                      Name,
                       std::filesystem::path            SourcePath,
-                      const GPU::FVulkanContext&       Context,
+                      const GPU::FVulkanContext       &Context,
                       std::uint32_t                    Width,
                       std::uint32_t                    Height,
-                      const std::vector<std::uint8_t>& RGBA8Pixels,
+                      const std::vector<std::uint8_t> &Pixels,
                       VkFormat                         Format);
 
         [[nodiscard]] std::uint32_t GetWidth() const noexcept;
@@ -49,14 +47,14 @@ namespace MDSS::Asset
         [[nodiscard]] VkImageView   GetImageView() const noexcept;
         [[nodiscard]] VkSampler     GetSampler() const noexcept;
 
-    private:
+      private:
         /** @brief one-time command buffer로 지정된 image layout 전환을 실행한다. */
-        static void TransitionImageLayout(const GPU::FVulkanContext& Context,
+        static void TransitionImageLayout(const GPU::FVulkanContext &Context,
                                           VkImage                    Image,
                                           VkImageLayout              OldLayout,
                                           VkImageLayout              NewLayout);
         /** @brief staging buffer의 pixel data를 image의 color subresource로 복사한다. */
-        static void CopyBufferToImage(const GPU::FVulkanContext& Context,
+        static void CopyBufferToImage(const GPU::FVulkanContext &Context,
                                       VkBuffer                   Buffer,
                                       VkImage                    Image,
                                       std::uint32_t              Width,

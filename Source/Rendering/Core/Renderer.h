@@ -184,33 +184,10 @@ namespace MDSS::Rendering
 #pragma endregion
 
 // ============================================================
-// 04. Benchmark capture and overlay profiling
+// 04. Overlay and runtime performance controls
 // ============================================================
-#pragma region "04_Benchmark_capture_and_overlay_profiling"
+#pragma region "04_Overlay_and_runtime_performance_controls"
 // 결과 출력과 overlay 실행·표시 설정을 외부 제어에 연결한다.
-
-        // 04.00. Benchmark Capture
-        #pragma region "04_00_Benchmark_Capture"
-        // 프레임 측정과 선택적 checkpoint 출력을 설정하고 종료 후 결과를 확정한다.
-
-        /**
-         * @brief benchmark 출력과 선택적 authoring checkpoint 캡처를 설정한다.
-         * @param OutputPath 프레임 기록 및 추가 캡처 파일의 기준 경로.
-         * @param WarmupFrames 측정 전에 제외할 프레임 수.
-         * @param MeasurementFrames 기록할 측정 프레임 수. 0보다 커야 한다.
-         * @param AuthoringScene 초기 입력 관찰자가 참조할 Scene. checkpoint 사용 시 필수다.
-         * @pre AuthoringScene은 초기 입력 관찰자가 실행될 때까지 유효해야 한다.
-         * @throws std::invalid_argument 출력 경로·프레임 수·checkpoint 설정이 유효하지 않을 때.
-         * @throws std::runtime_error timestamp query를 지원하지 않거나 출력 파일을 열 수 없을 때.
-         */
-        void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
-                                       std::uint32_t                WarmupFrames,
-                                       std::uint32_t                MeasurementFrames,
-                                       const FScene*                AuthoringScene = nullptr);
-        // Called only after the application has waited for the device to become idle.
-        void                              FinalizeBenchmarkCapture();
-        void                              RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex);
-        #pragma endregion
 
         // 04.01. Overlay Display Controls
         #pragma region "04_01_Overlay_Display_Controls"
@@ -504,29 +481,12 @@ namespace MDSS::Rendering
 #pragma endregion
 
 // ============================================================
-// 06. Benchmark Submission and Material Records
+// 06. Frame Timing and Material Records
 // ============================================================
-#pragma region "06_Benchmark_Submission_and_Material_Records"
+#pragma region "06_Frame_Timing_and_Material_Records"
 // in-flight 측정 record와 material 자원이 유지할 필드 형식을 정의한다.
 
-        struct FBenchmarkFrameSubmission
-        {
-            std::uint64_t        FrameIndex = std::numeric_limits<std::uint64_t>::max();
-            std::uint32_t        SimulationSteps = 0;
-            std::uint32_t        Resolution = 0;
-            std::uint32_t        SurfaceMeshResolution = 0;
-            std::uint32_t        OverlayMeshResolution = 0;
-            std::uint32_t        Instances = 0;
-            std::uint32_t        StateChannels = 0;
-            std::uint64_t        Texels = 0;
-            float                SimulatedSeconds = 0.0F;
-            std::array<float, 5> CpuMilliseconds{};
-        };
-
         void CollectCompletedFrameTimings(std::uint32_t FrameIndex);
-        void WriteBenchmarkSample(std::uint32_t FrameSlot);
-        void WriteAuthoringCheckpoint(const FScene& SceneData, bool bInitialInput = false);
-        void WriteBenchmarkMetadata(const FScene& SceneData, const FDebugUI& DebugInterface);
 
         struct FMaterialRenderResource
         {
@@ -596,9 +556,6 @@ namespace MDSS::Rendering
         [[nodiscard]] bool PresentFrameImage(std::uint32_t ImageIndex,
                                              VkResult AcquireResult,
                                              VkSemaphore SignalSemaphore);
-        void FinalizeFrameBenchmark(std::uint32_t FrameIndex,
-                                    const FScene& SceneData,
-                                    const FDebugUI& DebugInterface);
 
         void RecreateSwapchain(FDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
@@ -645,7 +602,6 @@ namespace MDSS::Rendering
                                                                    const FDebugUI&               DebugInterface,
                                                                    const FCommandRecordingState& Frame);
         void                                  RecordUIAndEndCommandBuffer(VkCommandBuffer               CommandBuffer,
-                                                                          std::uint32_t                 ImageIndex,
                                                                           const FDebugUI&               DebugInterface,
                                                                           const FCommandRecordingState& Frame);
         [[nodiscard]] FViewportRecordingState ConfigureViewport(VkCommandBuffer               CommandBuffer,
@@ -701,8 +657,8 @@ namespace MDSS::Rendering
         std::uint32_t                                          WorldAxisVertexCount = 0;
         std::uint32_t                                          TranslateGizmoVertexCount = 0;
         std::uint32_t                                          RotateGizmoVertexCount = 0;
-        bool                                                   bWorldGridVisible = true;
-        bool                                                   bWorldAxisVisible = true;
+        bool                                                   bWorldGridVisible = false;
+        bool                                                   bWorldAxisVisible = false;
         std::unique_ptr<GPU::FGraphicsPipeline>                SurfaceDebugPipeline;
         std::unique_ptr<SurfaceState::FTexelGeometryPreview>   TexelGeometryPreview;
         std::unique_ptr<GPU::FGraphicsPipeline>                TexelGeometryPipeline;
@@ -776,33 +732,9 @@ namespace MDSS::Rendering
 #pragma endregion
 
 // ============================================================
-// 10. Benchmark Capture State
+// 10. Frame Timing
 // ============================================================
-#pragma region "10_Benchmark_Capture_State"
-// stream·경로·buffer·frame serial을 캡처 작업이 값으로 소유한다.
-
-        struct FBenchmarkCaptureState
-        {
-            std::array<FBenchmarkFrameSubmission, FRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
-            std::ofstream                                                            BenchmarkOutput;
-            std::filesystem::path                                                    BenchmarkOutputPath;
-            bool                                                                     bBenchmarkMetadataWritten = false;
-            std::vector<std::string>                                                 BenchmarkJsonLines;
-            std::uint64_t                                                            BenchmarkWarmupFrames = 0;
-            std::uint64_t                                                            BenchmarkMeasurementFrames = 0;
-            std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
-            bool                                                                     bBenchmarkCaptureEnabled = false;
-            std::unique_ptr<GPU::FGPUBuffer>                                         BenchmarkScreenshot;
-            std::unique_ptr<GPU::FGPUBuffer>                                         AuthoringScreenshot;
-            std::vector<std::uint64_t>                                               AuthoringCheckpointSteps;
-            std::uint64_t AuthoringLastCapturedStep = std::numeric_limits<std::uint64_t>::max();
-            VkExtent2D                                                               BenchmarkScreenshotExtent{};
-            VkFormat BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
-
-            float BenchmarkGpuElapsed = -1.0F;
-            float BenchmarkSimulationElapsed = -1.0F;
-        };
-        FBenchmarkCaptureState  Benchmark;
+#pragma region "10_Frame_Timing"
         std::uint32_t           TimestampQueriesPerFrame = 24;
         std::uint32_t           SolverTimestampGroupCount = 0;
         float                   TimestampPeriodNanoseconds = 0.0F;
@@ -813,7 +745,6 @@ namespace MDSS::Rendering
         float                   LastSolverPass1GpuMilliseconds = -1.0F;
         float                   LastSolverPass2GpuMilliseconds = -1.0F;
         FRendererProfilingStats ProfilingStats;
-
 #pragma endregion
     };
 } // MDSS 네임스페이스

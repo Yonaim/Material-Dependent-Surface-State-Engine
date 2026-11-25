@@ -1,0 +1,8 @@
+# 재사용할 국소 규칙의 모델과 계수. 적용 상태와 입력은 SurfaceProfile에서 연결한다.
+version: 1
+id: IceGateMelt
+model: TemperatureDrivenMelt
+# 용융 계수 [kg/(m²·s·K)]. 적용 면적과 어는점 위의 온도 차에 비례해 녹는다.
+rateKgM2SecondK: 0.25
+# 재질의 transitions 항목에서 읽을 상변환 ID.
+transition: IceLiquid

@@ -35,10 +35,6 @@ namespace MDSS
 
         // Consume time only after an image was acquired so skipped frames retain their budget.
         void PrepareSteps(FDebugUI& DebugUI, bool bResetState);
-        void RecordSimulation(VkCommandBuffer CommandBuffer,
-                              VkQueryPool     QueryPool,
-                              std::uint32_t   FirstStepQuery,
-                              std::uint32_t   QueriesPerStep);
         void ResetClock() noexcept;
         void RestartState();
 
@@ -72,16 +68,10 @@ namespace MDSS
             return DroppedSeconds;
         }
 
-        [[nodiscard]] std::uint64_t GetStepSerial() const noexcept
-        {
-            return StepSerial;
-        }
-
-    private:
-        SurfaceState::FSurfaceStateSystem& SurfaceStateSystem;
+      private:
+        SurfaceState::FSurfaceStateSystem &SurfaceStateSystem;
         SurfaceState::FSimulationClock     Clock;
         std::vector<float>                 Steps;
-        std::uint64_t                      StepSerial = 0;
         float                              MaximumStep = SurfaceState::FixedSimulationStepSeconds;
         float                              DroppedSeconds = 0.0F;
     };

@@ -4,7 +4,6 @@
  */
 
 #include "GPU/Vulkan/Render/RenderPass.h"
-
 #include <array>
 #include <cstdint>
 #include <stdexcept>
@@ -15,9 +14,10 @@ namespace MDSS::GPU
 // 00. Render Pass Lifecycle
 // ============================================================
 #pragma region 00_Render_Pass_Lifecycle
-// attachment와 dependency 설정으로 render pass를 만들고 해제한다.
+    // attachment와 dependency 설정으로 render pass를 만들고 해제한다.
 
-    FRenderPass::FRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
+    FRenderPass::FRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat, bool bSampled)
+        : Device(Device)
     {
         VkAttachmentDescription ColorAttachment{};
         ColorAttachment.format = ColorFormat;
@@ -27,17 +27,19 @@ namespace MDSS::GPU
         ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        ColorAttachment.finalLayout =
+            bSampled ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
         VkAttachmentDescription DepthAttachment{};
         DepthAttachment.format = DepthFormat;
         DepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         DepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        DepthAttachment.storeOp = bSampled ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        DepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        DepthAttachment.finalLayout = bSampled ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                                               : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         const std::array<VkAttachmentDescription, 2> Attachments = {ColorAttachment, DepthAttachment};
 
@@ -73,8 +75,21 @@ namespace MDSS::GPU
         CreateInfo.pAttachments = Attachments.data();
         CreateInfo.subpassCount = 1;
         CreateInfo.pSubpasses = &Subpass;
-        CreateInfo.dependencyCount = 1;
-        CreateInfo.pDependencies = &Dependency;
+        VkSubpassDependency Sampled{};
+        if (bSampled)
+        {
+            Dependency.srcStageMask |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            Dependency.srcAccessMask |= VK_ACCESS_SHADER_READ_BIT;
+            Sampled.srcSubpass = 0;
+            Sampled.dstSubpass = VK_SUBPASS_EXTERNAL;
+            Sampled.srcStageMask = Dependency.dstStageMask;
+            Sampled.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            Sampled.srcAccessMask = Dependency.dstAccessMask;
+            Sampled.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        }
+        const std::array Dependencies{Dependency, Sampled};
+        CreateInfo.dependencyCount = bSampled ? 2 : 1;
+        CreateInfo.pDependencies = Dependencies.data();
 
         if (vkCreateRenderPass(Device, &CreateInfo, nullptr, &Handle) != VK_SUCCESS)
         {
@@ -97,7 +112,7 @@ namespace MDSS::GPU
 // 01. Render Pass Access
 // ============================================================
 #pragma region 01_Render_Pass_Access
-// pipeline·framebuffer·명령 기록에서 사용할 render pass를 제공한다.
+    // pipeline·framebuffer·명령 기록에서 사용할 render pass를 제공한다.
 
     VkRenderPass FRenderPass::GetHandle() const noexcept
     {

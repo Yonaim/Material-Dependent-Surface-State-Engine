@@ -8,24 +8,24 @@
 #include "AssetManager/Core/Asset.h"
 #include "DebugUI/Profiling/ProfilingUIState.h"
 #include "Logger/Logger.h"
+#include "Rendering/Core/RenderSettings.h"
 #include "Scene/Camera.h"
 #include "SurfaceState/Solver/SimulationClock.h"
 #include "SurfaceState/State/SurfaceInput.h"
 #include "SurfaceState/Types/SurfaceStateTypes.h"
-
-#include <vulkan/vulkan.h>
-
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <map>
+#include <memory>
 #include <optional>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 struct GLFWwindow;
 struct ImFont;
@@ -41,6 +41,11 @@ namespace MDSS::SurfaceState
     class FSurfaceDataManager;
 }
 
+namespace MDSS::SurfaceSimulation
+{
+    class FEditorSession;
+}
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -53,7 +58,7 @@ namespace MDSS::Rendering
     struct FDemoSurfaceStateBindings;
     struct FRendererProfilingStats;
     enum class ERenderViewMode : std::uint32_t;
-}
+} // namespace MDSS::Rendering
 
 namespace MDSS
 {
@@ -68,7 +73,7 @@ namespace MDSS
 
     class FDebugUI
     {
-    public:
+      public:
         // ============================================================
         // 00. Lifecycle and Public API
         // ============================================================
@@ -76,21 +81,30 @@ namespace MDSS
         // 외부 호출자가 UI 초기화·프레임·종료 경계를 통해 기능을 사용한다.
 
         // Debug UI lifecycle
-        FDebugUI(const GPU::FVulkanContext&         Context,
-                 const FWindow&                     Window,
-                 Rendering::FRenderer&              Renderer,
-                 Asset::FAssetManager&              Assets,
-                 SurfaceState::FSurfaceDataManager& SurfaceData);
+        FDebugUI(const GPU::FVulkanContext         &Context,
+                 const FWindow                     &Window,
+                 Rendering::FRenderer              &Renderer,
+                 Asset::FAssetManager              &Assets,
+                 SurfaceState::FSurfaceDataManager &SurfaceData);
         ~FDebugUI();
 
-        FDebugUI(const FDebugUI&) = delete;
-        FDebugUI& operator=(const FDebugUI&) = delete;
-        FDebugUI(FDebugUI&&) = delete;
-        FDebugUI& operator=(FDebugUI&&) = delete;
+        FDebugUI(const FDebugUI &) = delete;
+        FDebugUI &operator=(const FDebugUI &) = delete;
+        FDebugUI(FDebugUI &&) = delete;
+        FDebugUI &operator=(FDebugUI &&) = delete;
 
         // Frame, scene, and swapchain control
         /** @brief 새 ImGui frame을 시작해 진단 창을 갱신하고 draw data를 확정한다. */
-        void BeginFrame(FScene& SceneData);
+        void BeginFrame(FScene &SceneData);
+
+        /** @brief 현재 창에서 저작된 표면 시뮬레이션 장면을 연다. */
+        void OpenWorkspaceScene(const std::filesystem::path &Path);
+        /** @brief 공통 창에 표면 시뮬레이션 세션을 연결한다. */
+        void               SetSurfaceSimulationEnabled(bool bEnabled);
+        [[nodiscard]] bool UsesSurfaceSimulation() const noexcept;
+
+        /** @brief 현재 editor frame slot의 offscreen 시뮬레이션 표시를 기록한다. */
+        void RecordSurfaceSimulation(VkCommandBuffer Commands, std::uint32_t FrameSlot) const;
 
         /** @brief 자동 benchmark에서 solver 조건을 fixed 1/60 s step으로 고정한다. */
         void SetPresentationMode(bool bEnabled)
@@ -110,14 +124,14 @@ namespace MDSS
         }
 
         /** @brief 저장된 .Scene을 다시 읽어 애니메이션, 상태, 초기 접촉 입력을 처음부터 시작한다. */
-        void RestartScene(FScene& SceneData);
+        void RestartScene(FScene &SceneData);
 
         // Draw submission
         /** @brief 현재 Vulkan render pass에 ImGui draw command를 기록한다. */
         void Render(VkCommandBuffer CommandBuffer) const;
 
         /** @brief swapchain 재생성 후 ImGui Vulkan backend의 image count를 갱신한다. */
-        void OnSwapchainRecreated(const GPU::FVulkanContext& Context, const Rendering::FRenderer& Renderer);
+        void OnSwapchainRecreated(const GPU::FVulkanContext &Context, const Rendering::FRenderer &Renderer);
 
         // Runtime settings and viewport state
         [[nodiscard]] bool                                   IsInjectModeEnabled() const noexcept;
@@ -149,8 +163,8 @@ namespace MDSS
         [[nodiscard]] bool           ConsumeFrameTimeResetRequest() noexcept;
         [[nodiscard]] std::size_t    GetViewportCount() const noexcept;
         [[nodiscard]] glm::vec4      GetViewportRectNormalized(std::size_t Index) const noexcept;
-        [[nodiscard]] const FCamera& GetViewportCamera(const FScene& SceneData, std::size_t Index) const noexcept;
-        [[nodiscard]] const FCamera& GetActiveViewportCamera(const FScene& SceneData) const noexcept;
+        [[nodiscard]] const FCamera &GetViewportCamera(const FScene &SceneData, std::size_t Index) const noexcept;
+        [[nodiscard]] const FCamera &GetActiveViewportCamera(const FScene &SceneData) const noexcept;
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] int                        GetHoveredGizmoAxis() const noexcept;
         [[nodiscard]] bool                       IsRotationGizmoMode() const noexcept;
@@ -159,7 +173,7 @@ namespace MDSS
 
 #pragma endregion
 
-    private:
+      private:
         // ============================================================
         // 01. Scene and Viewport Operations
         // ============================================================
@@ -170,34 +184,39 @@ namespace MDSS
         void InitializeImGuiContext();
         void ConfigureImGuiFonts();
         void ConfigureImGuiStyle();
-        void InitializeImGuiBackends(const GPU::FVulkanContext& Context,
-                                     const FWindow& Window,
-                                     Rendering::FRenderer& Renderer);
+        void InitializeImGuiBackends(const GPU::FVulkanContext &Context,
+                                     const FWindow             &Window,
+                                     Rendering::FRenderer      &Renderer);
 
         // Only the active frame's top-level flow belongs in BeginFrame().
-        void BeginImGuiFrame(FScene& SceneData);
-        void DrawEditorPanels(FScene& SceneData);
+        void BeginImGuiFrame(FScene &SceneData);
+        void DrawEditorPanels(FScene &SceneData);
         void DrawInjectionCrosshair();
 
         // Scene, selection, and camera controls
-        void ProcessCameraInput(FScene& SceneData);
-        void ProcessSelectionAndGizmo(FScene& SceneData);
-        void HandleGizmoKeyboardShortcuts(FScene& SceneData);
-        void ProcessGizmoPointerInteraction(FScene& SceneData);
-        void UpdateActiveGizmoDrag(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
-        void UpdateHoveredGizmoAxis(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
-        void HandleGizmoViewportClick(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
-        void DrawSceneWindow(FScene& SceneData);
-        void DrawSceneBrowser(FScene &SceneData);
-        void ReplaceSceneFromPath(FScene &SceneData, const std::filesystem::path &Path);
-        void DrawAnimationWindow(FScene &SceneData);
-        void ReplayDemo(FScene& SceneData);
+        void ProcessCameraInput(FScene &SceneData);
+        void ProcessSelectionAndGizmo(FScene &SceneData);
+        void HandleGizmoKeyboardShortcuts(FScene &SceneData);
+        void ProcessGizmoPointerInteraction(FScene &SceneData);
+        void UpdateActiveGizmoDrag(FScene &SceneData, const FGizmoViewportProjection &Projection, const ImVec2 &Mouse);
+        void UpdateHoveredGizmoAxis(FScene &SceneData, const FGizmoViewportProjection &Projection, const ImVec2 &Mouse);
+        void
+        HandleGizmoViewportClick(FScene &SceneData, const FGizmoViewportProjection &Projection, const ImVec2 &Mouse);
+        void DrawWorkspaceMenu();
+        void BrowseWorkspaceScene();
+        void DrawSceneLibrary(FScene &SceneData);
+        void DrawSceneChooser();
+        void DrawWorkspaceTimeline(FScene &SceneData);
+        void DrawWorkspaceDetails(FScene &SceneData);
+        void DrawWorkspaceTools();
+        void DrawAnimationControls(FScene &SceneData);
+        void ReplayDemo(FScene &SceneData);
         void TogglePresentationMode();
-        void DrawSelectedObjectWindow(FScene& SceneData);
-        void DrawCameraWindow(FScene& SceneData);
-        void DrawViewportPanels(FScene& SceneData);
-        void DrawDemoWeatherOverlay(const FScene& SceneData);
-        void DrawBrickCubeTexelMeshNotice(const FScene& SceneData);
+        void DrawSelectedObjectDetails(FScene &SceneData);
+        void DrawCameraDetails(FScene &SceneData);
+        void DrawViewportPanels(FScene &SceneData);
+        void DrawDemoWeatherOverlay(const FScene &SceneData);
+        void DrawSurfaceSimulationViewport();
 
 #pragma endregion
 
@@ -208,48 +227,49 @@ namespace MDSS
         // 렌더 표시와 실행 비용 옵션을 해당 Renderer 설정에 전달한다.
 
         // Rendering controls and performance overlays
-        void DrawRenderOptionsWindow(FScene& SceneData);
-        [[nodiscard]] const char* DrawToolbarViewSelector(std::size_t ActiveViewportIndex,
-                                                          Rendering::ERenderViewMode& CurrentMode);
-        [[nodiscard]] const char* ResolveViewModeName(Rendering::ERenderViewMode CurrentMode) const;
-        [[nodiscard]] bool DrawViewModeCombo(std::size_t ActiveViewportIndex,
-                                             Rendering::ERenderViewMode& CurrentMode,
-                                             const char* CurrentName);
-        void DrawViewportCollectionControls(std::size_t ActiveViewportIndex);
-        void DrawToolbarStateSelector(Rendering::ERenderViewMode CurrentMode);
-        [[nodiscard]] bool DrawToolbarViewSettingsButton();
-        void DrawToolbarVisibilityAndZoom(FScene& SceneData);
-        void DrawViewSettingsPopup(std::size_t                 ActiveViewportIndex,
-                                   Rendering::ERenderViewMode& CurrentMode,
-                                   const char*                 CurrentName);
-        void DrawRenderSettingsWindow(FScene& SceneData);
-        void DrawVisualRenderSettings();
-        void DrawVisualEffectToggles(Rendering::FDemoSurfaceEffectSettings& Effects,
-                                     const Rendering::FDemoSurfaceStateBindings& Bindings,
-                                     bool& bChanged);
-        void DrawVisualEffectDetails(Rendering::FDemoSurfaceEffectSettings& Effects,
-                                     const Rendering::FDemoSurfaceStateBindings& Bindings,
-                                     bool& bChanged);
-        void DrawVisualHeightFade(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged);
-        void DrawVisualShadingControls(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged);
-        void DrawDisplayRenderSettings(FScene& SceneData);
-        void DrawActiveViewModeSettings(std::size_t ActiveViewportIndex, Rendering::ERenderViewMode& CurrentMode);
-        void DrawViewModeContext(Rendering::ERenderViewMode CurrentMode, const char* Title, const char* Description);
+        void                      DrawRenderOptionsWindow(FScene &SceneData);
+        void                      DrawViewportToolbar(FScene &SceneData);
+        [[nodiscard]] const char *ResolveViewModeName(Rendering::ERenderViewMode CurrentMode) const;
+        [[nodiscard]] bool        DrawViewModeCombo(std::size_t                 ActiveViewportIndex,
+                                                    Rendering::ERenderViewMode &CurrentMode,
+                                                    const char                 *CurrentName);
+        void                      SetWorkspaceViewCount(int Count);
+        void                      DrawToolbarStateSelector(Rendering::ERenderViewMode CurrentMode);
+        [[nodiscard]] bool        DrawToolbarViewSettingsButton();
+        void                      DrawMeshCompareMenu();
+        void                      DrawViewSettingsPopup(std::size_t                 ActiveViewportIndex,
+                                                        Rendering::ERenderViewMode &CurrentMode,
+                                                        const char                 *CurrentName,
+                                                        FScene                     &SceneData);
+        void                      DrawRenderSettingsWindow(FScene &SceneData);
+        void                      DrawVisualRenderSettings();
+        void                      DrawVisualEffectToggles(Rendering::FDemoSurfaceEffectSettings      &Effects,
+                                                          const Rendering::FDemoSurfaceStateBindings &Bindings,
+                                                          bool                                       &bChanged);
+        void                      DrawVisualEffectDetails(Rendering::FDemoSurfaceEffectSettings      &Effects,
+                                                          const Rendering::FDemoSurfaceStateBindings &Bindings,
+                                                          bool                                       &bChanged);
+        void                      DrawVisualHeightFade(Rendering::FDemoSurfaceEffectSettings &Effects, bool &bChanged);
+        void DrawVisualShadingControls(Rendering::FDemoSurfaceEffectSettings &Effects, bool &bChanged);
+        void DrawDisplayRenderSettings(FScene &SceneData);
+        void DrawActiveViewModeSettings(std::size_t ActiveViewportIndex, Rendering::ERenderViewMode &CurrentMode);
+        void DrawViewModeContext(Rendering::ERenderViewMode CurrentMode, const char *Title, const char *Description);
         void DrawHeightGridControls();
-        void DrawWireframeViewSettings(Rendering::ERenderViewMode& CurrentMode);
-        void DrawStateHeatmapViewSettings(Rendering::ERenderViewMode& CurrentMode);
-        void DrawStateGeometryViewSettings(Rendering::ERenderViewMode& CurrentMode);
-        void DrawOutgoingFluxViewSettings(Rendering::ERenderViewMode& CurrentMode);
-        void DrawTransferWeightViewSettings(Rendering::ERenderViewMode& CurrentMode);
-        void DrawTexelGridViewSettings(Rendering::ERenderViewMode& CurrentMode);
-        void DrawTexelAreaViewSettings(Rendering::ERenderViewMode& CurrentMode);
-        void DrawMesoGeometryViewSettings(std::size_t ActiveViewportIndex, Rendering::ERenderViewMode& CurrentMode);
+        void DrawWireframeViewSettings(Rendering::ERenderViewMode &CurrentMode);
+        void DrawStateHeatmapViewSettings(Rendering::ERenderViewMode &CurrentMode);
+        void DrawStateGeometryViewSettings(Rendering::ERenderViewMode &CurrentMode);
+        void DrawOutgoingFluxViewSettings(Rendering::ERenderViewMode &CurrentMode);
+        void DrawTransferWeightViewSettings(Rendering::ERenderViewMode &CurrentMode);
+        void DrawTexelGridViewSettings(Rendering::ERenderViewMode &CurrentMode);
+        void DrawTexelAreaViewSettings(Rendering::ERenderViewMode &CurrentMode);
+        void DrawMesoGeometryViewSettings(std::size_t ActiveViewportIndex, Rendering::ERenderViewMode &CurrentMode);
 
-        void DrawViewportStatsOverlay();
-        [[nodiscard]] float DrawTimeProfilingOverlay(const ImVec2& ViewportOrigin);
-        void DrawTimeProfilingContents(const Rendering::FRendererProfilingStats& Stats, bool bFineRenderTimings);
-        [[nodiscard]] float DrawMemoryProfilingOverlay(const ImVec2& ViewportOrigin, float RenderStateY);
-        void DrawRenderStateProfilingOverlay(const ImVec2& ViewportOrigin, float RenderStateY);
+        void DrawProfilingWindow();
+        void DrawProfilingTimings();
+        void RefreshProfilingReadings();
+        void DrawTimeProfilingContents(const Rendering::FRendererProfilingStats &Stats, bool bFineRenderTimings);
+        void DrawMemoryProfilingContents();
+        void DrawRenderStateProfilingContents();
         void ResetProfilingAverages() noexcept;
         void ResetSurfaceStateSettings();
 
@@ -262,25 +282,12 @@ namespace MDSS
         // Solver 설정과 State 진단의 패널 구성 경계를 선언한다.
 
         // Simulation and diagnostic panels
-        void DrawSimulationDebugWindow(FScene& SceneData);
         void DrawSimulationCommonControls();
         void DrawSolverTab();
         void DrawTexelInspectorTab();
         void DrawDebugStateSelector();
         void DrawContactInputTab();
-        void DrawProfileTuningTab(FScene& SceneData);
-        [[nodiscard]] std::vector<Asset::FSRProfileAssetHandle> CollectSceneProfiles(const FScene& SceneData) const;
-        void DrawProfileSelector(const std::vector<Asset::FSRProfileAssetHandle>& SceneProfiles);
-        void DrawProfileReactionRules();
-        [[nodiscard]] bool DrawProfileStateSelector();
-        [[nodiscard]] bool PrepareProfileDraft();
-        void DrawProfileParameterControls();
-        void DrawProfileCapacityControls(bool& bChanged);
-        void DrawProfileTransportControls(bool& bChanged);
-        void DrawProfileDecayControls(bool& bChanged);
-        void DrawProfileAccumulationControls(bool& bChanged);
-        void DrawProfileOverrideActions();
-        void DrawSimulationSettingsTab(FScene& SceneData);
+        void DrawSimulationSettingsTab(FScene &SceneData);
         void DrawPerformanceTab(bool bRendering);
         void DrawRenderingPerformanceSettings();
         void DrawSimulationPerformanceSettings();
@@ -288,7 +295,7 @@ namespace MDSS
         void DrawRenderingSmoothingSettings();
         void DrawSimulationCacheSettings();
         void DrawSimulationSparseSettings();
-        void DrawLogWindow();
+        void DrawLogContents();
 
 #pragma endregion
 
@@ -300,14 +307,13 @@ namespace MDSS
 
         // Shared layout helpers
         void                      SetupDockspace();
-        void                      ApplyCameraViewPreset(FScene& SceneData, std::size_t Index);
-        void                      UpdateDemoPlaybackGridAxis(FScene& SceneData);
-        [[nodiscard]] FCamera&    GetViewportCamera(FScene& SceneData, std::size_t Index) noexcept;
+        void                      ApplyCameraViewPreset(FScene &SceneData, std::size_t Index);
+        [[nodiscard]] FCamera    &GetViewportCamera(FScene &SceneData, std::size_t Index) noexcept;
         [[nodiscard]] std::size_t GetActiveViewportIndex() const noexcept;
-        static constexpr float    SectionHeaderTopPadding = 8.0F;
-        void                      DrawSectionHeader(const char* Title,
+        static constexpr float    SectionHeaderTopPadding = 6.0F;
+        void                      DrawSectionHeader(const char *Title,
                                                     float       TopPadding = SectionHeaderTopPadding,
-                                                    float       BottomPadding = 4.0F) const;
+                                                    float       BottomPadding = 6.0F) const;
 
 #pragma endregion
 
@@ -317,11 +323,15 @@ namespace MDSS
 #pragma region "05_Resource_References"
         // Application이 소유하는 장치·Scene·Renderer를 빌려 사용한다.
 
-        VkDevice                           Device = VK_NULL_HANDLE;
-        GLFWwindow*                        NativeWindow = nullptr;
-        Rendering::FRenderer*              FrameRenderer = nullptr;
-        Asset::FAssetManager*              AssetManager = nullptr;
-        SurfaceState::FSurfaceDataManager* SurfaceDataManager = nullptr;
+        const GPU::FVulkanContext                         &GpuContext;
+        std::unique_ptr<SurfaceSimulation::FEditorSession> EditorLab;
+        bool                                               bSurfaceSimulationEnabled = false;
+        bool                                               bSceneWeatherPreview = false;
+        VkDevice                                           Device = VK_NULL_HANDLE;
+        GLFWwindow                                        *NativeWindow = nullptr;
+        Rendering::FRenderer                              *FrameRenderer = nullptr;
+        Asset::FAssetManager                              *AssetManager = nullptr;
+        SurfaceState::FSurfaceDataManager                 *SurfaceDataManager = nullptr;
 #pragma endregion
 
         // ============================================================
@@ -348,9 +358,6 @@ namespace MDSS
             bool bPresentationMode = false;
             bool bPresentationGridWasVisible = false;
             bool bPresentationAxisWasVisible = false;
-            bool bDemoPlaybackGridAxisHidden = false;
-            bool bDemoPlaybackGridWasVisible = false;
-            bool bDemoPlaybackAxisWasVisible = false;
         };
         FPresentationUIState Presentation;
 #pragma endregion
@@ -375,42 +382,15 @@ namespace MDSS
             int                                    InjectTexelSearchRadius = 2;
             float                                  AnimationTimeScale = 1.0F;
             float                                  SimulationTimeScale = 1.0F;
-            bool bFixedSimulationTimestep = SurfaceState::bDefaultFixedSimulationTimestep;
-            bool bAutoSubstepping = SurfaceState::bDefaultAutoSubstepping;
-            bool bSimulationPaused = false;
-            bool bSolverStepRequested = false;
-            bool bSolverResetRequested = false;
-            bool bFrameTimeResetRequested = false;
+            bool        bFixedSimulationTimestep = SurfaceState::bDefaultFixedSimulationTimestep;
+            bool        bAutoSubstepping = SurfaceState::bDefaultAutoSubstepping;
+            bool        bSimulationPaused = false;
+            bool        bSolverStepRequested = false;
+            bool        bSolverResetRequested = false;
+            bool        bFrameTimeResetRequested = false;
+            std::string ResolutionStatus;
         };
         FSimulationUIState Simulation;
-#pragma endregion
-
-        // ============================================================
-        // 09. Profile Editing State
-        // ============================================================
-#pragma region "09_Profile_Editing_State"
-        // Profile 편집 중 선택한 자산·State와 임시 입력 값을 유지한다.
-
-        struct FProfileEditingUIState
-        {
-            Asset::FSRProfileAssetHandle                                    Profile = Asset::InvalidAssetHandle;
-            SurfaceState::FStateId                                          State = 0;
-            std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> DraftKey{Asset::InvalidAssetHandle,
-                                                                                     SurfaceState::InvalidStateId};
-            SurfaceState::FSurfaceStateParameters                           Draft{};
-            std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>,
-                     SurfaceState::FSurfaceStateParameters>
-                RuntimeOverrides;
-            std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>,
-                     SurfaceState::FSurfaceStateParameters>
-                                                                                      Drafts;
-            std::set<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>> DirtyDrafts;
-            bool                                                                      bAvailable = false;
-            bool                                                                      bDirty = false;
-            std::string                                                               Status;
-            std::string                                                               ResolutionStatus;
-        };
-        FProfileEditingUIState ProfileEditing;
 #pragma endregion
 
         // ============================================================
@@ -445,12 +425,23 @@ namespace MDSS
 
         struct FViewportUIState
         {
-            std::string   SceneStatus;
-            std::string   SceneBrowserPath;
-            int           SceneCategory = 0;
-            std::string   EditorLayoutPath;
-            std::uint32_t DockspaceID = 0;
-            ImFont       *SectionHeaderFont = nullptr;
+            std::string           SceneStatus;
+            std::filesystem::path SceneLibrarySelection;
+            int                   SceneCategory = 0;
+            bool                  bShowLibrary = true;
+            bool                  bShowCamera = true;
+            bool                  bShowSceneSetup = true;
+            bool                  bShowRenderOptions = true;
+            bool                  bShowDetails = true;
+            bool                  bShowExperiments = true;
+            bool                  bShowLog = true;
+            bool                  bShowProfiling = true;
+            bool                  bShowCellInspector = false;
+            bool                  bResetWorkspaceLayout = false;
+            std::string           EditorLayoutPath;
+            std::uint32_t         DockspaceID = 0;
+            ImFont               *SectionHeaderFont = nullptr;
+            ImFont               *BoldLabelFont = nullptr;
             struct FViewportPanel
             {
                 std::uint32_t Id = 0;
@@ -480,7 +471,6 @@ namespace MDSS
             std::vector<FLogEntry>                                       Entries;
             std::uint64_t                                                LastSeenRevision = 0;
             bool                                                         bScrollToBottom = true;
-            float                                                        WindowHeight = 540.0F;
         };
         FLogUIState LogState;
 #pragma endregion
@@ -491,8 +481,11 @@ namespace MDSS
 #pragma region "13_Profiling_and_Overlay_State"
         // 측정 집계와 overlay 표시 설정을 UI 소비자에게 연결한다.
 
-        FProfilingUIState Profiling;
-        bool              bViewportOverlaysVisible = true;
+        FProfilingUIState                                 Profiling;
+        std::optional<Rendering::FRendererProfilingStats> DisplayedProfilingStats;
+        float                                             DisplayedMeshSimulationTime = 0.F;
+        bool                                              bHoldProfilingReadings = false;
+        bool                                              bProfilingChartScene = false;
 #pragma endregion
     };
 } // namespace MDSS

@@ -3,7 +3,9 @@
  * @brief 디버그 UI의 초기화·프레임·종료와 공통 입력·표시 상태를 관리한다.
  */
 
+#include "Application/Editor/SurfaceSimulation/SurfaceSimulation.h"
 #include "DebugUI/Core/DebugUIShared.h"
+#include "DebugUI/Panels/EditorLayoutStyle.h"
 
 namespace MDSS
 {
@@ -18,7 +20,11 @@ namespace MDSS
                        Rendering::FRenderer              &Renderer,
                        Asset::FAssetManager              &Assets,
                        SurfaceState::FSurfaceDataManager &SurfaceData)
-        : Device(Context.GetDevice()), NativeWindow(Window.GetNativeHandle()), FrameRenderer(&Renderer), AssetManager(&Assets),
+        : GpuContext(Context),
+          Device(Context.GetDevice()),
+          NativeWindow(Window.GetNativeHandle()),
+          FrameRenderer(&Renderer),
+          AssetManager(&Assets),
           SurfaceDataManager(&SurfaceData)
     {
         InitializeImGuiContext();
@@ -28,7 +34,8 @@ namespace MDSS
 
         ResetSurfaceStateSettings();
         FLogger::Info("TDebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
-        FLogger::Debug("TDebugUI", "Camera/render controls, injection controls, normal debug views, and log filtering are active.");
+        FLogger::Debug("TDebugUI",
+                       "Camera/render controls, injection controls, normal debug views, and log filtering are active.");
         LogState.Entries = FLogger::GetEntries();
         LogState.LastSeenRevision = FLogger::GetRevision();
     }
@@ -46,7 +53,7 @@ namespace MDSS
             ImGuiIO &IO = ImGui::GetIO();
             IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
             std::filesystem::create_directories(GetEngineConfigDirectory());
-            ViewportState.EditorLayoutPath = (GetEngineConfigDirectory() / "EditorLayout.ini").string();
+            ViewportState.EditorLayoutPath = (GetEngineConfigDirectory() / "EditorWorkspace-v3.ini").string();
             IO.IniFilename = ViewportState.EditorLayoutPath.c_str();
         }
 
@@ -54,26 +61,38 @@ namespace MDSS
         {
             ImGuiIO &IO = ImGui::GetIO();
 
-                        #if defined(_WIN32)
-            constexpr const char *FontCandidates[] = {"C:/Windows/Fonts/malgun.ttf", "C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf"};
-                        #elif defined(__APPLE__)
+                                                                                                    #if defined(_WIN32)
+            constexpr const char *FontCandidates[] = {"C:/Windows/Fonts/malgun.ttf",
+                                                      "C:/Windows/Fonts/segoeui.ttf",
+                                                      "C:/Windows/Fonts/arial.ttf"};
+            constexpr const char *BoldFontCandidates[] = {"C:/Windows/Fonts/malgunbd.ttf",
+                                                          "C:/Windows/Fonts/segoeuib.ttf",
+                                                          "C:/Windows/Fonts/arialbd.ttf"};
+                                                                                                    #elif defined(__APPLE__)
             constexpr const char *FontCandidates[] = {"/System/Library/Fonts/AppleSDGothicNeo.ttc",
                                                       "/System/Library/Fonts/Supplemental/Arial.ttf",
                                                       "/System/Library/Fonts/Supplemental/Verdana.ttf"};
-                        #else
+            constexpr const char *BoldFontCandidates[] = {"/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                                                          "/System/Library/Fonts/Supplemental/Verdana Bold.ttf"};
+                                                                                                    #else
             constexpr const char *FontCandidates[] = {"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
                                                       "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
                                                       "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                                                       "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"};
-                        #endif
+            constexpr const char *BoldFontCandidates[] = {"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                                                          "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
+                                                          "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"};
+                                                                                                    #endif
             for (const char *FontPath : FontCandidates)
             {
                 if (std::filesystem::exists(FontPath))
                 {
-                    if (ImFont *Font = IO.Fonts->AddFontFromFileTTF(FontPath, 14.0F, nullptr, IO.Fonts->GetGlyphRangesKorean()))
+                    if (ImFont *Font =
+                            IO.Fonts->AddFontFromFileTTF(FontPath, 14.0F, nullptr, IO.Fonts->GetGlyphRangesKorean()))
                     {
                         IO.FontDefault = Font;
-                        ViewportState.SectionHeaderFont = IO.Fonts->AddFontFromFileTTF(FontPath, 17.0F, nullptr, IO.Fonts->GetGlyphRangesKorean());
+                        ViewportState.SectionHeaderFont =
+                            IO.Fonts->AddFontFromFileTTF(FontPath, 16.0F, nullptr, IO.Fonts->GetGlyphRangesKorean());
                         break;
                     }
                 }
@@ -89,8 +108,18 @@ namespace MDSS
             if (ViewportState.SectionHeaderFont == nullptr)
             {
                 ImFontConfig HeaderFontConfig{};
-                HeaderFontConfig.SizePixels = 17.0F;
+                HeaderFontConfig.SizePixels = 16.0F;
                 ViewportState.SectionHeaderFont = IO.Fonts->AddFontDefault(&HeaderFontConfig);
+            }
+
+            // 상태 요약의 영문 항목명은 본문과 같은 크기의 굵은 글꼴을 쓴다.
+            for (const char *FontPath : BoldFontCandidates)
+            {
+                if (!std::filesystem::exists(FontPath))
+                    continue;
+                ViewportState.BoldLabelFont = IO.Fonts->AddFontFromFileTTF(FontPath, 14.F);
+                if (ViewportState.BoldLabelFont)
+                    break;
             }
         }
 
@@ -98,43 +127,96 @@ namespace MDSS
         {
             ImGui::StyleColorsDark();
             ImGuiStyle &Style = ImGui::GetStyle();
-            Style.WindowPadding = {12.0F, 10.0F};
-            Style.FramePadding = {8.0F, 5.0F};
-            Style.ItemSpacing = {8.0F, 6.0F};
-            Style.WindowRounding = 3.0F;
-            Style.FrameRounding = 3.0F;
-            Style.PopupRounding = 3.0F;
-            Style.GrabRounding = 3.0F;
-            Style.TabRounding = 3.0F;
-            Style.DisabledAlpha = 0.78F;
-            Style.Colors[ImGuiCol_Text] = {0.91F, 0.93F, 0.97F, 1.0F};
-            Style.Colors[ImGuiCol_TextDisabled] = {0.46F, 0.50F, 0.57F, 1.0F};
-            Style.Colors[ImGuiCol_CheckMark] = {0.35F, 0.78F, 1.0F, 1.0F};
+            Style.WindowPadding = {12.F, 10.F};
+            Style.FramePadding = {9.F, 5.F};
+            Style.ItemSpacing = {8.F, 7.F};
+            Style.WindowRounding = 6.F;
+            Style.FrameRounding = 4.F;
+            Style.PopupRounding = 6.F;
+            Style.ScrollbarRounding = 5.F;
+            Style.GrabRounding = 4.F;
+            Style.TabRounding = 4.F;
+            Style.TabBarBorderSize = 1.F;
+            Style.DisabledAlpha = 0.75F;
 
-            // 창 배경은 패널과 내부 영역에 두 단계의 더 어두운 회색을 쓴다.
-            Style.Colors[ImGuiCol_WindowBg] = {0.075F, 0.082F, 0.10F, 0.99F};
-            Style.Colors[ImGuiCol_ChildBg] = {0.058F, 0.065F, 0.082F, 0.94F};
-            Style.Colors[ImGuiCol_PopupBg] = {0.075F, 0.082F, 0.10F, 0.99F};
-            Style.Colors[ImGuiCol_MenuBarBg] = {0.058F, 0.065F, 0.082F, 1.0F};
-            Style.Colors[ImGuiCol_DockingEmptyBg] = {0.065F, 0.072F, 0.09F, 1.0F};
-            Style.Colors[ImGuiCol_Border] = {0.20F, 0.24F, 0.31F, 0.75F};
-            Style.Colors[ImGuiCol_FrameBg] = {0.14F, 0.17F, 0.22F, 1.0F};
-            Style.Colors[ImGuiCol_FrameBgHovered] = {0.18F, 0.29F, 0.44F, 1.0F};
-            Style.Colors[ImGuiCol_FrameBgActive] = {0.12F, 0.34F, 0.60F, 1.0F};
-            Style.Colors[ImGuiCol_TitleBg] = {0.048F, 0.053F, 0.068F, 1.0F};
-            Style.Colors[ImGuiCol_TitleBgActive] = {0.060F, 0.086F, 0.13F, 1.0F};
-            Style.Colors[ImGuiCol_SliderGrab] = {0.10F, 0.36F, 0.70F, 1.0F};
-            Style.Colors[ImGuiCol_SliderGrabActive] = {0.12F, 0.48F, 0.88F, 1.0F};
-            Style.Colors[ImGuiCol_Button] = {0.12F, 0.27F, 0.47F, 1.0F};
-            Style.Colors[ImGuiCol_ButtonHovered] = {0.15F, 0.36F, 0.61F, 1.0F};
-            Style.Colors[ImGuiCol_ButtonActive] = {0.09F, 0.31F, 0.59F, 1.0F};
-            Style.Colors[ImGuiCol_Header] = {0.12F, 0.27F, 0.47F, 0.82F};
-            Style.Colors[ImGuiCol_HeaderHovered] = {0.15F, 0.36F, 0.61F, 0.92F};
-            Style.Colors[ImGuiCol_HeaderActive] = {0.10F, 0.32F, 0.58F, 1.0F};
-            Style.Colors[ImGuiCol_Tab] = {0.062F, 0.105F, 0.17F, 1.0F};
-            Style.Colors[ImGuiCol_TabHovered] = {0.13F, 0.35F, 0.62F, 1.0F};
-            Style.Colors[ImGuiCol_TabSelected] = {0.11F, 0.29F, 0.51F, 1.0F};
-            Style.Colors[ImGuiCol_TabSelectedOverline] = {0.08F, 0.34F, 0.70F, 1.0F};
+            const auto Color = [](std::uint32_t RGB)
+            {
+                return ImVec4(static_cast<float>((RGB >> 16U) & 255U) / 255.F,
+                              static_cast<float>((RGB >> 8U) & 255U) / 255.F,
+                              static_cast<float>(RGB & 255U) / 255.F,
+                              1.F);
+            };
+            const auto Panel = Color(0x191E26);
+            const auto Chrome = Color(0x12171E);
+            const auto Control = Color(0x252D38);
+            const auto Hover = Color(0x355F61);
+            const auto Selected = Color(0x2B4D50);
+            const auto Accent = Color(0x84E3D5);
+            const auto Border = Color(0x343E4C);
+            auto      &Colors = Style.Colors;
+            Colors[ImGuiCol_Text] = Color(0xE8EDF5);
+            Colors[ImGuiCol_TextDisabled] = Color(0xA1ADBD);
+            Colors[ImGuiCol_WindowBg] = Panel;
+            Colors[ImGuiCol_ChildBg] = Panel;
+            Colors[ImGuiCol_PopupBg] = Color(0x202732);
+            Colors[ImGuiCol_MenuBarBg] = Chrome;
+            Colors[ImGuiCol_DockingEmptyBg] = Chrome;
+            Colors[ImGuiCol_DockingPreview] = Color(0x559A99);
+            Colors[ImGuiCol_Border] = Border;
+            Colors[ImGuiCol_Separator] = Border;
+            Colors[ImGuiCol_SeparatorHovered] = Hover;
+            Colors[ImGuiCol_SeparatorActive] = Accent;
+            Colors[ImGuiCol_TitleBg] = Chrome;
+            Colors[ImGuiCol_TitleBgActive] = Chrome;
+            Colors[ImGuiCol_TitleBgCollapsed] = Chrome;
+            Colors[ImGuiCol_FrameBg] = Control;
+            Colors[ImGuiCol_FrameBgHovered] = Hover;
+            Colors[ImGuiCol_FrameBgActive] = Selected;
+            Colors[ImGuiCol_Button] = Control;
+            Colors[ImGuiCol_ButtonHovered] = Hover;
+            Colors[ImGuiCol_ButtonActive] = Selected;
+            Colors[ImGuiCol_Header] = Selected;
+            Colors[ImGuiCol_HeaderHovered] = Hover;
+            Colors[ImGuiCol_HeaderActive] = Selected;
+            Colors[ImGuiCol_CheckMark] = Accent;
+            Colors[ImGuiCol_CheckboxSelectedBg] = Selected;
+            Colors[ImGuiCol_SliderGrab] = Color(0x69BDB5);
+            Colors[ImGuiCol_SliderGrabActive] = Accent;
+            Colors[ImGuiCol_Tab] = Chrome;
+            Colors[ImGuiCol_TabHovered] = Hover;
+            Colors[ImGuiCol_TabSelected] = Selected;
+            Colors[ImGuiCol_TabSelectedOverline] = Accent;
+            Colors[ImGuiCol_TabDimmed] = Chrome;
+            Colors[ImGuiCol_TabDimmedSelected] = Control;
+            Colors[ImGuiCol_TabDimmedSelectedOverline] = Color(0x539996);
+            Colors[ImGuiCol_TableHeaderBg] = Control;
+            Colors[ImGuiCol_TableBorderStrong] = Border;
+            Colors[ImGuiCol_TableBorderLight] = Control;
+            Colors[ImGuiCol_TableRowBgAlt] = Color(0x202733);
+            Colors[ImGuiCol_TextSelectedBg] = Selected;
+            Colors[ImGuiCol_NavCursor] = Accent;
+            Colors[ImGuiCol_ResizeGrip] = Control;
+            Colors[ImGuiCol_ResizeGripHovered] = Hover;
+            Colors[ImGuiCol_ResizeGripActive] = Accent;
+            Colors[ImGuiCol_ScrollbarBg] = Chrome;
+            Colors[ImGuiCol_ScrollbarGrab] = Border;
+            Colors[ImGuiCol_ScrollbarGrabHovered] = Hover;
+            Colors[ImGuiCol_ScrollbarGrabActive] = Color(0x536574);
+
+            // ImGui의 Vulkan 셰이더가 버텍스 색 공간을 변환하지 않으므로 sRGB attachment에 선형 색을 준다.
+            const VkFormat Format = FrameRenderer->GetSwapchain().GetImageFormat();
+            if (Format == VK_FORMAT_B8G8R8A8_SRGB || Format == VK_FORMAT_R8G8B8A8_SRGB ||
+                Format == VK_FORMAT_A8B8G8R8_SRGB_PACK32)
+            {
+                const auto ToLinear = [](float Component)
+                { return Component <= 0.04045F ? Component / 12.92F : std::pow((Component + 0.055F) / 1.055F, 2.4F); };
+                for (auto &Value : Colors)
+                {
+                    Value.x = ToLinear(Value.x);
+                    Value.y = ToLinear(Value.y);
+                    Value.z = ToLinear(Value.z);
+                }
+            }
         }
 
     #pragma endregion
@@ -143,7 +225,9 @@ namespace MDSS
     #pragma region 00_01_Platform_and_GPU_Backends
         // GLFW·Vulkan backend의 초기화 실패 시 기존과 동일한 단계로 자원을 되돌린다.
 
-        void FDebugUI::InitializeImGuiBackends(const GPU::FVulkanContext &Context, const FWindow &Window, Rendering::FRenderer &Renderer)
+        void FDebugUI::InitializeImGuiBackends(const GPU::FVulkanContext &Context,
+                                               const FWindow             &Window,
+                                               Rendering::FRenderer      &Renderer)
         {
             if (!ImGui_ImplGlfw_InitForVulkan(Window.GetNativeHandle(), true))
             {
@@ -151,9 +235,10 @@ namespace MDSS
                 throw std::runtime_error("Failed to initialize Dear ImGui GLFW backend.");
             }
 
-            const std::uint32_t                 ImageCount = static_cast<std::uint32_t>(Renderer.GetSwapchain().GetImages().size());
-            const GPU::FSwapchainSupportDetails Support = GPU::FSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
-            const std::uint32_t                 MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
+            const std::uint32_t ImageCount = static_cast<std::uint32_t>(Renderer.GetSwapchain().GetImages().size());
+            const GPU::FSwapchainSupportDetails Support =
+                GPU::FSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+            const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
 
             ImGui_ImplVulkan_InitInfo InitInfo{};
             InitInfo.ApiVersion = VK_API_VERSION_1_2;
@@ -197,6 +282,7 @@ namespace MDSS
             vkDeviceWaitIdle(Device);
         }
 
+        EditorLab.reset();
         FLogger::Verbose("TDebugUI", "Shutting down Dear ImGui backends.");
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -216,13 +302,20 @@ namespace MDSS
 
         if (Presentation.bPresentationMode)
         {
-            DrawDemoWeatherOverlay(SceneData);
+            if (UsesSurfaceSimulation())
+            {
+                const auto *Main = ImGui::GetMainViewport();
+                EditorLab->DrawViewport(Main->Pos, Main->Size, true);
+            }
+            else
+                DrawDemoWeatherOverlay(SceneData);
             ImGui::Render();
             return;
         }
 
         DrawEditorPanels(SceneData);
-        DrawInjectionCrosshair();
+        if (!UsesSurfaceSimulation())
+            DrawInjectionCrosshair();
 
         ImGui::Render();
     }
@@ -245,36 +338,49 @@ namespace MDSS
                 TogglePresentationMode();
             if (Presentation.bPresentationMode && ImGui::IsKeyPressed(ImGuiKey_Escape))
                 TogglePresentationMode();
-            if (ImGui::IsKeyPressed(ImGuiKey_F9) && SceneData.HasDemoAnimation())
-                ReplayDemo(SceneData);
-            UpdateDemoPlaybackGridAxis(SceneData);
+            if (UsesSurfaceSimulation())
+            {
+                if (ImGui::IsKeyPressed(ImGuiKey_F9))
+                    EditorLab->Restart();
+            }
+            else
+            {
+                if (ImGui::IsKeyPressed(ImGuiKey_F9) && SceneData.HasDemoAnimation())
+                    ReplayDemo(SceneData);
+            }
         }
 
         void FDebugUI::DrawEditorPanels(FScene &SceneData)
         {
+            DrawWorkspaceMenu();
             SetupDockspace();
+            if (UsesSurfaceSimulation())
+                EditorLab->BeginFrame();
+            DrawSceneLibrary(SceneData);
+            DrawViewportToolbar(SceneData);
 
             // Render the viewport windows before the other editor windows.  The
             // viewport panels are transparent overlays, so creating them last
             // would also make them the topmost ImGui hit-test target when another
             // window is visually above the viewport.
+            if (UsesSurfaceSimulation())
+            {
+                DrawSurfaceSimulationViewport();
+            }
+            else
+            {
+                DrawViewportPanels(SceneData);
+                if (bSceneWeatherPreview)
+                    DrawDemoWeatherOverlay(SceneData);
+                if (ViewportState.bMouseOverViewportOverlay)
+                    ViewportState.HoveredViewportId = 0;
+                ProcessCameraInput(SceneData);
+                ProcessSelectionAndGizmo(SceneData);
+            }
             DrawRenderOptionsWindow(SceneData);
-            DrawViewportPanels(SceneData);
-            DrawDemoWeatherOverlay(SceneData);
-            DrawBrickCubeTexelMeshNotice(SceneData);
-            DrawSceneWindow(SceneData);
-            DrawAnimationWindow(SceneData);
-            DrawCameraWindow(SceneData);
-            DrawSelectedObjectWindow(SceneData);
-            DrawRenderSettingsWindow(SceneData);
-            DrawViewportStatsOverlay();
-
-            if (ViewportState.bMouseOverViewportOverlay)
-                ViewportState.HoveredViewportId = 0;
-            DrawSimulationDebugWindow(SceneData);
-            DrawLogWindow();
-            ProcessCameraInput(SceneData);
-            ProcessSelectionAndGizmo(SceneData);
+            DrawWorkspaceDetails(SceneData);
+            DrawWorkspaceTools();
+            DrawProfilingWindow();
         }
 
     #pragma endregion
@@ -295,33 +401,49 @@ namespace MDSS
                 constexpr float CrosshairHalfSize = 9.0F;
                 constexpr ImU32 CrosshairColor = IM_COL32(255, 255, 255, 230);
                 ImDrawList     *DrawList = ImGui::GetForegroundDrawList();
-                DrawList->AddLine({Center.x - CrosshairHalfSize, Center.y}, {Center.x + CrosshairHalfSize, Center.y}, CrosshairColor, 2.0F);
-                DrawList->AddLine({Center.x, Center.y - CrosshairHalfSize}, {Center.x, Center.y + CrosshairHalfSize}, CrosshairColor, 2.0F);
+                DrawList->AddLine({Center.x - CrosshairHalfSize, Center.y},
+                                  {Center.x + CrosshairHalfSize, Center.y},
+                                  CrosshairColor,
+                                  2.0F);
+                DrawList->AddLine({Center.x, Center.y - CrosshairHalfSize},
+                                  {Center.x, Center.y + CrosshairHalfSize},
+                                  CrosshairColor,
+                                  2.0F);
             }
         }
 
     #pragma endregion
 
+    void FDebugUI::SetSurfaceSimulationEnabled(bool bEnabled)
+    {
+        if (bEnabled && !EditorLab)
+            EditorLab = std::make_unique<SurfaceSimulation::FEditorSession>(GpuContext);
+        bSurfaceSimulationEnabled = bEnabled;
+    }
+
+    bool FDebugUI::UsesSurfaceSimulation() const noexcept
+    {
+        return bSurfaceSimulationEnabled;
+    }
+
+    void FDebugUI::RecordSurfaceSimulation(VkCommandBuffer Commands, std::uint32_t FrameSlot) const
+    {
+        if (UsesSurfaceSimulation())
+            EditorLab->Record(Commands, FrameSlot);
+    }
+
+    void FDebugUI::DrawSurfaceSimulationViewport()
+    {
+        const auto *Main = ImGui::GetMainViewport();
+        const auto  Size = ImGui::GetIO().DisplaySize;
+        const auto &Rect = ViewportState.ViewportWorkspaceRectNormalized;
+        EditorLab->DrawViewport({Main->Pos.x + Rect.x * Size.x, Main->Pos.y + Rect.y * Size.y},
+                                {Rect.z * Size.x, Rect.w * Size.y});
+    }
+
     void FDebugUI::DrawSectionHeader(const char *Title, float TopPadding, float BottomPadding) const
     {
-        ImGui::Dummy({0.0F, TopPadding});
-        ImGui::PushStyleColor(ImGuiCol_Text, {0.91F, 0.93F, 0.97F, 1.0F});
-
-        if (ViewportState.SectionHeaderFont != nullptr)
-        {
-            ImGui::PushFont(ViewportState.SectionHeaderFont);
-        }
-
-        ImGui::TextUnformatted(Title);
-
-        if (ViewportState.SectionHeaderFont != nullptr)
-        {
-            ImGui::PopFont();
-        }
-
-        ImGui::PopStyleColor();
-        ImGui::Separator();
-        ImGui::Dummy({0.0F, BottomPadding});
+        EditorLayout::SectionTitle(Title, TopPadding, BottomPadding);
     }
 
     void FDebugUI::Render(VkCommandBuffer CommandBuffer) const
@@ -336,13 +458,14 @@ namespace MDSS
 
     void FDebugUI::OnSwapchainRecreated(const GPU::FVulkanContext &Context, const Rendering::FRenderer &Renderer)
     {
-        const GPU::FSwapchainSupportDetails Support = GPU::FSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
-        const std::uint32_t                 MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
+        const GPU::FSwapchainSupportDetails Support =
+            GPU::FSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
         ImGui_ImplVulkan_SetMinImageCount(MinImageCount);
 
-        FLogger::Debug(
-            "TDebugUI",
-            "ImGui Vulkan backend updated after swapchain recreation (images=" + std::to_string(Renderer.GetSwapchain().GetImages().size()) + ").");
+        FLogger::Debug("TDebugUI",
+                       "ImGui Vulkan backend updated after swapchain recreation (images=" +
+                           std::to_string(Renderer.GetSwapchain().GetImages().size()) + ").");
     }
 
 #pragma endregion
@@ -352,31 +475,70 @@ namespace MDSS
 #pragma region 02_UI_State_Accessors
     // 현재 UI 표시 상태와 진단 선택을 관련 소비자에게 제공한다.
 
-    bool FDebugUI::IsInjectModeEnabled() const noexcept { return bInjectMode && !Presentation.bPresentationMode; }
+    bool FDebugUI::IsInjectModeEnabled() const noexcept
+    {
+        return bInjectMode && !Presentation.bPresentationMode;
+    }
 
-    SurfaceState::FStateId FDebugUI::GetInjectState() const noexcept { return Simulation.InjectState; }
+    SurfaceState::FStateId FDebugUI::GetInjectState() const noexcept
+    {
+        return Simulation.InjectState;
+    }
 
-    float FDebugUI::GetInjectStrength() const noexcept { return Simulation.InjectStrength; }
+    float FDebugUI::GetInjectStrength() const noexcept
+    {
+        return Simulation.InjectStrength;
+    }
 
-    float FDebugUI::GetInjectRadius() const noexcept { return Simulation.InjectRadius; }
+    float FDebugUI::GetInjectRadius() const noexcept
+    {
+        return Simulation.InjectRadius;
+    }
 
-    float FDebugUI::GetInjectFalloff() const noexcept { return Simulation.InjectFalloff; }
+    float FDebugUI::GetInjectFalloff() const noexcept
+    {
+        return Simulation.InjectFalloff;
+    }
 
-    SurfaceState::ESurfaceContactOperation FDebugUI::GetInjectOperation() const noexcept { return Simulation.InjectOperation; }
+    SurfaceState::ESurfaceContactOperation FDebugUI::GetInjectOperation() const noexcept
+    {
+        return Simulation.InjectOperation;
+    }
 
-    SurfaceState::ESurfaceContactShape FDebugUI::GetInjectShape() const noexcept { return Simulation.InjectShape; }
+    SurfaceState::ESurfaceContactShape FDebugUI::GetInjectShape() const noexcept
+    {
+        return Simulation.InjectShape;
+    }
 
-    float FDebugUI::GetInjectSecondaryRadius() const noexcept { return Simulation.InjectSecondaryRadius; }
+    float FDebugUI::GetInjectSecondaryRadius() const noexcept
+    {
+        return Simulation.InjectSecondaryRadius;
+    }
 
-    float FDebugUI::GetInjectRotationDegrees() const noexcept { return Simulation.InjectRotationDegrees; }
+    float FDebugUI::GetInjectRotationDegrees() const noexcept
+    {
+        return Simulation.InjectRotationDegrees;
+    }
 
-    std::uint32_t FDebugUI::GetInjectTexelSearchRadius() const noexcept { return static_cast<std::uint32_t>(Simulation.InjectTexelSearchRadius); }
+    std::uint32_t FDebugUI::GetInjectTexelSearchRadius() const noexcept
+    {
+        return static_cast<std::uint32_t>(Simulation.InjectTexelSearchRadius);
+    }
 
-    float FDebugUI::GetAnimationTimeScale() const noexcept { return Simulation.AnimationTimeScale; }
+    float FDebugUI::GetAnimationTimeScale() const noexcept
+    {
+        return Simulation.AnimationTimeScale;
+    }
 
-    float FDebugUI::GetSimulationTimeScale() const noexcept { return Simulation.SimulationTimeScale; }
+    float FDebugUI::GetSimulationTimeScale() const noexcept
+    {
+        return Simulation.SimulationTimeScale;
+    }
 
-    bool FDebugUI::IsSimulationPaused() const noexcept { return Simulation.bSimulationPaused; }
+    bool FDebugUI::IsSimulationPaused() const noexcept
+    {
+        return Simulation.bSimulationPaused;
+    }
 
     bool FDebugUI::ConsumeSolverStepRequest() noexcept
     {
@@ -449,20 +611,27 @@ namespace MDSS
                 const float SeedY = std::fmod(static_cast<float>(I * 47 + 7), 113.0F) / 113.0F;
                 const float X = Min.x + SeedX * Width;
                 const float Y = Min.y + std::fmod(SeedY + Time * (0.27F + 0.06F * (I % 4)), 1.0F) * Height;
-                Draw->AddLine({X, Y}, {X - 3.0F, Y + 12.0F}, IM_COL32(181, 207, 231, static_cast<int>(RainAlpha * 95.0F)), 1.0F);
+                Draw->AddLine({X, Y},
+                              {X - 3.0F, Y + 12.0F},
+                              IM_COL32(181, 207, 231, static_cast<int>(RainAlpha * 95.0F)),
+                              1.0F);
             }
         }
 
         Draw->PopClipRect();
     }
 
-    std::size_t FDebugUI::GetViewportCount() const noexcept { return Presentation.bPresentationMode ? 1U : ViewportState.ViewportPanels.size(); }
+    std::size_t FDebugUI::GetViewportCount() const noexcept
+    {
+        return UsesSurfaceSimulation() ? 0U : Presentation.bPresentationMode ? 1U : ViewportState.ViewportPanels.size();
+    }
 
     glm::vec4 FDebugUI::GetViewportRectNormalized(std::size_t Index) const noexcept
     {
         if (Presentation.bPresentationMode)
             return Index == 0 ? glm::vec4(0.0F, 0.0F, 1.0F, 1.0F) : glm::vec4(0.0F);
-        return Index < ViewportState.ViewportPanels.size() ? ViewportState.ViewportPanels[Index].RectNormalized : glm::vec4(0.0F);
+        return Index < ViewportState.ViewportPanels.size() ? ViewportState.ViewportPanels[Index].RectNormalized
+                                                           : glm::vec4(0.0F);
     }
 
     const FCamera &FDebugUI::GetViewportCamera(const FScene &SceneData, std::size_t Index) const noexcept
@@ -498,8 +667,9 @@ namespace MDSS
 
         if (AssetManager != nullptr)
         {
-            const Asset::FMeshAsset &Mesh = AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetMesh());
-            const auto              &Vertices = Mesh.GetVertices();
+            const Asset::FMeshAsset &Mesh =
+                AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetMesh());
+            const auto &Vertices = Mesh.GetVertices();
 
             if (!Vertices.empty())
             {
@@ -538,18 +708,27 @@ namespace MDSS
         return Presentation.bPresentationMode ? std::nullopt : Gizmo.SelectedObject;
     }
 
-    int FDebugUI::GetHoveredGizmoAxis() const noexcept { return Gizmo.HoveredAxis; }
+    int FDebugUI::GetHoveredGizmoAxis() const noexcept
+    {
+        return Gizmo.HoveredAxis;
+    }
 
-    bool FDebugUI::IsRotationGizmoMode() const noexcept { return Gizmo.bRotationMode; }
+    bool FDebugUI::IsRotationGizmoMode() const noexcept
+    {
+        return Gizmo.bRotationMode;
+    }
 
-    SurfaceState::FStateId FDebugUI::GetDebugState() const noexcept { return Simulation.DebugState; }
+    SurfaceState::FStateId FDebugUI::GetDebugState() const noexcept
+    {
+        return Simulation.DebugState;
+    }
 
     bool FDebugUI::ShouldSuppressDebugHotkey() const noexcept
     {
         const ImGuiIO &IO = ImGui::GetIO();
         return ViewportState.bMouseOverViewportOverlay || IO.WantTextInput ||
-               (ViewportState.HoveredViewportId == 0 &&
-                (IO.WantCaptureKeyboard || ImGui::IsAnyItemActive() || ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)));
+               (ViewportState.HoveredViewportId == 0 && (IO.WantCaptureKeyboard || ImGui::IsAnyItemActive() ||
+                                                         ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)));
     }
 
 #pragma endregion

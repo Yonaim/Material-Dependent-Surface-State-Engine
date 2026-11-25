@@ -7,13 +7,16 @@
 
 #include "SurfaceState/Mapping/SurfaceMappingData.h"
 #include "SurfaceState/Types/SurfaceStateTypes.h"
-
 #include <cstdint>
 #include <filesystem>
+#include <map>
 #include <vector>
 
 namespace MDSS::Asset
 {
+    /** @brief 빈 경로는 해당 표면을 시뮬레이션 대상에서 제외한다. */
+    using FSurfaceProfileOverrides = std::map<SurfaceState::FSurfaceLocalID, std::filesystem::path>;
+
     struct FSurfaceProfileDistribution
     {
         std::vector<std::filesystem::path> ProfilePaths;
@@ -23,16 +26,16 @@ namespace MDSS::Asset
 
         /** @brief Expand one Profile assignment per Surface to one index per mapping texel. */
         [[nodiscard]] std::vector<SurfaceState::FSurfaceProfileIndex>
-        BuildTexelProfileMap(const SurfaceState::FSurfaceMappingData& Mapping) const;
+        BuildTexelProfileMap(const SurfaceState::FSurfaceMappingData &Mapping) const;
     };
 
     class FSurfaceProfileDistributionLoader final
     {
-    public:
+      public:
         /**
          * @brief Load a version 1 `.SurfaceProfileMap` JSON sidecar.
          * Paths in the file are relative to the sidecar's directory.
          */
-        [[nodiscard]] static FSurfaceProfileDistribution Load(const std::filesystem::path& Path);
+        [[nodiscard]] static FSurfaceProfileDistribution Load(const std::filesystem::path &Path);
     };
 } // namespace MDSS::Asset

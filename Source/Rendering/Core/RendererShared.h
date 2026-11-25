@@ -21,7 +21,6 @@
 #include "Scene/StaticMeshInstance.h"
 #include "ShaderCatalog.h"
 #include "SurfaceState/Runtime/SurfaceDataManager.h"
-
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -45,7 +44,7 @@ namespace MDSS::Rendering
 // 00. Shader Variants and Frame Constants
 // ============================================================
 #pragma region 00_Shader_Variants_and_Frame_Constants
-// 표시 mode에 맞는 shader 선택과 frame 상수를 준비한다.
+        // 표시 mode에 맞는 shader 선택과 frame 상수를 준비한다.
 
         using Shaders::EShader;
         const std::array<EShader, 3> SurfaceLitVariants{EShader::Rendering_Surface_Lighting_SurfaceLit_frag_m0,
@@ -71,10 +70,13 @@ namespace MDSS::Rendering
 // 01. Attachment Construction
 // ============================================================
 #pragma region 01_Attachment_Construction
-// swapchain 크기·format에 대응하는 depth·framebuffer를 구성한다.
+        // swapchain 크기·format에 대응하는 depth·framebuffer를 구성한다.
 
-        std::vector<std::unique_ptr<GPU::FGPUImage>> CreateDepthImages(
-            VkPhysicalDevice PhysicalDevice, VkDevice Device, VkExtent2D Extent, VkFormat Format, std::size_t Count)
+        std::vector<std::unique_ptr<GPU::FGPUImage>> CreateDepthImages(VkPhysicalDevice PhysicalDevice,
+                                                                       VkDevice         Device,
+                                                                       VkExtent2D       Extent,
+                                                                       VkFormat         Format,
+                                                                       std::size_t      Count)
         {
             std::vector<std::unique_ptr<GPU::FGPUImage>> Images;
             Images.reserve(Count);
@@ -90,24 +92,28 @@ namespace MDSS::Rendering
             return Images;
         }
 
-        std::vector<std::unique_ptr<GPU::FGPUImageView>> CreateDepthImageViews(
-            VkDevice Device, const std::vector<std::unique_ptr<GPU::FGPUImage>>& Images, VkFormat Format)
+        std::vector<std::unique_ptr<GPU::FGPUImageView>>
+        CreateDepthImageViews(VkDevice                                            Device,
+                              const std::vector<std::unique_ptr<GPU::FGPUImage>> &Images,
+                              VkFormat                                            Format)
         {
             std::vector<std::unique_ptr<GPU::FGPUImageView>> Views;
             Views.reserve(Images.size());
 
-            for (const auto& Image : Images)
-                Views.push_back(std::make_unique<GPU::FGPUImageView>(
-                    Device, Image->GetHandle(), Format, VK_IMAGE_ASPECT_DEPTH_BIT));
+            for (const auto &Image : Images)
+                Views.push_back(std::make_unique<GPU::FGPUImageView>(Device,
+                                                                     Image->GetHandle(),
+                                                                     Format,
+                                                                     VK_IMAGE_ASPECT_DEPTH_BIT));
             return Views;
         }
 
-        std::vector<VkImageView> GetDepthImageViewHandles(const std::vector<std::unique_ptr<GPU::FGPUImageView>>& Views)
+        std::vector<VkImageView> GetDepthImageViewHandles(const std::vector<std::unique_ptr<GPU::FGPUImageView>> &Views)
         {
             std::vector<VkImageView> Handles;
             Handles.reserve(Views.size());
 
-            for (const auto& View : Views)
+            for (const auto &View : Views)
                 Handles.push_back(View->GetHandle());
             return Handles;
         }
@@ -118,7 +124,7 @@ namespace MDSS::Rendering
 // 02. Mesh and World Geometry
 // ============================================================
 #pragma region 02_Mesh_and_World_Geometry
-// Mesh와 기준선·gizmo의 정점 자료를 GPU 입력으로 만든다.
+        // Mesh와 기준선·gizmo의 정점 자료를 GPU 입력으로 만든다.
 
         struct FStaticMeshPushConstants
         {
@@ -132,23 +138,25 @@ namespace MDSS::Rendering
 // 03. Material GPU Interface
 // ============================================================
 #pragma region 03_Material_GPU_Interface
-// CPU material record를 descriptor·uniform layout과 대응시킨다.
+        // CPU material record를 descriptor·uniform layout과 대응시킨다.
 
         struct alignas(16) FMaterialUniform
         {
-            glm::vec4     BaseColor{1.0F};
-            std::uint32_t RenderMode = 0;
-            std::uint32_t FlipNormalY = 1;
-            float         NormalStrength = 1.0F;
-            float         AmbientLight = 0.25F;
-            std::uint32_t DebugStateChannel = 0;
-            std::uint32_t StateChannelCount = 0;
-            float         DebugViewParameter = 0.0F;
-            float         ReliefShadingEnabled = 1.0F;
-            glm::vec4     DebugOptions{4.0F, 0.01F, 1.0F, 1.0F};
-            glm::uvec4    DebugFlags{0};
-            glm::uvec4    DemoStateChannels{
-                SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 1U};
+            glm::vec4                BaseColor{1.0F};
+            std::uint32_t            RenderMode = 0;
+            std::uint32_t            FlipNormalY = 1;
+            float                    NormalStrength = 1.0F;
+            float                    AmbientLight = 0.25F;
+            std::uint32_t            DebugStateChannel = 0;
+            std::uint32_t            StateChannelCount = 0;
+            float                    DebugViewParameter = 0.0F;
+            float                    ReliefShadingEnabled = 1.0F;
+            glm::vec4                DebugOptions{4.0F, 0.01F, 1.0F, 1.0F};
+            glm::uvec4               DebugFlags{0};
+            glm::uvec4               DemoStateChannels{SurfaceState::InvalidStateId,
+                                                       SurfaceState::InvalidStateId,
+                                                       SurfaceState::InvalidStateId,
+                                                       1U};
             glm::vec4                DemoOptions{0.65F, 0.0F, 0.48F, 1.0F};
             glm::vec4                DemoEffectOptions{1.0F, 0.35F, 1.0F, 0.16F};
             glm::uvec4               DemoExtraStateChannels{SurfaceState::InvalidStateId, 0U, 0U, 0U};
@@ -164,52 +172,52 @@ namespace MDSS::Rendering
 
         constexpr std::uint32_t RenderModeWireframeUniformWhite = 20U;
 
-        const char* GetRenderViewModeName(ERenderViewMode Mode)
+        const char *GetRenderViewModeName(ERenderViewMode Mode)
         {
             switch (Mode)
             {
                 case ERenderViewMode::Lit:
-                    return "Lit";
+                return "Lit";
                 case ERenderViewMode::Unlit:
-                    return "Unlit";
+                return "Unlit";
                 case ERenderViewMode::Wireframe:
-                    return "Wireframe";
+                return "Wireframe";
                 case ERenderViewMode::VertexNormalWS:
-                    return "Vertex Normal (World Space)";
+                return "Vertex Normal (World Space)";
                 case ERenderViewMode::NormalTextureTS:
-                    return "Normal Texture (Tangent Space)";
+                return "Normal Texture (Tangent Space)";
                 case ERenderViewMode::MappedNormalWS:
-                    return "Mapped Normal (World Space)";
+                return "Mapped Normal (World Space)";
                 case ERenderViewMode::SurfaceStateHeatmap:
-                    return "Surface State Heatmap";
+                return "Surface State Heatmap";
                 case ERenderViewMode::SurfaceValidity:
-                    return "Surface Validity";
+                return "Surface Validity";
                 case ERenderViewMode::SurfaceID:
-                    return "Surface ID";
+                return "Surface ID";
                 case ERenderViewMode::NeighborCount:
-                    return "Neighbor Count";
+                return "Neighbor Count";
                 case ERenderViewMode::SurfaceSeam:
-                    return "Surface Seam";
+                return "Surface Seam";
                 case ERenderViewMode::OutgoingFluxScale:
-                    return "Outgoing Flux Scale";
+                return "Outgoing Flux Scale";
                 case ERenderViewMode::SolverTransferWeight:
-                    return "Solver Transfer Weight";
+                return "Solver Transfer Weight";
                 case ERenderViewMode::MesoHeight:
-                    return "Meso Color";
+                return "Meso Color";
                 case ERenderViewMode::MesoOffset:
-                    return "Meso Displacement";
+                return "Meso Displacement";
                 case ERenderViewMode::MacroGeometry:
-                    return "Macro Geometry";
+                return "Macro Geometry";
                 case ERenderViewMode::SurfaceTexelGrid:
-                    return "Texel Grid";
+                return "Texel Grid";
                 case ERenderViewMode::SurfaceAccumulation:
-                    return "Accumulation";
+                return "Accumulation";
                 case ERenderViewMode::SurfaceFinalGeometry:
-                    return "Final Geometry";
+                return "Final Geometry";
                 case ERenderViewMode::TotalSimulationHeight:
-                    return "Total Simulation Height";
+                return "Total Simulation Height";
                 case ERenderViewMode::SurfaceTexelArea:
-                    return "Texel Area Heatmap";
+                return "Texel Area Heatmap";
             }
 
             return "Unknown";
@@ -256,8 +264,9 @@ namespace MDSS::Rendering
             AddAttribute(0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(offsetof(Asset::FVertex, Position)));
             AddAttribute(1, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(offsetof(Asset::FVertex, Normal)));
             AddAttribute(2, VK_FORMAT_R32G32_SFLOAT, static_cast<std::uint32_t>(offsetof(Asset::FVertex, UV)));
-            AddAttribute(
-                3, VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<std::uint32_t>(offsetof(Asset::FVertex, Tangent)));
+            AddAttribute(3,
+                         VK_FORMAT_R32G32B32A32_SFLOAT,
+                         static_cast<std::uint32_t>(offsetof(Asset::FVertex, Tangent)));
 
             VkPushConstantRange PushConstantRange{};
             PushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -296,7 +305,7 @@ namespace MDSS::Rendering
 // 04. Geometry Mode Selection
 // ============================================================
 #pragma region 04_Geometry_Mode_Selection
-// 선택한 표시 mode에 맞는 Surface geometry 경로를 고른다.
+        // 선택한 표시 mode에 맞는 Surface geometry 경로를 고른다.
 
         bool UsesTexelGeometry(ERenderViewMode Mode)
         {
@@ -305,7 +314,7 @@ namespace MDSS::Rendering
                    Mode == ERenderViewMode::TotalSimulationHeight;
         }
 
-        void SetTexelMeshVertexLayout(GPU::FGraphicsPipelineConfig& Config)
+        void SetTexelMeshVertexLayout(GPU::FGraphicsPipelineConfig &Config)
         {
             using FMeshVertex = SurfaceState::FSurfaceTexelMeshVertex;
             Config.VertexBindings = {{0, sizeof(FMeshVertex), VK_VERTEX_INPUT_RATE_VERTEX}};
@@ -400,18 +409,18 @@ namespace MDSS::Rendering
             return Config;
         }
 
-        bool UsesAccumulationGeometry(const FStaticMeshInstance&                              Instance,
-                                      const Asset::FAssetManager&                             Assets,
-                                      const SurfaceState::FSurfaceDataManager&                SurfaceData,
-                                      const SurfaceState::FSurfaceSharedGeometryGPUResources* Shared,
-                                      const std::string&                                      StateName)
+        bool UsesAccumulationGeometry(const FStaticMeshInstance                              &Instance,
+                                      const Asset::FAssetManager                             &Assets,
+                                      const SurfaceState::FSurfaceDataManager                &SurfaceData,
+                                      const SurfaceState::FSurfaceSharedGeometryGPUResources *Shared,
+                                      const std::string                                      &StateName)
         {
             if (!Shared || !Shared->GetTexelMeshIndexBuffer() || Instance.GetMesh() == Asset::InvalidAssetHandle ||
                 !SurfaceData.HasSurfaceData(Instance.GetSurfaceData()))
                 return false;
             bool bHasConnectedTriangles = false;
 
-            for (const auto& Section : Assets.GetMesh(Instance.GetMesh()).GetSections())
+            for (const auto &Section : Assets.GetMesh(Instance.GetMesh()).GetSections())
                 if (Section.Surface < Shared->GetTexelMeshRanges().size() &&
                     Shared->GetTexelMeshRanges()[Section.Surface].IndexCount > 0)
                     bHasConnectedTriangles = true;
@@ -460,39 +469,20 @@ namespace MDSS::Rendering
             return Config;
         }
 
-        GPU::FGraphicsPipelineConfig BuildWorldReferencePipelineConfig()
-        {
-            GPU::FGraphicsPipelineConfig Config = BuildGizmoPipelineConfig();
-            Config.ShaderStages = {
-                {VK_SHADER_STAGE_VERTEX_BIT, Shaders::Path(EShader::Rendering_Scene_WorldReference_vert), "main"},
-                {VK_SHADER_STAGE_FRAGMENT_BIT, Shaders::Path(EShader::Rendering_Scene_WorldReference_frag), "main"},
-            };
-            VkVertexInputAttributeDescription EdgeCoordinate{};
-            EdgeCoordinate.location = 2;
-            EdgeCoordinate.binding = 0;
-            EdgeCoordinate.format = VK_FORMAT_R32_SFLOAT;
-            EdgeCoordinate.offset = static_cast<std::uint32_t>(offsetof(FGizmoVertex, EdgeCoordinate));
-            Config.VertexAttributes.push_back(EdgeCoordinate);
-            Config.bDepthTestEnabled = true;
-            Config.bDepthWriteEnabled = false;
-            Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-            Config.bBlendingEnabled = true;
-
-            return Config;
-        }
-
 #pragma endregion
 
 // ============================================================
 // 05. Scope Cleanup
 // ============================================================
 #pragma region 05_Scope_Cleanup
-// 기록 중 예외·조기 종료에서도 필요한 정리 동작을 실행한다.
+        // 기록 중 예외·조기 종료에서도 필요한 정리 동작을 실행한다.
 
-        template <typename TCallback> class TScopeExit final
+        template <typename TCallback>
+        class TScopeExit final
         {
-        public:
-            explicit TScopeExit(TCallback Callback) : Callback(std::move(Callback))
+            public:
+            explicit TScopeExit(TCallback Callback)
+                : Callback(std::move(Callback))
             {
             }
 
@@ -507,12 +497,12 @@ namespace MDSS::Rendering
                 bActive = false;
             }
 
-        private:
+            private:
             TCallback Callback;
             bool      bActive = true;
         };
-    } // 내부 네임스페이스
+        } // namespace
 
-}
+        } // namespace MDSS::Rendering
 
 #pragma endregion

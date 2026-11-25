@@ -1,0 +1,31 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "KilnSpillway",
+  "geometry": "Spillway",
+  "geometrySamples": [
+    56,
+    40
+  ],
+  "simulationCells": [
+    14,
+    10
+  ],
+  "sizeM": [
+    0.14,
+    0.1
+  ],
+  "smoothDisplay": true,
+  "openOutlet": true,
+  "pourKg": 0.013,
+  "maxTiltRadians": 0.31415927,
+  "states": {
+    "layer": [
+      "SurfaceWater",
+      "SnowIce"
+    ],
+    "substrate": [
+      "CharFraction"
+    ]
+  }
+}

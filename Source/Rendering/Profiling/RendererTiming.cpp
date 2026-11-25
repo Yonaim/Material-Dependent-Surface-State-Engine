@@ -145,9 +145,6 @@ namespace MDSS::Rendering
                                                        ProfilingStats.TransferWeightGpuMilliseconds;
                 LastSolverGpuMilliseconds = ProfilingStats.SolverGpuMilliseconds;
 
-                Benchmark.BenchmarkGpuElapsed = ToMilliseconds(Timestamps[21], Timestamps[23]);
-                Benchmark.BenchmarkSimulationElapsed = ToMilliseconds(Timestamps[21], Timestamps[22]);
-                WriteBenchmarkSample(FrameIndex);
             }
 
             bTimestampQueriesSubmitted[FrameIndex] = false;
