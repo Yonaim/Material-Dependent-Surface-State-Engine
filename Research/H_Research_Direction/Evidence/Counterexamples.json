@@ -1,0 +1,102 @@
+{
+  "scope": "synthetic closed-form controls; no capture, visual or engine benchmark",
+  "python": "3.12.10",
+  "material_history": {
+    "decay": 0.15,
+    "initial_film": 1.0,
+    "initial_pore": 0.0,
+    "wipe_at": 2.0,
+    "wipe_efficiency": 0.8,
+    "rewet_at": 3.0,
+    "rewet_mass": 0.25,
+    "evaluate_at": 4.0,
+    "calibration_times": [
+      0.0,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0,
+      1.1,
+      1.2,
+      1.3,
+      1.4,
+      1.5,
+      1.6,
+      1.7,
+      1.8,
+      1.9,
+      2.0,
+      2.1,
+      2.2,
+      2.3,
+      2.4,
+      2.5,
+      2.6,
+      2.7,
+      2.8,
+      2.9,
+      3.0,
+      3.1,
+      3.2,
+      3.3,
+      3.4,
+      3.5,
+      3.6,
+      3.7,
+      3.8,
+      3.9,
+      4.0
+    ],
+    "passive_linf_difference": 1.1102230246251565e-16,
+    "histories": [
+      {
+        "a": 0.1,
+        "film_at_wipe": 0.6065306597126334,
+        "pore_at_wipe": 0.13428756096908445,
+        "total_after_wipe": 0.2555936929116111,
+        "total_at_evaluation": 0.40452545890651365,
+        "film_at_evaluation": 0.2682760840021396,
+        "pore_at_evaluation": 0.13624937490437405,
+        "inferred_from_known_wipe": 0.10000000000000002
+      },
+      {
+        "a": 1.0,
+        "film_at_wipe": 0.10025884372280375,
+        "pore_at_wipe": 0.6405593769589142,
+        "total_after_wipe": 0.6606111457034749,
+        "total_at_evaluation": 0.704569767628824,
+        "film_at_evaluation": 0.08116955949369002,
+        "pore_at_evaluation": 0.623400208135134,
+        "inferred_from_known_wipe": 0.9999999999999993
+      }
+    ],
+    "heldout_gap": 0.3000443087223103,
+    "minimax_absolute_error_lower_bound": 0.15002215436115515
+  },
+  "coarse_flux": {
+    "fine_heights": [
+      [
+        1.0,
+        1.0
+      ],
+      [
+        0.0,
+        2.0
+      ]
+    ],
+    "coarse_height": 1.0,
+    "fine_average_flux": [
+      1.0,
+      4.0
+    ],
+    "shared_coarse_cubic_flux": 1.0,
+    "minimax_single_prediction": 2.5,
+    "minimax_absolute_error_lower_bound": 1.5
+  }
+}

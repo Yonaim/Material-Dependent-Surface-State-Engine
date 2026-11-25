@@ -1,0 +1,37 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "63078E4529F7FA7C82730755813C3F62EB16AF2382CEA1F45B25386B6FCAC5AB",
+    "Path": "C:\\Users\\yonai\\Documents\\MDSSP_Research\\F_Temporal_Surface_State_Research\\Docs\\Report_KO.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "FE1985886E61E61B08182A6390CA934EFD6C795AD1095199C5422FD3C6AD3C11",
+    "Path": "C:\\Users\\yonai\\Documents\\MDSSP_Research\\F_Temporal_Surface_State_Research\\Docs\\Mathematical_Audit_KO.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "7C794593D551C250BBC3B0161BE92001E1D0B35B5B21FC7A97234436764057A0",
+    "Path": "C:\\Users\\yonai\\Documents\\MDSSP_Research\\F_Temporal_Surface_State_Research\\Results\\pareto_summary.json"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "0C0666C95F76307953E9D7FF637C943E4378CE27DF0929418A31DCF55AE974CF",
+    "Path": "C:\\Users\\yonai\\Documents\\MDSSP_Research\\F_Temporal_Surface_State_Research\\Results\\verification.json"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "83638A07C8C47523991E0F5D573BCA47DDE1CF3B11669FD4E67B4A25B71E8D07",
+    "Path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Research\\G_Connected_Surface_Validation\\Docs\\Report_KO.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C2D201AD92D1A43853A0195CF91AACC4BF68441BD891804E515A67482FA3CB2E",
+    "Path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Research\\G_Connected_Surface_Validation\\Docs\\Mathematical_Review_KO.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "6D47368C6F992A53BB576BF43E505BFC8AD0261F3909EF0FE922D9005A75F385",
+    "Path": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Research\\G_Connected_Surface_Validation\\Results\\summary.json"
+  }
+]
