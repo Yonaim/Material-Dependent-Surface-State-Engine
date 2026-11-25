@@ -152,6 +152,18 @@
         return ice_interface_color(bulk, normal, view, light, mix(Field.IceOptics.x, Field.IceOptics.y, frost));
     }
 
+    vec3 shade_hot_substrate(vec3 reflected, float temperature_k)
+    {
+        // 선형 RGB에서 적열부터 노란 백열까지 근사하고 건조한 금속의 반사 위에 발광을 더한다.
+        float red = smoothstep(650.0, 1040.0, temperature_k);
+        float orange = smoothstep(985.0, 1260.0, temperature_k);
+        float white_hot = smoothstep(1220.0, 1460.0, temperature_k);
+        vec3 emission = red * vec3(0.52, 0.008, 0.002) +
+                        orange * vec3(0.62, 0.23, 0.012) +
+                        white_hot * vec3(0.44, 0.57, 0.41);
+        return reflected * (0.64 - 0.47 * red) + emission;
+    }
+
     vec3 shade_snow_layer(vec3 light)
     {
         vec2 point = Local.xy;
@@ -622,6 +634,8 @@
                     color = mix(color, shade_molten_lava(Local.xy * 0.48, film_depth), coverage);
                 }
             }
+            if ((Push.AppearanceFlags & INCANDESCENT_SUBSTRATE) != 0u)
+                color = shade_hot_substrate(color, display_state.z);
             float ice_coverage_mass = film_ice_kg_m2 + (has_ice_layer && !has_snow_layer ? display_state.w : 0.0);
             if (ice_coverage_mass > 0.0)
             {

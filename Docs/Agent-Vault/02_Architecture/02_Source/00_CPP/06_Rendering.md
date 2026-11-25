@@ -26,6 +26,7 @@
 | [HeightFieldSmoothing.h](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.h) | `FHeightFieldSmoothing::Record`, output lifecycle | 동적 height geometry 표시용 smoothing API |
 | [HeightFieldSmoothing.cpp](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.cpp) | variant pipeline·smoothing dispatch | height field를 화면용으로 smoothing하며 Solver geometry/state를 변경하지 않음 |
 | [DemoSurfaceEffects.h](../../../../../Source/Rendering/Surface/DemoSurfaceEffects.h) | demo state color/effect mappings | Surface State 채널과 데모 shader appearance 연결 설정 |
+| [SurfaceAppearance.h](../../../../../Source/Rendering/Surface/SurfaceAppearance.h) | `FSurfaceAppearance` | 표면 바탕색과 미터 단위 albedo/roughness 텍스처 매핑. Surface Simulation 장면에서 재사용한다. |
 
 ## Overlay geometry·benchmark
 
