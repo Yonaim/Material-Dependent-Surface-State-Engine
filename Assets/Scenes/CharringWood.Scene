@@ -5,7 +5,7 @@
   "surfaceTexture": "../Textures/SurfaceSimulation/AmbientCG/Wood049.png",
   "surfaceNormal": "../Textures/SurfaceSimulation/AmbientCG/Wood049Normal.png",
   "geometry": "WoodPatch",
-  "geometrySamples": [56, 40],
+  "geometrySamplesPerCell": 4,
   "simulationCells": [
     14,
     10

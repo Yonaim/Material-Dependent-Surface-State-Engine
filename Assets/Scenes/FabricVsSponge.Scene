@@ -7,7 +7,7 @@
   "comparisonSurfaceProfiles": [
     "SteelAbsorptionSample"
   ],
-  "geometrySamples": [64, 32],
+  "geometrySamplesPerCell": 4,
   "simulationCells": [
     16,
     8

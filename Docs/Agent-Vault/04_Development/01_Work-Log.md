@@ -1,5 +1,10 @@
 # Work Log — 코드 변경 및 문서 동기화
 
+## 2026-11-26 — 흡수 비교의 예약 급수 지연
+
+- 첫 급수가 시작되는 `pourStartSeconds`를 지원한다. 스텝과 실제 급수 구간이 겹친 시간으로 질량을 계산하고 에디터 조건 및 Scene Tracks에 시작 시각을 표시한다. 두 흡수 비교는 마른 시편에 2.0–2.25초 동안 물 20 g씩을 준다.
+- 포맷·Region 처리와 MSVC Debug 빌드를 통과했다. 분수 스텝에 걸친 급수 시작·종료 검사, 두 비교 씬의 에디터 실행과 CPU/Vulkan 대조에서 주입 전 건조 상태 및 공급 누계 20 g을 확인했다.
+
 ## 2026-11-26 — 아래층 수위로 위층 바닥 복원
 
 - CPU·Vulkan 수송과 표시에서 아래층이 채운 위치만 위층 바닥에 반영한다. 각 서브스텝의 시작 수위로 공유 턱과 수용·잔류 부피를 평가하고, 질량을 확정한 뒤 아래에서 위로 수위를 갱신한다.
@@ -12,6 +17,17 @@
 - 변경 C++의 clang-format과 Region 후처리, MSVC Debug 빌드, Heated Water Channel 에디터 8프레임 실행을 확인했다. 시뮬레이션 셰이더 7개는 Vulkan 1.2 SPIR-V 검사를 통과했고 디버그 심볼 제거 후 전후 바이너리가 일치했다. 텍스처 켜기·끄기 캡처도 각각 전후 PNG가 일치했다.
 - Surface Simulation의 Reference·GPU·Capture 회귀 3건을 모두 통과했다. CPU 기준 결과 35개가 이전 빌드와 정확히 일치했고 GPU 검증은 마른 격자와 국소 주입에서 희소·전체 실행의 결과 일치를 확인했다. [CTest 기록](../../../Build/SurfaceNamingVerification/ctest.log)
 
+## 2026-11-26 — 씬과 에디터의 셀당 형상 표본
+
+- Agent-Vault C++·주석·문서 규칙과 Surface Simulation 계약을 확인했다. 단일 씬과 비교 에디터의 해상도 선택을 셀당 1×1, 2×2, 4×4, 8×8 및 Custom으로 바꾸고 전체 형상 격자를 숫자로 표시했다.
+- 씬에서 `geometrySamplesPerCell`은 셀당 비율을, `geometrySamples`는 직접 지정한 전체 격자를 설정한다. 기존 크기에 정확히 맞는 23개 씬을 비율로 전환했다. 나머지 21개에는 기존 전체 격자 설정을 유지했다. [씬·에디터 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#00-경계와-단위)과 개인 볼트의 에셋 형식 문서를 갱신했다.
+- MSVC Debug 빌드, 셀당 비율 유지·상한·직접 입력 검사, 프리셋·Custom 씬의 에디터 초기 프레임을 확인했다. 두 씬 형식으로 실행한 Terraced Catchment의 CPU 결과가 일치했고 새 형식의 CPU·GPU 비교와 배포 씬 전체 CPU 기준 회귀를 통과했다. 중복 키, 미지원 비율, 비정수 비율 및 형상 범위를 위반한 입력은 로더에서 거부했다.
+
+## 2026-11-26 — ThinFilm 프로파일의 수송 바인딩 간소화
+
+- 프로파일 로더와 에셋 12개에서 중복 모델 지정을 제거했다. 대표 액체의 상태 ID는 transport.state에서 읽는다. Agent-Vault 계약과 개인 볼트의 현재 에셋 예시를 갱신했다.
+- clang-format·Region 처리와 MSVC Debug 빌드를 통과했다. Snow on Fabric, Ice Gate, Brick Runoff의 CPU·Vulkan 검사를 실행했다. [검증 로그](../../../Build/Transport-State-Only)
+
 ## 2026-11-26 — ThinFilm 실행 통합과 씬 검색 제거
 
 - Code Style, C++·GLSL, 주석·Region과 Surface Simulation 계약을 확인했다. 12개 수송 프로파일을 공통 ThinFilm 스키마로 묶었다. CPU·GPU는 각 층의 경계 유량과 같은 셀의 영역·바닥 규칙을 한 흐름에서 실행한다. 외투의 셀 단위 눈·흡수수와 고정 스텝당 한 번의 건조를 보존했다.
@@ -22,6 +38,24 @@
 
 - Code Style, C++·GLSL, 주석·Region 규칙과 Surface Simulation의 수송·상태 계약을 확인했다. 단일층도 공유 재질의 안식각과 항복응력을 읽는다. CPU는 같은 면 유량 함수, GPU는 같은 이동성 함수와 면 거리 계산을 두 경로에서 사용한다. 다층의 유효 바닥은 각 수송 서브스텝의 시작 질량과 층 순서로 계산한다.
 - clang-format·Region 처리 후 MSVC Debug 빌드와 Vulkan 1.2 SPIR-V 검사를 통과했다. 단일·다층의 뉴턴 극한, 마찰·항복 조건, 정지한 아래층의 턱과 월류를 검증했다. 외투, 얼음 마개, 흙이 덮인 돌길과 계단형 수조의 CPU/Vulkan 검사 및 Python 기준 검사 6건을 통과했다. 수송 계약·소스 맵·개인 볼트의 Transport 및 결합 문서를 갱신했다. [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md#층별-이동성과-정지한-아래층의-턱)
+
+## 2026-11-26 — 비교 씬 해상도 조절
+
+- 단일 씬과 비교 씬이 형상 샘플과 계산 셀 해상도 입력을 공유한다. 비교 씬을 처음 열면 각 원본 해상도를 사용한다. 해상도 변경을 적용하거나 되돌릴 때 두 시뮬레이션과 렌더 리소스를 함께 교체한다.
+- clang-format과 Region 정리 후 MSVC Debug 빌드를 통과했다. Meadow Firebreak의 원본과 두 해상도 변경 조합이 CPU/Vulkan 검사를 통과했다. 다른 한 조합의 GPU 질량 수지 한계 초과를 실험 문서에 기록했다. 에디터 검증 창이 최소화된 상태에서 활성화가 막혀 적용 버튼의 클릭 검증은 완료하지 못했다. [좌우 비교 검증](../05_Experiments/04_Surface-Simulation-Validation.md#기존-씬의-좌우-비교)
+
+## 2026-11-26 — 씬의 직접 Height Map 입력
+
+- Code Style·C++·주석 규칙과 Surface Simulation 입력 및 실험 계약을 확인했다. 배포 씬의 외부 형상 입력을 씬 상대 PNG 경로와 미터 범위로 통일했다. 카탈로그와 그 전용 UI·CLI를 제거하고 기존 형상 세트는 세 개의 Cavity 씬으로 이관했다. 원본 실험 파일과 재질용 노멀 맵을 보존했다.
+- 기존 용암 장면의 256×256 바닥을 16비트 PNG로 베이크했다. Cavity의 기존 Height Map 실행 두 건과 새 직접 참조 실행은 CPU/Vulkan 보고서가 일치했다. 단일 포켓, 쌍둥이 홈, 계단형 수로와 벽돌 용암의 CPU/Vulkan 검사를 통과했다. 용암의 기본 격자 높이 최대 차이는 0.0000505 mm였고, 저장 영역 수는 8,454개에서 8,448개로 바뀌었다.
+- clang-format·Region 처리 후 MSVC Debug를 빌드하고 Cavity PBR과 액체 두께를 150프레임으로 캡처했다. 캡처에 기존 프레젠테이션 레이아웃 검증 경고가 나타났다. Agent-Vault 실행 계약, ADR 및 개인 볼트의 형상 근거를 동기화했다. [ADR-0003](../03_Decisions/00_Records/ADR-0003-Scene-Height-Maps.md) · [캡처](../../../Build/HeightMapSceneInput/Cavity-HeightMap.png)
+
+## 2026-11-26 — YAML 저작 에셋과 프로파일 상태 정의
+
+- Code Style, C++와 주석 규칙, Surface Simulation 에셋 및 로더 계약을 확인했다. 용융·흡수·건조 규칙 파일 네 개와 일반 프로파일 여덟 개를 `.Interaction` 및 `interactions[].use` 형식으로 변경했다. Scene Setup의 분류·파일명을 실제 에셋과 맞췄다. 구형 규칙 에셋과 프로파일 바인딩 로더를 제거했다.
+- `.PhysicalMaterial`, `.Interaction`, `.SurfaceProfile`의 본문을 YAML로 변환했다. 파일 확장자로 종류를 구분하고 버전과 ID를 보존했다. 상태 정의는 프로파일의 `states.layer`와 `states.substrate`로 옮겼다. 절차형 씬 16개는 상태 구성을 공유하는 프로파일 4개를 참조한다. 별도 `States/` 파일과 참조 로더를 제거하고, 에셋 검사기는 상태의 출처를 해당 프로파일로 표시한다.
+- 재질·규칙·프로파일 33개에 값의 쓰임새와 단위를 설명하는 한국어 주석을 추가했다. 에셋 계약과 소스 지도를 갱신했다.
+- clang-format과 Region 포맷터 적용 후 MSVC Debug 빌드를 통과했다. 배포 씬 33개의 에셋 참조, 구형 규칙 바인딩 거부와 중복 YAML 키 거부를 확인했다. 최종 CPU 기준과 Vulkan 검사에서 각각 장면 결과 40건 및 월류 계약 보고서 1건이 비교 기준과 일치했다. [CPU 검사](../../../Build/InteractionAssetMigration/inline-reference.log) · [Vulkan 검사](../../../Build/InteractionAssetMigration/inline-vulkan.log)
 
 ## 2026-11-25 — 공통 바닥 온도 상태
 
