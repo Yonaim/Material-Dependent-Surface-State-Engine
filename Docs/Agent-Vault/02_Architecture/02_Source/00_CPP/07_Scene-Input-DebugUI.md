@@ -36,10 +36,12 @@ Contact 입력 수식과 적용 시점은 [[02_Architecture/01_Contracts/01_Stat
 | [DebugUI.h](../../../../../Source/DebugUI/Core/DebugUI.h) | `FDebugUI` public API/state | panel 조작·setting·renderer/solver update 요청의 중심 interface |
 | [DebugUI.cpp](../../../../../Source/DebugUI/Core/DebugUI.cpp) | ImGui lifecycle·frame/window orchestration | UI frame 시작·메뉴·패널 호출·상태 전달 |
 | [DebugUIShared.h](../../../../../Source/DebugUI/Core/DebugUIShared.h) | shared UI enum/format/helper | panel 간 공유하는 label, style, display helper |
+| [DebugUIWorkspace.cpp](../../../../../Source/DebugUI/Editor/DebugUIWorkspace.cpp) | 씬 탐색·요약 카드 | 한국어 설명에 영어 재질과 상태를 표시하고 복수 항목은 한 줄씩 불릿으로 나열한다. Condition 라벨과 선택기는 같은 행에 둔다. |
 | [DebugUIEditor.cpp](../../../../../Source/DebugUI/Editor/DebugUIEditor.cpp) | Scene/object editor widget | Scene·transform·camera 편집 UI와 변경 통지 |
 | [DebugUISimulation.cpp](../../../../../Source/DebugUI/Panels/DebugUISimulation.cpp) | clock·step·solver·Contact controls | simulation 실행 상태, test input, State/profile 제어 |
 | [DebugUIContactProfile.cpp](../../../../../Source/DebugUI/Panels/DebugUIContactProfile.cpp) | Contact/Profile widgets | Contact 형상과 현재 Scene Profile override를 조작 |
 | [DebugUIRender.cpp](../../../../../Source/DebugUI/Panels/DebugUIRender.cpp) | render/debug mode controls | renderer 옵션, surface/overlay 표시, smoothing·culling 토글 전달 |
+| [SurfaceSimulation.cpp](../../../../../Source/Application/Editor/SurfaceSimulation/SurfaceSimulation.cpp) | Surface Simulation 뷰포트 조작 | Show 메뉴의 Viewport Guides는 월드 가이드와 라벨을, Simulation Overlays는 셀 경계·출구·State Injection 표시를 설정한다. |
 | [DebugUIViewport.cpp](../../../../../Source/DebugUI/Panels/DebugUIViewport.cpp) | viewport image·interaction | render image 표시, mouse position/pick 처리 연결 |
 | [DebugUILog.cpp](../../../../../Source/DebugUI/Panels/DebugUILog.cpp) | log entry view/filter/clear | `FLogger` entry를 화면에서 탐색 |
 | [DebugUIProfiling.cpp](../../../../../Source/DebugUI/Profiling/DebugUIProfiling.cpp) | profiling panel coordination | renderer timing 및 memory stats 화면을 구성 |
@@ -73,7 +75,29 @@ Scene animation event도 `MainLoop`에서 stable object ID로 instance를 찾아
 
 UI 표시값은 실행 조건을 확인하는 출발점이다. 성능 측정에서는 benchmark runner가 기록한 실제 설정과 자동 출력 원자료를 [[05_Experiments/02_Performance-Measurements|성능 기록]]에 남긴다. `Logger.cpp`의 메시지는 load·Contact 거절·resource 변경의 진단에 쓰되, 수치 결과의 근거는 자동 기록한 결과 파일이다.
 
-Scene 패널은 현재 Scene 이름과 같은 폭의 Open/Save 보조 버튼, Category/Scene 선택 행, Restart 주 버튼 순서로 구성한다. `DrawSceneBrowser`는 Starter·Midterm demos·Showcase·Performance 중 Category를 선택한 뒤 해당 Scene dropdown에서 즉시 교체한다. 라벨은 고정 폭 열에, 선택 컨트롤은 남은 폭에 배치한다. Category 선택 자체는 Scene을 교체하지 않으며, 외부 파일 로드 등으로 경로가 달라지면 해당 Category를 다시 찾는다. UI 소유 `SceneCategory`/`SceneBrowserPath`는 파일에 저장하지 않는다. `Restart Scene`은 초기 transform·animation 시점을 복구하고 simulation state를 초기화한다. Demo animation이 있는 Scene은 재생을 다시 시작하며 simulation pause와 animation/simulation time scale을 기본값으로 돌린다. 현재 camera는 기존처럼 restart 직전 값을 유지한다.
+## 에디터 배치
+
+| 위치 | 기능 |
+|---|---|
+| 좌측 상단 `Scenes` · `Camera` | `Scenes`는 Features의 Geometry Inputs, Transport & Boundaries, Material Response, Interactions, State-Driven Geometry Coupling과 별도 Showcase를 표시한다. 드롭다운에서 전체, Features, 각 하위 분류 또는 Showcase를 선택한다. 선택 항목은 그룹 목록에서 고른다. 여러 분류를 보여 줄 때는 표시되는 분류 사이에 구분선을 넣는다. 데모당 한 항목이다. 선택한 씬의 제목, 설명, 재질, 상태 목록과 `Condition`은 제목 아래 구분선과 테마 강조색 테두리가 있는 요약 영역에 모인다. 비교 씬의 기본 조건은 `Compare All`이며 메뉴로 단독 조건을 고를 수 있다. `Camera`는 선택 조건들에 공통으로 적용하는 카메라를 제어한다. |
+| 좌측 하단 `Scene Setup` | `Assets`에서 에셋과 프로파일을 편집한다. `Geometry`는 입력 소스·복원 해상도·표면 크기를, `Conditions`는 초기 상태·씬 입력·트랙 기본값을 담당한다. |
+| 우측 상단 `Simulation` | `Solver`에서 연산, 시뮬레이션 셀과 형상 샘플의 해상도, 출구, 고정 시간 간격을 본다. `Tools`에서 수동 주입과 표면 기울기를 조작한다. |
+| 우측 하단 `Render Options` | 외관, 바닥 표시, 물 경계 보정, 상태 소스와 팔레트를 조작한다. 바닥 메시 전환은 같은 시뮬레이션 상태를 유지한다. |
+| 중앙 뷰포트 | 상단의 렌더 모드에서 `Diagnostics → Grids`로 계산 셀과 형상 샘플을 각각 표시한다. `Show`와 `Layout`으로 오버레이와 비교 뷰를 관리한다. 단독 씬의 기본값은 `Layer & Substrate` 4분할이다. 조건 비교에서는 조건당 상단 외관과 하단 두 상태 뷰를 그린다. `Exit Compare`로 비교를 종료할 수 있다. |
+| 뷰포트 상단 `Timeline` | 재생, 한 스텝, 재시작, 배속, 경과 시간과 씬의 주입·출구 상태를 표시한다. `Scene Tracks`에서 예약 주입과 온도 트랙을 임시로 끄거나 카메라 연출을 재생한다. 표면 기울기의 현재 각도와 제어 모드도 확인할 수 있다. |
+| 하단 도구 `Experiments / Profiling / Log` | 기준 계산, CPU/GPU 비교, 그림 저장, GPU 측정, 로그를 탭으로 연다. PNG는 패널에서 열고 `Enlarge`로 확대한다. |
+
+`Apply & Restart`는 Scene Setup과 Solver가 공유하는 대기 설정을 모두 적용하고 상태를 초기화한다. `Discard Changes`는 적용한 설정을 편집란에 돌려놓는다. 타임라인의 `Restart`는 현재 적용값으로 시간을 0초로 돌리고 트랙의 임시 재생 선택을 유지한다. 타임라인은 0.05×, 0.1×, 0.25×, 0.5×, 1×, 2×, 4×를 제공한다. 씬의 선택 속성 `initialPlaybackRate`는 처음 열 때 적용한다. 비교 씬은 첫 조건의 값을 공유한다. 배속은 편집기의 실행 속도를 조절하며 시뮬레이션의 스텝은 1/240초다. 새로운 기본 도킹은 `EditorWorkspace-v3.ini`에 저장한다.
+
+에디터는 어두운 패널에 푸른빛이 도는 밝은 옥색을 강조색으로 사용한다. 선택된 뷰의 2픽셀 테두리는 이미지 바깥 여백에 그린다. 양쪽 구분선은 설정 섹션 제목에 사용한다. 파일 열기는 `File → Open Scene…`에서 한다. 차트 씬의 `Profiling`은 `Timings / Workload / GPU Memory`를 표시한다. 메쉬 씬은 렌더 상태와 솔버·렌더 최적화 옵션도 제공한다.
+
+실험 그림은 `Captures/Surface/`에 PNG로 저장한다. `Copy PNG Path`로 해당 파일의 경로를 복사한다. 확대 창은 `Close`, 제목 표시줄의 닫기 버튼이나 포커스 상태의 `Esc`로 닫는다. 가공용 데이터가 필요하면 `Capture → State Data & Plot`으로 현재 상태의 JSON·SVG·PNG를 저장한다. 3D 뷰 이미지는 `Capture → Active View PNG`에서 저장한다. Log의 검색창 옆에는 전체 선택, 전체 해제, 각 레벨, 복사와 비우기를 펼쳐 둔다. 폭이 좁으면 같은 버튼이 다음 줄에 이어진다.
+
+차트 씬에서는 `Simulation → Tools`에서 주입 브러시를 켜고 대상과 크기를 지정한 뒤, 상면에 마우스를 두고 Space를 누른다. 씬을 바꿔도 브러시 활성 상태가 유지된다. 월드 그리드와 축은 뷰포트 상단 `Show`에서 켜고 끄며 발표 모드에서는 숨긴다. 메쉬 씬은 기존 `Inject mode`의 십자선과 Space를 사용한다. [수동 주입 계약](../../01_Contracts/08_Surface-Simulation.md#수동-주입과-범위-표시)
+
+주입 대상, 입력값, 브러시 모양과 크기는 왼쪽 라벨과 오른쪽 조작으로 배치한다. 액체 부피, 얼음 질량, 온도 목표와 지속 시간은 수치·단위·단계를 보여주는 각 5개 프리셋에서 선택한다. 원 반경과 사각형 크기·회전은 슬라이더로 조절한다. 주입량은 브러시 면적에 나눠 적용하는 1회분 총량이다. 온도는 지정된 시뮬레이션 시간 동안 선택한 바닥 셀에 적용한다.
+
+Heated Water Channel 계열은 45–1200°C의 온도 프리셋을 제공한다. 온도 선택창 아래에는 강철 표시 셰이더가 붉은색, 주황색, 밝은 발광을 더하기 시작하는 약 377°C, 712°C, 947°C를 주황색으로 안내한다.
 
 ## 현재 소스의 UI / Debug / Scene 연결 보강
 

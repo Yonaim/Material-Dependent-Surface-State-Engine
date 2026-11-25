@@ -1,4 +1,18 @@
 {
+  "maptz.regionfolder": {
+    "[cpp]": {
+      "foldStart": "#pragma region [NAME]",
+      "foldEnd": "#pragma endregion",
+      "foldStartRegex": "^\\s*#pragma[ \\t]+region[ \\t]+([^\\r\\n]+?)\\s*$",
+      "foldEndRegex": "^\\s*#pragma[ \\t]+endregion\\b[^\\r\\n]*\\s*$"
+    },
+    "[glsl]": {
+      "foldStart": "// #region [NAME]",
+      "foldEnd": "// #endregion",
+      "foldStartRegex": "^\\s*//[ \\t]*#region[ \\t]+([^\\r\\n]+?)\\s*$",
+      "foldEndRegex": "^\\s*//[ \\t]*#endregion\\b[^\\r\\n]*\\s*$"
+    }
+  },
   "explorer.sortOrder": "filesFirst",
   "files.exclude": {
     ".gitignore": true,
