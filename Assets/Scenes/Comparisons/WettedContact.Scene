@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Flat & Ruffled Fabric",
+  "koreanTitle": "평평한 천과 주름진 천",
+  "description": "두 천 가운데의 60 mm 정사각형에 같은 양의 물을 올린다. 재생하면 주름을 따라 물이 모이고 흡수 자국이 달라진다.",
+  "cases": [
+    {
+      "scene": "../SnowOnFabric_WettedContact_Flat.Scene",
+      "label": "Flat Surface"
+    },
+    {
+      "scene": "../SnowOnFabric_WettedContact_Ruffled.Scene",
+      "label": "Ruffled Surface"
+    }
+  ]
+}

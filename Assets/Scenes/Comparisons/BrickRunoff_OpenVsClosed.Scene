@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Grooved Brick · Open vs Closed Outlet",
+  "koreanTitle": "홈이 파인 벽돌 · 열린 출구와 닫힌 출구",
+  "description": "같은 급수와 기울기에서 배수된 물과 홈에 남는 물을 비교한다.",
+  "cases": [
+    {
+      "scene": "../BrickRunoff.Scene",
+      "label": "Open outlet"
+    },
+    {
+      "scene": "../BrickRunoff_ClosedOutlet.Scene",
+      "label": "Closed outlet"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Soil-covered Stone Path · With vs Without Mud Height",
+  "koreanTitle": "흙으로 덮인 돌길 · 진흙 높이의 영향",
+  "description": "두 번째 급수에서 새로 쌓인 진흙의 높이가 물길을 얼마나 바꾸는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../SoilCoveredStonePath.Scene",
+      "label": "With mud height"
+    },
+    {
+      "scene": "../SoilCoveredStonePath_NoMudSupport.Scene",
+      "label": "Without mud height"
+    }
+  ]
+}

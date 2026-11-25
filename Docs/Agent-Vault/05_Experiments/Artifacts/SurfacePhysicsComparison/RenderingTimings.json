@@ -1,0 +1,90 @@
+{
+  "before_existing_dirt_path": {
+    "solver": {
+      "mean_ms": 1.24956,
+      "p90_ms": 1.27732,
+      "frames": 88
+    },
+    "display": {
+      "mean_ms": 0.245228,
+      "p90_ms": 0.24704,
+      "frames": 88
+    }
+  },
+  "after_existing_dirt_path_runs": [
+    {
+      "solver": {
+        "mean_ms": 1.48878,
+        "p90_ms": 1.5092,
+        "frames": 88
+      },
+      "display": {
+        "mean_ms": 0.248927,
+        "p90_ms": 0.25148,
+        "frames": 88
+      }
+    },
+    {
+      "solver": {
+        "mean_ms": 1.48547,
+        "p90_ms": 1.50952,
+        "frames": 88
+      },
+      "display": {
+        "mean_ms": 0.249747,
+        "p90_ms": 0.2522,
+        "frames": 88
+      }
+    },
+    {
+      "solver": {
+        "mean_ms": 1.48551,
+        "p90_ms": 1.50428,
+        "frames": 88
+      },
+      "display": {
+        "mean_ms": 0.249334,
+        "p90_ms": 0.251,
+        "frames": 88
+      }
+    }
+  ],
+  "after_delta_four_views_runs": [
+    {
+      "solver": {
+        "mean_ms": 2.46081,
+        "p90_ms": 2.48348,
+        "frames": 88
+      },
+      "display": {
+        "mean_ms": 0.262264,
+        "p90_ms": 0.26568,
+        "frames": 88
+      }
+    },
+    {
+      "solver": {
+        "mean_ms": 2.45789,
+        "p90_ms": 2.48524,
+        "frames": 88
+      },
+      "display": {
+        "mean_ms": 0.263699,
+        "p90_ms": 0.26608,
+        "frames": 88
+      }
+    },
+    {
+      "solver": {
+        "mean_ms": 2.46068,
+        "p90_ms": 2.48444,
+        "frames": 88
+      },
+      "display": {
+        "mean_ms": 0.262853,
+        "p90_ms": 0.26472,
+        "frames": 88
+      }
+    }
+  ]
+}

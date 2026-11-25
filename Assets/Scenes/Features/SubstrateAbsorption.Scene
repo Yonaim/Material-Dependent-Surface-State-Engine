@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Substrate Absorption",
+  "koreanTitle": "바닥 흡수",
+  "description": "재생 2초 뒤 같은 높이장과 크기의 스펀지와 강철에 물 20 g씩을 부어 표면수와 흡수수를 비교한다.",
+  "cases": [
+    {
+      "scene": "../FeatureCases/AbsorptionSponge.Scene",
+      "label": "Sponge"
+    },
+    {
+      "scene": "../FeatureCases/AbsorptionSteel.Scene",
+      "label": "Brushed Steel"
+    }
+  ]
+}

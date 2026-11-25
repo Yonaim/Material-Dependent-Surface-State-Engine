@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Melt Geometry Feedback",
+  "koreanTitle": "용융과 바닥 높이",
+  "description": "얼음이 녹아 낮아진 바닥이 다음 수송에서 새 물길을 여는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../IceGate.Scene",
+      "label": "Evolving Bed"
+    },
+    {
+      "scene": "../IceGate_FixedBed.Scene",
+      "label": "Fixed Initial Bed"
+    }
+  ]
+}

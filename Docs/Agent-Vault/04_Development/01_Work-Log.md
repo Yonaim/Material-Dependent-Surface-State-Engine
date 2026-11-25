@@ -1,15 +1,90 @@
 # Work Log — 코드 변경 및 문서 동기화
 
+## 2026-11-26 — 격자 프리셋과 직접 입력
+
+- Resolution에 시뮬레이션 셀과 형상 샘플을 두 줄로 배치했다. 각 프리셋의 오른쪽에 가로·세로 입력을 두고, 계산된 격자 정보는 설명에 표시한다. 각 프리셋의 `Scene Default`는 씬을 열 때 읽은 값을 초안에 복원한다.
+- Debug 빌드 및 Snow on Fabric의 ImGui 입력 테스트를 통과했다. 두 메뉴로 시뮬레이션 기본값 14 × 10과 형상 기본값 56 × 40을 복원했으며, 적용 전 활성 격자와 다른 초안 설정을 보존하는 것을 확인했다.
+
+## 2026-11-26 — 홈 자동 분할 설정 위치
+
+- `Automatic basin splitting`을 Solver의 `Storage Regions`에 배치했다. 격자 기본값 복원과 분할 설정은 각각의 초안 값을 다루고, 공용 `Apply & Restart`로 적용한다.
+- C++ 포맷 및 Debug 빌드를 통과했다. `BasinSplittingOn`을 열어 `Storage Regions`와 `Resolution`이 별도 섹션으로 표시되는 것을 확인했다.
+
+## 2026-11-26 — 흡수수 단독 진단과 온도 수치
+
+- Agent-Vault C++·주석 규칙과 Surface Simulation 계약을 확인했다. Snow on Fabric의 평평한 천과 요철 천 씬에 단독 흡수수 뷰를 지정했다. 온도 범례와 커서 조회는 GPU가 완료한 표시 스냅샷의 계산 셀 온도를 °C로 표시한다. 프레임 읽기 슬롯은 기존 프레임 완료 동기화를 재사용한다.
+- [표시와 온도 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md) 및 [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)을 갱신했다.
+- MSVC Debug 빌드, Snow on Fabric CPU/GPU 비교와 잘못된 뷰 상태 거부를 확인했다. 에디터에서 흡수수 기본 뷰, 온도 단독 뷰 두 경로, 24.0/24.0°C 기본 범위, 45°C 펄스의 24.0/45.0°C 범위와 45.0°C 셀 툴팁을 확인했다. 에디터 로그에 Vulkan 검증 오류가 없었다.
+
+## 2026-11-26 — Melt Geometry 수심 진단
+
+- GLSL·Region 규칙과 다층 표시 계약을 확인했다. Layer Thickness가 다층에서 수송용 바닥 기준의 연결 수심을 보간하도록 고쳤다. 표시 바닥은 화면에 보일 수 있는 깊이의 상한으로 사용한다.
+- 독립 Debug 빌드, 기본 Build의 셰이더 빌드, Vulkan 1.2 SPIR-V 네 모듈, Ice Gate 두 조건 CPU/Vulkan를 확인했다. 전후 캡처와 네 뷰의 픽셀 비교를 검증 문서에 기록했다. 기본 실행 파일은 실행 중이라 링크 단계에서 잠겨 별도 빌드로 전체 검증했다.
+
+## 2026-11-26 — 홈 자동 분할의 매끄러운 바닥 대조
+
+- 기존 눈금 단면 비교에 완만한 높이장의 분할 ON/OFF를 추가했다. 격자, 급수 및 턱 높이를 맞추고 네 조건을 CPU·Vulkan에서 대조했다. [네 조건의 단면·수심 비교](../05_Experiments/04_Surface-Simulation-Validation.md#각진-바닥과-매끄러운-바닥)
+
 ## 2026-11-26 — 씬 카드와 뷰포트 표시 메뉴
 
 - 씬 카드의 설명을 기존 한국어로 두고 재질·상태는 영어 이름을 읽도록 연결했다. 현재 비교 조건들의 중복 없는 값을 한 줄씩 불릿으로 표시하고, 굵은 Condition 라벨 오른쪽에 선택기를 놓았다. MSVC는 씬 목록 파일을 UTF-8로 읽는다.
 - 뷰포트 Show에 Viewport Guides와 Simulation Overlays 제목·구분선을 넣었다. 예약 주입 위치 토글의 표시 이름을 State Injection으로 바꿨다.
 - Debug 빌드 후 Heated Water Channel과 Deposition & Flow Feedback의 한국어 설명, 후자의 복수 상태 불릿과 Condition 배치, Show 팝업을 에디터 화면에서 확인했다.
 
+## 2026-11-26 — Solver 설정 행과 해상도 표기
+
+- `Simulation → Solver`의 Operations, Resolution, Boundary, Time Step에서 왼쪽 라벨과 오른쪽 입력을 정렬했다. Resolution에 시뮬레이션 셀과 형상 샘플의 가로·세로 해상도 및 총개수를 각각 표시한다.
+- 변경 범위에 clang-format과 Region 포맷을 적용했다. 기본 실행 파일이 실행 중이어서 별도 Debug 실행 파일을 빌드했다. SnowOnFabric의 실제 에디터에서 `14 x 10 (140 cells)`, `56 x 40 (2240 samples)`, 우측 샘플 프리셋 드롭다운을 확인했다. [UI 구현](../../../Source/Application/Editor/SurfaceSimulation/SurfaceSimulationUI.cpp)
+
+## 2026-11-26 — 홈 자동 분할 전환과 비교 씬
+
+- Solver의 Resolution에 `Automatic basin splitting`을 추가했다. `Apply & Restart`가 저장 영역을 다시 만들고, 기존 씬은 자동 분할을 기본값으로 유지한다.
+- `Transport & Boundaries`에 같은 형상·급수로 두 모드를 병렬 재생하는 비교 씬을 등록했다. 수정한 C++의 Region 검사, MSVC Debug 빌드, CPU/Vulkan 대조를 통과했다. 턱을 넘기 전후의 PBR·수심 캡처를 저장했다. [검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md#홈-자동-분할-onoff)
+
+## 2026-11-26 — SnowyCoat 온도 표시 범위
+
+- SnowyCoat의 온도 히트맵 표시 범위를 293.15–303.15 K(20–30°C)로 좁혔다. 297.15 K(24°C)는 범위의 40%에 해당한다.
+- 같은 뷰에서 12프레임을 실행해 전후 온도 색이 짙은 보라색에서 청록색으로 바뀌는 것을 확인했다. [전후 캡처](../../../Build/SnowyCoatTemperatureRange/)
+
+## 2026-11-26 — 배수 수로의 계단형과 연속 표면 비교
+
+- `Transport & Boundaries`에 `Drainage Geometry Comparison`을 등록했다. 같은 무유약 테라코타와 급수·기울기에서 기존 계단형 수로와 단차·벽을 곡선으로 연결한 형상을 비교한다. 곡선형 대조군은 새 16비트 높이장으로 작성했다.
+- 변경 C++의 clang-format·Region 검사와 별도 MSVC Debug 빌드를 통과했다. CPU/Vulkan에서 두 조건의 배수를 확인하고 6초 PBR·수심을 캡처했다. [검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md#배수-수로의-계단형과-연속-표면-비교)
+
+## 2026-11-26 — Glacier Cut의 Snow 상태와 적설 외관
+
+- 두 Glacier Cut 조건을 `SteelWithWaterAndSnow.SurfaceProfile`과 `Snow` 상태에 연결했다. 절차 씬도 공용 적설 표시를 쓰고, 용암과 물의 표시 좌표가 눈층 높이를 읽는다. 장면 설명과 재질 출처를 갱신했다.
+- Debug 빌드, 정점 SPIR-V 및 두 조건의 CPU·Vulkan 대조를 통과했다. 초기 적설과 최종 융해수의 질량을 비교하고 PBR 세 시점을 캡처했다. [수치와 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#강철-수로-위-snow-003-적설)
+
+## 2026-11-26 — Snow 003 눈층 PBR
+
+- SnowyCoat가 참조하는 공용 눈 표시 레이어에 ambientCG Snow 003 색·거칠기와 GL 노멀을 연결했다. 천과 눈은 각각의 맵을 읽고 뷰의 Textures와 Material Normal Maps 전환을 공유한다.
+- Debug 빌드, SPIR-V 검증, 두 눈 씬의 CPU·Vulkan 대조와 PBR 비교를 통과했다. 강철 Glacier Cut의 PBR·수심 캡처 회귀도 확인했다. 외관 계약·소스 맵 및 CC0 에셋 출처를 기록했다. [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#snow-003-적설-외관)
+
+## 2026-11-26 — Glacier Cut 수로 본체의 강철 재질
+
+- 절차 씬도 수송 프로파일과 동일하게 바닥 재질의 PBR 외관을 읽는다. Glacier Cut의 두 조건은 강철 본체와 녹을 수 있는 얼음층을 표시한다. 에디터의 씬 정보 및 자산 패널에 강철 재질을 노출한다.
+- Debug 빌드, SPIR-V 4개와 두 조건의 CPU·Vulkan 대조를 통과했다. 얼음량, 고인 물, 기화 누계 및 질량 수지가 이전 측정과 일치했다. 초기 및 8초 캡처를 저장하고 계약·소스 맵을 갱신했다. [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#수로-본체를-강철로-교체)
+
 ## 2026-11-26 — Glacier Cut 얼음과 금속 받침
 
 - Glacier Cut의 두 조건에 표층 얼음 배율 1.75, 접촉 열 감쇠 4.4초와 브러시드 스틸 받침을 적용했다. 얼음 아래의 직접 표시와 굴절은 공용 강철 음영을 사용한다.
 - 상태·표시 계약과 소스 맵을 동기화했다. MSVC Debug, SPIR-V 두 개, 두 조건의 CPU·Vulkan 대조 및 PBR 캡처를 확인했다. [수치 비교](../05_Experiments/04_Surface-Simulation-Validation.md#얼음-보충과-금속-받침)
+
+## 2026-11-26 — 면적당 열용량의 두꺼운 시편 가열
+
+- 두꺼운 강판의 열 계산 및 외형 두께를 12 mm에서 1 mm로 맞췄다. 두 판에는 같은 2.00 MJ/m² 에너지 펄스를 적용한다. 씬 조건 이름과 비교 문서를 동기화했다.
+- CPU/Vulkan 대조를 통과했다. 공용 발광을 사용한 PBR에서 0.5 mm 판(1333.06 K)의 주황색과 1 mm 판(813.10 K)의 옅은 적색을 확인했다.
+
+## 2026-11-26 — 배수 데모의 무유약 점토와 흡수 자국
+
+- Tilt-Driven Drainage와 Outlet Drainage의 같은 홈 벽돌에 무광 테라코타 재질과 제한된 흡수를 연결했다. 젖은 자국은 바닥 흡수수로 표시한다.
+- 기존 Debug 실행 파일의 CPU/Vulkan 대조에서 열린 출구 유출과 닫힌 출구의 0 g 유출을 확인했다. 6초 전후 GPU 캡처를 비교했다. [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#기울기와-출구-배수의-테라코타-재질)
+
+## 2026-11-26 — Height Map Cavities의 가장자리 급수
+
+- 평면과 높이맵 조건의 6×8 mm 급수 영역을 차트 중심 기준 (−44, +22) mm로 맞췄다. 각 조건의 급수량은 4초 동안 9 g이다. 높이맵은 같은 홈 형상을 공유하는 별도 비교 케이스로 연결했다.
+- 두 조건의 CPU/Vulkan 대조에서 9 g 주입과 질량 수지를 확인했다. 높이맵 조건에서 8초 후 바닥 높이 2.5 mm 미만의 홈 영역에 물 2.98 g이 남았다. 에디터 로드 및 가장자리 급수·홈 집수 구간의 PBR 캡처도 확인했다.
 
 ## 2026-11-26 — 흡수 비교의 예약 급수 지연
 
@@ -27,6 +102,16 @@
 - 장면·실행 옵션·GPU 타이밍과 셰이더 파일명을 갱신했다. Agent-Vault 코드 맵·계약·흐름, CMake 셰이더 목록과 C++ 호출부를 동기화했다.
 - 변경 C++의 clang-format과 Region 후처리, MSVC Debug 빌드, Heated Water Channel 에디터 8프레임 실행을 확인했다. 시뮬레이션 셰이더 7개는 Vulkan 1.2 SPIR-V 검사를 통과했고 디버그 심볼 제거 후 전후 바이너리가 일치했다. 텍스처 켜기·끄기 캡처도 각각 전후 PNG가 일치했다.
 - Surface Simulation의 Reference·GPU·Capture 회귀 3건을 모두 통과했다. CPU 기준 결과 35개가 이전 빌드와 정확히 일치했고 GPU 검증은 마른 격자와 국소 주입에서 희소·전체 실행의 결과 일치를 확인했다. [CTest 기록](../../../Build/SurfaceNamingVerification/ctest.log)
+
+## 2026-11-26 — 천 비교의 정사각형 물 배치와 흡수 자국
+
+- 초기 물을 양쪽 시편 중앙의 60×60 mm 정사각형에 배치하고 질량을 1.44 g으로 맞췄다. 비교 프로파일의 젖음 표시 기준을 2.5에서 0.35 kg/m²로 낮췄다. 씬 설명과 계약, 실험 문서를 갱신했다.
+- 두 조건의 CPU/Vulkan 대조를 통과했다. 평평한 시편의 PBR 캡처에서 초기 물의 경계와 흡수 후 어두워진 자국을 확인했다.
+
+## 2026-11-26 — 천 비교의 초기 물 영역
+
+- Flat & Ruffled Fabric의 두 조건에서 초기 물을 중앙 약 105×66.7 mm 직사각형으로 줄였다. 면적당 물량을 보존하도록 물을 각 2.8 g으로 맞췄다. 씬 설명과 Agent-Vault 계약 및 실험 결과를 갱신했다.
+- 비교 씬의 두 조건이 CPU/Vulkan 대조를 통과했다. 편집기에서 0초의 물 영역과 마른 가장자리, 0.1× 기본 배속을 확인했다.
 
 ## 2026-11-26 — 씬 비교의 저속 재생
 
@@ -56,6 +141,11 @@
 - Scenes 패널의 텍스트 검색 위젯, 검색 상태와 문자열 필터를 제거했다. 그룹과 비교 조건 선택은 유지했다. Agent-Vault 계약·코드 맵·에디터 문서 및 개인 볼트의 모델·GPU 패스와 분류 그림을 맞췄다.
 - clang-format·Region 처리, MSVC Debug, Vulkan 1.2 SPIR-V, 15개 씬 CPU/Vulkan 검사, Python 6건, 비교 씬 실행과 외투 캡처를 확인했다. [측정 결과](../05_Experiments/04_Surface-Simulation-Validation.md#thinfilm-실행-경로-통합)
 
+## 2026-11-26 — 씬 설명과 조건 제어의 강조 테두리
+
+- `Scenes`에서 제목, 설명, 재질·상태 정보와 `Condition`을 하나의 요약 영역에 배치했다. 2 px 테마 강조색 테두리와 좌우 12 px, 상하 10 px 내부 여백을 적용했다. 에디터 배치 문서를 동기화했다.
+- clang-format과 Region 후처리 후 MSVC Debug 빌드를 통과했다. 에디터에서 Sill Overflow의 설명 줄바꿈과 요약 테두리, Condition 메뉴가 열리는 동작을 확인했다.
+
 ## 2026-11-26 — 에디터 데모 분류와 조건 선택
 
 - Features 16개와 Showcase 5개를 씬 선택기에 등록했다. 드롭다운은 전체, Features, 다섯 하위 분류와 Showcase를 제공한다. Features와 전체 목록은 현재 표시하는 분류 사이를 구분선으로 나눈다.
@@ -68,15 +158,56 @@
 - Code Style, C++·GLSL, 주석·Region 규칙과 Surface Simulation의 수송·상태 계약을 확인했다. 단일층도 공유 재질의 안식각과 항복응력을 읽는다. CPU는 같은 면 유량 함수, GPU는 같은 이동성 함수와 면 거리 계산을 두 경로에서 사용한다. 다층의 유효 바닥은 각 수송 서브스텝의 시작 질량과 층 순서로 계산한다.
 - clang-format·Region 처리 후 MSVC Debug 빌드와 Vulkan 1.2 SPIR-V 검사를 통과했다. 단일·다층의 뉴턴 극한, 마찰·항복 조건, 정지한 아래층의 턱과 월류를 검증했다. 외투, 얼음 마개, 흙이 덮인 돌길과 계단형 수조의 CPU/Vulkan 검사 및 Python 기준 검사 6건을 통과했다. 수송 계약·소스 맵·개인 볼트의 Transport 및 결합 문서를 갱신했다. [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md#층별-이동성과-정지한-아래층의-턱)
 
+## 2026-11-26 — 흡수 시편과 요철 비교의 이름 및 분류
+
+- Substrate Absorption을 스펀지와 강철 두 시편으로 정리했다. 시편별 면적, 격자와 초기 물 20 g을 유지했다. Wetted Contact를 Surface Relief & Wetting으로 바꾸고 이미지 목록의 Geometry Inputs로 옮겼다.
+- Region 후처리와 MSVC Debug 빌드를 수행했다. 두 씬의 PBR을 캡처했고 흡수 비교의 CPU/Vulkan 검증에서 8초 흡수량 19.84 g / 0.00 g을 확인했다. 검증 문서의 씬 이름과 데이터를 갱신했다.
+
+## 2026-11-26 — 평평한 흡수 비교 시편
+
+- 편집기 씬 설명을 실제 에셋에 맞췄다. Substrate Absorption의 세 시편에서 동일한 요철을 제거하고 재질·시편 두께·급수량을 유지했다. 실험 문서와 소스 맵을 갱신하고, 목록 이미지에서 Interactions을 별도 분류로 복원했다.
+- Region 후처리·MSVC Debug 빌드 후 PBR 캡처와 CPU/Vulkan 대조를 확인했다. 높이차는 0 mm이며 8초 후 흡수량은 천 6.50 g, 스펀지 19.84 g, 강철 0.00 g이다.
+
+## 눈금 유리 용기와 물 수조의 돌 받침
+
+- Code Style, C++·GLSL, 단면 표시 계약을 확인했다. 왁스에는 전면 눈금을 포함한 유리 용기 메시와 안쪽 물질 옆면을 추가했다. 물 수조는 오른쪽의 기존 12 mm 바닥 단차만 돌 표면으로 그린다. 두 표현을 저작 에셋 필드로 연결하고 계약을 기록했다.
+- Region 후처리, 셰이더·MSVC Debug 빌드, 두 씬의 PBR 캡처와 CPU·Vulkan 대조를 확인했다. 이전 검증 보고서의 수치가 같으며, 일반 가열 수로의 PBR 역시 픽셀이 일치한다.
+
 ## 투명 단면 하부의 외관
 
 - GLSL과 Surface Simulation 표시 계약을 확인했다. 공용 눈금창의 불투명 바닥 단면을 반투명한 유리색으로 바꿨다. 바닥 높이는 얇은 선으로 표시한다. 표시 계약을 갱신했다.
 - Region 서식과 셰이더 빌드를 적용하고 두 씬의 초기·완료 PBR을 캡처했다. 단면창을 쓰지 않는 Heated Water Channel의 PBR은 변경 전과 픽셀이 일치한다.
 
+## 2026-11-26 — 투명 단면 눈금과 계단 수조 평형
+
+- Code Style, C++·GLSL, Surface Simulation 표시 계약을 확인했다. 공용 앞쪽 단면과 눈금 메시를 `.Scene.sectionWindow`에 연결했다. 왁스와 계단 수조가 같은 파이프라인과 표시 스냅샷으로 높이를 나타낸다. 에디터가 물의 초기 단차에서 멈추도록 `startPaused`를 연결했다.
+- 포맷과 Region 후처리, 셰이더·MSVC Debug 빌드를 수행했다. 두 씬의 CPU·Vulkan 검증, 초기·최종 PBR 비교, 물의 네 가지 보기 캡처를 확인했다. 기존 가열 수로 31프레임 PBR은 이전 캡처와 RGB 픽셀이 일치한다. [계측 및 캡처](../05_Experiments/05_Surface-Physics-Comparison.md#바닥-높이가-다른-두-구역의-수면-평형)
+
+## 2026-11-26 — 같은 질량의 왁스 상별 부피
+
+- 엔진의 상별 밀도와 층 높이 재구성 계약을 확인했다. 닫힌 평저 트레이의 같은 시편을 동일 구도의 고체·액체 단계로 시연하고, 층별 실험 시계열에 질량과 밀도로 산출한 부피를 담았다. 형상 입력과 검증 기록을 갱신했다.
+- 포맷과 Region 적용, 별도 Debug 빌드, CPU·Vulkan 대조와 PBR 캡처를 확인했다. 12 g 고체와 액체의 부피는 각각 13.636 mL와 15.385 mL다. [검증 기록](../05_Experiments/05_Surface-Physics-Comparison.md#같은-질량의-왁스-상별-부피)
+
 ## 2026-11-26 — 공유 열발광과 왁스 경사로 표기
 
 - Code Style·C++·주석 규칙과 Surface Simulation 계약을 확인했다. 발광 활성 조건을 강철 재질과 온도 상태 연결로 옮겼다. 건식 강판과 물 접촉 냉각이 같은 PBR 발광 곡선을 사용한다. 왁스의 가열·냉각부는 기존 chart albedo 슬롯에서 읽는 표식이다.
 - 포맷·Region 처리와 별도 Debug 빌드 뒤, 강판 두 조건·가열 수로·왁스·흡수 시편의 CPU·Vulkan 대조를 통과했다. 가열 수로의 31프레임 PBR은 변경 전후 픽셀 단위로 같고, 왁스 상별 질량 시계열도 일치했다. 공용 렌더 계약, 텍스처 목록과 검증 기록을 갱신했다. [비교 기록](../05_Experiments/05_Surface-Physics-Comparison.md#가열냉각의-시각적-단서)
+
+## 2026-11-26 — 기능 데모의 건식 가열과 왁스 상변화
+
+- Code Style·C++·GLSL과 Surface Simulation 계약을 확인했다. 강판 비교에 면적당 에너지 입력을 연결하고 액체 상태를 걷었다. 액체를 선언한 장면은 그 상태명을 입력 도구에 표시한다. 가열 수로의 접촉 냉각은 기존 모델을 사용한다.
+- 공유 박막 상변화에 평형점 이하 응고를 추가했다. Wax Melt & Set은 지정 온도장을 사용해 용융, 수송 및 낮은 쪽의 응고를 관찰한다. 씬 선택기에서는 왁스를 대표 상변화 장면으로 열고 물의 동결 계측은 파일과 검증 경로를 사용한다. 기존 건조·사전 적심 발화 대조를 Moisture Suppression of Ignition으로 표기했다.
+- 포맷·Region 처리와 셰이더·MSVC Debug 빌드를 수행했다. 두 강판과 왁스의 CPU/Vulkan을 대조하고 PBR 캡처를 검토했다. Ice Gate, Rewetting Delta, Heated Water Channel 및 Freeze and Thaw 회귀를 확인했다. 현재 열려 있는 에디터와 별도 실행 파일에서 검증했다. [계측과 의도](../05_Experiments/05_Surface-Physics-Comparison.md#기능-단위-시연과-복합-시연)
+
+## 2026-11-26 — 평평한 강판의 열용량 비교
+
+- 열용량 비교 에셋의 상면을 같은 직사각형 평판으로 바꿨다. 공통 평면 Height Map과 중앙 급수를 사용하고 경계는 두 조건 모두 닫았다. 바닥 형상 및 온도 계약을 확인하고 형상 에셋 설명과 비교 기록을 갱신했다.
+- 기존 Debug 실행 파일에서 시편별 CPU·Vulkan 대조 검사와 세 시점의 PBR 캡처를 수행했다. 두 시편의 바닥 높이 편차는 0 mm이며 에셋의 차이는 시편 ID, 열용량 프로파일과 몸체 두께다. [검증 기록](../05_Experiments/05_Surface-Physics-Comparison.md#평평한-강판-시편-비교)
+
+## 2026-11-26 — 열용량 편차와 동결 부피 시연
+
+- Code Style·C++·주석 및 표면 온도·상변화 계약을 확인했다. 열용량 비교의 유효 두께와 표시용 몸체 두께를 0.5 mm 및 12 mm로 바꾸고 씬 및 에디터 표기를 동기화했다. 표준 동결 씬의 표시 제목과 설명을 부피 변화에 맞췄다.
+- 포맷과 Region 적용 후 별도 MSVC Debug 실행 파일을 만들었다. 강판 두 조건과 표준 트레이의 CPU·Vulkan 대조 검사가 통과했다. 동일 시각 강판 PBR과 고정 카메라 액상·동결·해빙 PBR을 캡처했다. 기존 실행 중인 에디터의 메뉴 클릭 검증은 수행하지 않았다. [비교 측정](../05_Experiments/05_Surface-Physics-Comparison.md#면적당-열용량과-동결해빙)
 
 ## 2026-11-26 — 씬의 활성 상태 범례
 
@@ -112,10 +243,54 @@
 - 재질·규칙·프로파일 33개에 값의 쓰임새와 단위를 설명하는 한국어 주석을 추가했다. 에셋 계약과 소스 지도를 갱신했다.
 - clang-format과 Region 포맷터 적용 후 MSVC Debug 빌드를 통과했다. 배포 씬 33개의 에셋 참조, 구형 규칙 바인딩 거부와 중복 YAML 키 거부를 확인했다. 최종 CPU 기준과 Vulkan 검사에서 각각 장면 결과 40건 및 월류 계약 보고서 1건이 비교 기준과 일치했다. [CPU 검사](../../../Build/InteractionAssetMigration/inline-reference.log) · [Vulkan 검사](../../../Build/InteractionAssetMigration/inline-vulkan.log)
 
+## 2026-11-25 — 표면 접촉·퇴적·열용량과 수송 세분화
+
+- Code Style, C++·GLSL 규칙, 상태·형상·GPU 계약을 확인했다. 형상 샘플에서 접촉 면적을 얻고, 진흙의 혼합수 질량·건조·재습윤을 CPU와 Vulkan에 연결했다. 퇴적이 만드는 유효 바닥과 확정 월류를 표시한다. 고정 스텝 내부의 수송 횟수 선택과 바닥 온도 상태의 면적당 열용량 설정을 추가했다.
+- Wetted Contact, Rewetting Delta, Thin vs Thick Steel 비교 씬과 수심·접촉·유효 바닥·월류·흡수 충전율·진흙 성분 진단을 추가했다. 실행 계약과 소스 지도를 갱신하고 ADR-0002에 결정 근거를 적었다.
+- 수정 파일은 clang-format과 Region 포맷터를 거쳐 Debug로 빌드했다. 최종 CPU/Vulkan 회귀 40건과 별도 64×64 수송 1회·8회, 고정 턱·접촉 시험, SPIR-V 모듈 7개를 통과했다. 세 비교 씬의 좌우 캡처도 확인했다. 같은 카메라의 전후 캡처와 12개 해상도·수송 구성의 GPU 시간을 기록했다. [결과와 증거](../05_Experiments/05_Surface-Physics-Comparison.md)
+
+## 2026-11-25 — 천·스펀지·강철 흡수 비교
+
+- 코드와 GLSL 작성 규칙, 표면 상태 및 표시 계약을 확인했다. 같은 형상과 물 20 g을 갖는 시편을 세 개로 확장했다. 천은 Fabric 080, 스펀지는 Sponge 001, 강철은 Metal 010을 쓴다. [시편 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#바닥-저장-용량과-재질-비교)
+- Debug 빌드와 SPIR-V를 검사하고 재질 비교, 기존 천 및 가열 수로 CPU/GPU 검사와 구형 두 시편 자산 검사를 통과했다. 에디터 실행 및 시작·8초 후 렌더와 계산·형상 격자를 확인했다. [측정값과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#천스펀지강철의-흡수-용량-비교)
+
+## 2026-11-25 — Fabric 수심을 형상 표본에서 복원
+
+형상 표본을 56×40으로 고정하고 계산 격자만 14×10, 28×20, 56×40으로 변경해 6초 프레임을 비교했다. 이전 수심 보간에서는 계산 격자를 촘촘하게 할수록 경사면에 줄이 반복됐다. 단일 액체 두께 뷰에서 먼저 형상 표본의 수심을 얻고, 연결된 수심·수위와 바닥에 같은 선형 가중치를 적용했다. 완만한 접촉 양쪽에 물이 있고 수위가 턱을 넘는 구간은 연결하도록 했다. 변경 후 56×40에서 반복 줄이 크게 줄었고, 14×10에는 웅덩이 가장자리에 옅은 셀 자국이 남았다. 셰이더 빌드, 원시 14×10 캡처의 픽셀 일치, 두 홈의 전후 캡처, CPU·GPU 월류 시험을 확인했다. [같은 프레임 비교](../05_Experiments/Artifacts/SurfaceSimulation/FabricSampleDepthReconstruction.png)
+
+## 2026-11-25 — 주름진 천의 두께 뷰 경계 보정
+
+단일 액체의 보간 두께 뷰는 저장 수위에서 보간한 형상 표본의 바닥 높이를 뺀 뒤, 연결되지 않은 영역이 보간에서 차지하는 비중에 따라 경계 수심을 낮춘다. 같은 카메라와 색상 범위의 6초 Fabric 프레임에서 직전 보간과 비교했다. 표시한 125×32 픽셀 확대 구간에서 건조 바탕보다 녹색 채널이 9단계 이상 높은 푸른색 픽셀은 162개에서 81개로 감소했다. 이 수치는 그림의 국소 비교이며 전체 표면의 수심 오차를 나타내지 않는다. 세 캡처에서 보간을 끈 원시 뷰는 최초 기준과 픽셀이 일치했고, CPU·GPU 턱 월류 시험도 통과했다. [확대 비교](../05_Experiments/Artifacts/SurfaceSimulation/FabricWaterDepthBoundaryComparison.png)
+
+## 2026-11-25 — 단일 액체 두께 진단의 연결 보간
+
+`Layer Thickness`에서 `Smooth liquid boundary`를 켰을 때 연결된 수위만 보간한다. 근처 계산 형상 표본이 마른 곳에서는 렌더 바닥의 깊이만으로 생긴 물가 자국을 줄인다. Debug 빌드와 셰이더 컴파일 후 Fabric 6초와 두 홈의 1.5초·3.67초를 비교했다. 보간을 끈 캡처 세 장은 변경 전과 픽셀이 일치했다. 보간을 켜면 두 홈이 이어진 수로의 계단과 Fabric의 일부 얇은 띠가 줄었다. Fabric에는 마른 경계에 닿는 가는 자국이 남는다. CPU·GPU 월류 기준 시험에서 턱 아래 수신 영역의 액체량은 0이었고, 턱을 넘긴 뒤 수신 영역에 물이 도달했다. [전후 캡처](../05_Experiments/Artifacts/SurfaceSimulation/WaterThicknessInterpolationComparison.png)
+
+## 2026-11-25 — 원본 씬의 좌우 비교
+
+- 코드 규칙과 Surface Simulation·에디터 계약을 확인했다. 기존 변형 가운데 13개를 참조형 비교 씬으로 등록했다. 독립 시뮬레이션 두 개가 고정 스텝, 재생 조작과 카메라를 공유한다. [좌우 비교 씬 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#좌우-비교-씬)
+- MSVC Debug 빌드, 비교 파일 13개의 CPU 기준과 GPU 검사, 에디터의 목록·두 씬 전환·동기 재생 및 좌우 PNG 출력을 확인했다. [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#기존-씬의-좌우-비교)
+
+## 2026-11-25 — 천과 스펀지 시편의 간격과 요철
+
+- 시편을 26 mm 떨어뜨려 표시하고 25 mm 몸체와 안쪽 옆면을 그린다. 두 시편에 같은 2.77 mm 높이차를 형상 샘플에 넣고 양쪽 수송 경계를 닫았다. [비교 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#바닥-저장-용량과-재질-비교)
+- Debug 빌드와 표면 셰이더 검증, 비교 씬과 기존 천 씬의 CPU/GPU 검사에 통과했다. 시작·8초 후 상태 및 계산 격자와 형상 격자 캡처를 확인했다. [실험 결과](../05_Experiments/04_Surface-Simulation-Validation.md#천과-스펀지의-흡수-용량-비교)
+
+## 2026-11-25 — 흡수 용량과 씬 비교 분류
+
+- 코드 작성 규칙, 표면 상태 계약과 에디터 맵을 읽었다. `SurfaceProfile`이 면적당 흡수 상한을 읽도록 하고 흡수 속도는 `LocalUpdate`에서 공유한다. Fabric vs Sponge를 한 차트의 닫힌 두 시편으로 구성했다. [바닥 저장 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#바닥-저장-용량과-재질-비교)
+- 씬 브라우저를 Showcase, Phenomena, Comparisons, Experiments로 분류하고 변형은 같은 씬 계열에 뒀다. [에디터 배치](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md#에디터-배치)
+- MSVC Debug 빌드, 비교 씬과 기존 천 씬의 CPU/GPU 검증을 통과했다. 시작과 8초 프레임을 확인했고, 에디터의 Comparisons 카테고리에서 Fabric vs Sponge가 나오는 것을 확인했다. [비교 데이터](../05_Experiments/04_Surface-Simulation-Validation.md#천과-스펀지의-흡수-용량-비교)
+
 ## 2026-11-25 — 상태 범례의 공통 자동 팔레트
 
 - 다층 표시 계약과 일반·다층 상태 등록 경로를 확인했다. 씬별 진단색 지정 대신 공통 함수로 보색 쌍을 생성한다. 개별 프로파일에는 피복용 색을 보관한다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#다층-박막-프로파일)과 [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)을 갱신했다.
 - MSVC Debug 및 Soil Covered Stone Path·Snow on Fabric의 전후 GPU 캡처를 확인했다. 두 씬의 PBR과 개별 두께에는 픽셀 차이가 없었고 상태 색만 바뀌었다. 비교 자료는 `Documents/MDSSP-Previews/StateLegendPalette-2026-11-25`에 보관했다.
+
+## 2026-11-25 — 마른 흙·진흙 범례 대비
+
+- 다층 표시 계약과 장면 로더를 확인했다. `SoilCoveredStonePath` 프로파일의 `displayColor`로 마른 흙은 밝은 황금색, 진흙은 밝은 청록색을 지정했다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#다층-박막-프로파일)에 기본값과 적용 범위를 추가했다.
+- MSVC Debug 빌드, 150프레임 Vulkan 캡처 비교 및 Soil Covered Stone Path CPU/GPU 검사를 통과했다. 상태 진단은 51,209픽셀이 바뀌었고 PBR과 두 개별 두께 뷰는 0픽셀 차이였다. 비교 이미지는 `Documents/MDSSP-Previews/SoilMudLegend-2026-11-25`에 보관했다.
 
 ## 2026-11-25 — Fabric 젖음의 색과 반사
 
@@ -125,6 +300,52 @@
 
 - C++ 주석·포맷 규칙, 표면 표시 계약과 씬 코드 맵을 확인했다. 씬에서 반복 알베도·거칠기와 노멀을 지정하고 HDR 파노라마의 반사, 노출, 수평 회전을 설정할 수 있게 했다. 바닥 재질 세 종과 HDRI 세 종의 배포 경로 및 CC0 출처를 동기화했다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#03-재질-표시와-캡처) · [에셋 출처](../../../Assets/Textures/SurfaceSimulation/README.md)
 - MSVC Debug, 표시 셰이더 SPIR-V 여섯 개, 실제 Vulkan 캡처, Brick Runoff CPU/GPU 검사와 텍스처 캡처 회귀를 통과했다. 두 쌍의 두께 뷰에서 픽셀 차이가 0이었다. [검증](../05_Experiments/04_Surface-Simulation-Validation.md#ambientcg-데모-재질과-hdr-환경-반사)
+
+## 2026-11-25 — 다층 표시 상태를 프로파일에서 등록
+
+Surface Simulation 계약과 C++ 규칙을 확인했다. 다층 프로파일의 모든 층을 수송과 표시에서 함께 읽고 최상단 액체의 수심 뷰를 자동 선택한다. 얼음·돌길의 기본 씬과 대조군에서 중복 상태 배열을 제거했다. 기본 Debug 빌드, 다층 씬 다섯 건의 액체 및 아래층 두께 캡처, 이전 다층 형식과 기존 벽돌 두께 캡처를 확인했다. 두 기본 씬은 CPU와 Vulkan의 질량·수위 비교도 통과했다.
+
+## 2026-11-25 — Snow on Fabric의 Fabric080 재질
+
+기본·주름 씬의 이름과 파일명을 Fabric으로 통일했다. 두 씬이 공유하는 Fabric 재질에 ambientCG 1K 원본 비율의 색·거칠기와 GL 노멀·높이를 연결했다. 높이 채널은 0.25 mm 표시용 시차에 사용한다. Debug 빌드 후 같은 75번째 프레임을 1200×780 PBR로 캡처했다. 평평한 천에서 전체 텍스처를 끈 경우와 재질 노멀만 끈 경우 모두 픽셀 차이를 확인했다. [기본 씬](../05_Experiments/Artifacts/SurfaceSimulation/SnowOnFabric_Fabric080.png) · [주름 씬](../05_Experiments/Artifacts/SurfaceSimulation/SnowOnFabric_Ruffled_Fabric080.png)
+
+## 2026-11-25 — 다층 두께 뷰와 씬 재질
+
+다층 수송의 질량·수위 슬롯을 표시 스냅샷에 연결했다. 두께 뷰는 물의 저장 수위와 해당 형상 표본, 또는 선택한 아래층의 질량·밀도로 값을 구한다. Ice Gate는 공용 얼음 피복 셰이더를 사용한다. 돌길은 Poly Haven의 회색 돌 디퓨즈와 노말을 사용하며, 흙과 진흙이 덮인 부분에는 돌의 노말 강도를 감쇠한다. Agent-Vault C++·주석 규칙과 표면 표시 계약을 확인했다. 기본 Debug 빌드 및 돌길·얼음·벽돌 진단 캡처를 확인했다.
+
+## 2026-11-25 — 엔진 다층 박막과 갈림길 데모
+
+공통 마찰·항복 수송을 C++와 Vulkan에 연결하고 다층 프로파일, 얼음 마개, 흙 덮인 돌길 및 대조 씬을 추가했다. 코드 작성 전 Agent-Vault C++·주석 규칙, Surface Simulation 계약, 소스 맵을 읽었다. 코드·계약·검증 문서를 동기화했다. Debug는 실행 중인 기본 바이너리의 잠금 때문에 별도 출력 경로에 링크했다. 수송 계약, 기존 벽돌, 두 기본 데모와 대조군의 CPU/GPU 검증 및 캡처를 수행했다. [[05_Experiments/04_Surface-Simulation-Validation#다층 박막과 두 갈림길]]
+
+## 2026-11-25 — 다층 박막 CPU 기준 계산
+
+공통 마찰·항복식을 독립 기준 계산에 추가했다. 설계 볼트의 재질 표와 수학식, 프로파일 예시를 동기화했다. Agent-Vault의 Python·주석 규칙과 Surface Simulation 계약을 확인했다. 닫힌 직교 격자와 유량 함수에 대한 단위 시험 여섯 건을 통과했다. [[05_Experiments/04_Surface-Simulation-Validation#다층 박막 CPU 기준 계산]]
+
+> **모든 코드 변경 작업에서 작업 단위 최소 1건 기록 필수.** 상세 설계는 Architecture/ADR, 실제 테스트 결과는 Experiments에 기록한다.
+
+| 날짜 | 작업 / 코드 범위 | 읽은 주요 문서 | 갱신 문서 또는 영향 없음 근거 | 검증 상태 |
+|---|---|---|---|---|
+| `YYYY-MM-DD` | `{{TASK_AND_CODE_PATHS}}` | `{{READ_DOCS}}` | `{{UPDATED_DOCS_OR_NO_IMPACT_REASON}}` | `{{COMMAND_AND_RESULT_OR_NOT_RUN}}` |
+
+## 2026-11-26 — Assets를 열 때 발생한 시작 충돌
+
+- 시작 흐름과 에셋 편집기를 확인했다. `run.ps1`은 빌드를 마쳤고 `MDSS.exe`는 시작 프레임의 `ImGui::TableNextRow`에서 `0xC0000005`로 종료했다. 인라인 상태 설명 행을 `Bindings` 테이블 안에서 그리도록 수정했다. 변경 범위는 해당 행의 ImGui 테이블 생성 순서다.
+- MSVC Debug 빌드를 통과했다. 인수 없는 `run.ps1`에서 창이 유지되고 정상 닫기가 되는 것을 확인했으며, `run.ps1 -Configuration Debug --frames 12`도 종료 코드 0으로 완료했다.
+
+## 2026-11-25 — 수면 출렁임 표시 두 가지
+
+- C++·GLSL 작성과 접기 규칙, 표시 스냅샷과 수위 계약을 확인했다. 활성 뷰에서 반사·굴절과 높이 변위를 독립적으로 켜도록 하고, 기울기 변화의 감쇠 진동을 표시 슬롯으로 전달했다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#수면-출렁임-표시)과 [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md#출렁임의-광학과-수면-높이)을 갱신했다.
+- MSVC와 셰이더 Debug 빌드, SPIR-V 검사, CPU 기준, Brick Runoff CPU/GPU, 텍스처 캡처 회귀를 통과했다. 네 가지 설정의 PBR 캡처, 위에서 본 GPU 수심·젖은 영역 비교 두 건, 정지 시점 이미지 동일성, 교차 GPU 표시 시간 측정을 남겼다. [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md#수면-출렁임-표시-검증)
+
+## 2026-11-25 — 주입 브러시 프리셋과 발광 안내
+
+- 코드 작성·주석·포맷 규칙, 수동 주입 계약과 에디터 배치를 확인했다. 주입 브러시를 두 열로 배치하고 수치와 단계가 있는 선택창, 크기 슬라이더, 입력 설명을 추가했다. 가열 수로의 온도 범위와 셰이더 발광 안내를 [에디터 문서](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md#에디터-배치)에 동기화했다.
+- MSVC Debug 빌드와 가열 수로 CPU·GPU 검사를 통과했다. 새 에디터 창에서 물 0.35 mL 프리셋, 1200°C 프리셋과 주황색 설명, 원 반경 12.0–22.2 mm 변경, 일시정지 중 온도 주입으로 바닥 상태 뷰가 갱신되는 것을 확인했다.
+
+## 2026-11-25 — 매끄러운 바닥 위 수면의 내부 틈
+
+- C++·GLSL 작성과 접기 규칙, 표면 표시 계약을 확인했다. 굴절과 바닥 가림을 따로 끈 캡처에서 수면 자체의 틈을 재현했다. 매끄러운 바닥에서는 두 수위가 공유 턱을 덮은 모서리에 수직 연결 면을 그린다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)을 갱신했다.
+- Debug 셰이더와 별도 실행 파일을 빌드했다. Twin Pockets 캡처의 내부 빈 픽셀은 449개에서 8개로 줄었고 위에서 본 수심·젖음·질량은 같았다. Brick Runoff PBR, Twin Pockets CPU/GPU 검사와 텍스처 캡처 회귀를 확인했다. [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md#비스듬한-시점의-수면-내부-틈)
 
 ## 2026-11-25 — 물가 스무딩과 표시 수심 분리
 
@@ -158,22 +379,226 @@
 - GLSL 작성 규칙과 표시 계약을 확인했다. 고인 수면과 물가의 연결 조건을 분리하고, 보간한 높이차의 0점에서 물가를 표시했다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
 - Debug 셰이더와 SPIR-V 네 개, 텍스처 캡처 회귀를 확인했다. Cavity와 두 포켓 초기·후반, 벽돌 용암의 PBR·두께를 고정 카메라에서 비교했다. [수로 윤곽과 마른 턱 검사](../05_Experiments/04_Surface-Simulation-Validation.md#마른-턱과-수로-물가의-표시-분리)
 
+## 2026-11-25 — 에셋 속성의 용도별 섹션
+
+- 시뮬레이션·표시 계약과 밀도 필드의 소비 경로를 확인했다. `Assets` 속성에 `Physics`, `Appearance`, `Bindings`, `Inputs` 섹션을 적용하고 해당 속성이 없는 섹션은 그리지 않는다. [Surface Simulation 코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)
+- MSVC Debug 빌드를 통과했다. 실제 에디터에서 `Water`의 Physics·Appearance와 `SnowyCoat`의 Bindings·Appearance 배치를 확인했다. 다른 에셋의 섹션은 코드에서 확인했다.
+
+## 2026-11-25 — 에셋 패널의 한국어 도움말
+
+- 에셋 및 표시 계약과 에디터 코드 맵을 확인했다. `Assets`에서 분류·에셋·속성에 붙은 번역 표기를 없애고 각 항목에 한국어 도움말을 달았다. 값의 단위와 편집 경로는 유지한다. 배포 씬은 기존 씬 설명을 재사용한다. [Surface Simulation 코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)
+- MSVC Debug 빌드와 실제 에디터의 영문 분류·제목·속성 표시를 확인했다. ImGui 입력 검사에서 속성 이름과 값 위의 툴팁 및 기존 값 편집을 확인했다.
+
+## 2026-11-25 — 연결된 액체 수면만 표시 보간
+
+- GLSL 규칙과 표면 표시 계약을 확인했다. 양쪽 수위가 턱을 덮은 접촉만 연결하고 정점에서 받은 보간 전 수심으로 마른 영역의 표시를 제한했다. PBR과 두께 뷰에 같은 표시 수심을 사용한다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- Debug 셰이더 빌드, 네 SPIR-V, 벽돌과 cavity GPU 비교, 텍스처 캡처 회귀 및 같은 구도의 전후 PNG를 확인했다. [비교 수치와 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#연결된-수면의-표시-보간)
+
+## 2026-11-25 — PBR에서 용암 줄눈과 얇은 막 표시
+
+- GLSL 규칙과 표면 표시 계약을 확인했다. 수면 경계 보간을 켠 PBR에서 얕은 발광막을 표시 두께로 바닥색에 합성한다. 벽돌 프로파일에 표시 전환 깊이 0.9 mm를 지정했다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- 셰이더 빌드, 두 SPIR-V 모듈, 12초·32초 Vulkan 캡처 및 두께·레이어 상태의 픽셀 비교를 확인했다. [확대 비교](../../../Build/BrickCubeMortarFlow/Mortar-Rendering-Comparison.png)
+
+## 2026-11-25 — PBR 수면 경계 기본값
+
+- 표시 계약과 C++·서식 규칙을 확인했다. 씬 시작, 뷰 모드 선택, 비교 프리셋 및 캡처의 PBR 기본값으로 수면 경계 보간을 켰다. 뷰의 체크박스와 캡처의 명시적 옵션도 적용된다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- Debug를 빌드한 뒤 `run.ps1`로 기존 에디터를 열었다. BrickCube Lava의 PBR에서 기본 체크 상태를 확인하고, 15.888초에 멈춘 화면을 확대했다. 두꺼운 용암 내부는 이어져 보였고 얕은 가장자리에는 바닥이 드러나는 자리가 남았다. [에디터 확대 캡처](../../../Build/PbrBoundaryEditor/Pbr-Lava-Closeup.png)
+
+## 2026-11-25 — 독립 해상도 및 씬별 GPU 저장
+
+- Surface Simulation 계약과 C++·GLSL·빌드 전 서식 규칙을 확인했다. 노멀을 원본 크기 또는 지정 격자에서 적분하고, 같은 높이장을 형상 격자로 면적 재표본화한다. 에디터에서 적분·형상·수송 해상도를 각각 조정한다. 계산·정적 표시·표시 스냅샷의 SSBO는 실제 요소 수로 할당한다. [형상·GPU 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- MSVC Debug, 변경 SPIR-V 검사, `run.ps1` 편집기 시작, 512²·250×190 적분, 128² 최대 수송 격자와 두 BrickCube 조건의 CPU·GPU 수지를 확인했다. [정량 비교와 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#독립-적분형상수송-해상도)
+
+## 2026-11-25 — 노멀 형상 강도와 액상 용암 색
+
+- 형상·표시 계약과 C++·GLSL·빌드 전 서식 규칙을 확인했다. Geometry 탭에서 노멀 형상 강도와 적용 방식을 명시하고 BrickCube의 씬 기본 배율을 1.5로 조정했다. 발광 액상의 외관에 주황색 바탕과 흐름 무늬를 적용했다. [형상·표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- Debug 빌드, SPIR-V 검사, BrickCube CPU·GPU 수치와 동일 구도 전후 캡처, 빙하 PBR 캡처를 확인했다. [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md#줄눈을-따라-흐르는-용암과-pbr-노멀)
+
+## 2026-11-25 — 비교 프리셋의 2×2 배치
+
+- 표시 계약과 뷰포트 슬롯 순서를 확인했다. `Layer & Substrate`의 우측에 바탕 상태와 표면층 두께를 두고, `Elevation & Grids`에는 등고선과 계산 셀·형상 샘플을 배치했다. README와 표시 계약 및 [비교 프리셋 코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)을 갱신했다.
+- MSVC Debug 빌드, 두 프리셋의 슬롯 순서와 비교 종료 ImGui 입력 검사, Heated Water Channel의 두 배치 렌더 캡처를 확인했다.
+
+## 2026-11-25 — BrickCube 줄눈 수송과 PBR 노멀 연결
+
+- Surface Simulation의 형상·표시 계약과 C++·서식 규칙을 확인했다. `BrickCube Lava` 급수 영역을 노멀에서 복원한 줄눈 쪽으로 좁혔다. `chartNormal`을 통해 같은 UV의 BrickCube 노멀을 PBR에도 사용한다.
+- [에셋·표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [평탄 대조군·PBR 토글 실험](../05_Experiments/04_Surface-Simulation-Validation.md#줄눈을-따라-흐르는-용암과-pbr-노멀)을 갱신했다.
+- Debug 빌드, 에디터 12프레임 실행, 두 형상의 CPU–GPU 검사, PBR 토글의 픽셀 비교를 통과했다. 토글한 두께 뷰의 표본은 일치했다.
+
+## 2026-11-25 — 고정 가열 수로와 초원의 젖은 띠
+
+- 코드 작성 규칙과 Surface Simulation 계약을 검토했다. 가열 수로의 연료 패드와 탄화 규칙을 제거했다. 고정 경사와 면적 급수로 물길을 만들었다. 초원과 건조 비교 씬을 추가하고, 이전 스텝의 불꽃 활성도가 이웃의 온도를 구동하게 했다. [Surface Simulation 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- MSVC Debug, 강철 수로와 초원 두 조건의 CPU·GPU 비교, 질량 수지 및 RGB 캡처 검사를 통과했다. [시연 검증](../05_Experiments/04_Surface-Simulation-Validation.md#고정-가열-수로와-초원의-젖은-띠)
+
+## 2026-11-25 — Scene Setup 에셋 분류와 속성 행
+
+- 에디터 배치, Surface Simulation 코드 맵과 에셋 설정 계약을 확인했다. `Assets`를 `Scene Setup`의 첫 탭에 배치하고 에셋 선택 메뉴를 종류별로 나눴다. 선택한 에셋의 한영 제목은 크게 표시하고 속성 이름과 편집기를 같은 행에 둔다. [에디터 배치](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md#에디터-배치) · [Surface Simulation 코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)
+- MSVC Debug 빌드를 통과했다. 실제 에디터에서 `Assets`의 기본 선택, 재질 제목과 한영 속성 행을 확인했다. ImGui 입력 검사에서 밀도 값의 편집이 초안에 반영되는 것을 확인했다.
+
 ## 2026-11-25 — 뷰포트 도구 모음 정리
 
 - 에디터 배치와 예약 급수 표시 계약을 확인했다. 렌더 모드와 `Show`는 왼쪽에 두고, 재생·한 스텝·재시작 아이콘과 배속·시간·급수 상태를 중앙에 배치했다. 뷰포트가 좁으면 재생 줄을 분리한다.
 - 오른쪽 `Layout`의 뷰 개수 선택을 제거하고 비교 프리셋과 `Exit Compare`를 남겼다. `Profiling`은 시작 시 표시하며 `Window` 메뉴로 다시 열 수 있다. [에디터 배치](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md#에디터-배치)
 - MSVC Debug 빌드를 통과했다. 실제 에디터에서 중앙 배치, 기본 프로파일링 표시와 일시정지를 확인했다. 한 스텝, 재시작, 두 표면 비교 프리셋과 비교 종료는 ImGui 입력 검사로 확인했다.
 
+## 2026-11-25 — 씬 목록의 한국어 툴팁
+
+- 에디터 코드 맵과 씬 에셋 및 변형 비교 기록을 확인했다. `Scenes`에 기본 9개와 변형 9개의 한국어 제목과 설명을 추가했다. 변형에는 기본 씬과 다른 설정과 관찰할 현상을 적었다. [에디터 배치](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md#에디터-배치)
+- MSVC Debug 빌드, 기본·변형 에셋 18개의 설명 대응, 실행 파일의 UTF-8 문구를 확인했다. 실제 에디터에서 가열 수로의 출구 닫힘 변형에 커서를 올려 제목과 한글 설명의 줄바꿈을 확인했다.
+
+## 2026-11-24 — Experiments PNG 미리보기와 확대 창
+
+- 에디터 배치와 Surface Simulation 상태·표시 수명 계약을 확인했다. `Run`과 `Capture State Plot`의 기본 결과를 PNG로 저장하고 패널에 미리보기를 표시한다. `Capture → State Data & Plot`은 JSON·SVG도 저장한다. [에디터 배치](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md#에디터-배치)
+- 실험과 PNG 생성은 백그라운드에서 진행한다. 비교에 별도 장치·큐를 사용하며, 텍스처는 에디터에서 안전한 프레임 경계에 교체한다. [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md#기존-에디터-연결) · [표시 수명 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#기존-에디터에서의-표시-수명)
+- MSVC Debug 빌드, CPU 기준 CTest, Cascade GPU 검사, PNG·SVG 생성 모드를 통과했다. 실제 에디터에서 상태 캡처·PNG 단독 저장·인라인 표시·확대를 확인했고, `Close`와 `Esc`는 ImGui 입력 검사로 확인했다. CPU/GPU 비교의 UI 버튼은 직접 확인하지 않았다.
+
+## 2026-11-24 — 기본 씬의 변형 8개
+
+- Surface Simulation 에셋·표시·입력 계약, 검증 문서와 C++·서식 규칙을 확인했다. 출구, 사전 적심, 트레이 너비, 홈 형상, 급수 폭과 시간, 접촉 열 감소 시간, 최대 기울기를 각 씬 에셋에 설정했다. 파일 접두어에 따라 씬 목록과 전체 검사가 변형을 찾는다.
+- README, [표시·입력 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md), [8쌍 비교 실험](../05_Experiments/04_Surface-Simulation-Validation.md#기본-씬과-변형-8쌍)을 갱신했다.
+- Debug 빌드와 전체 Surface Simulation CPU–GPU 검사를 통과했다. 8쌍의 입력 차이와 지표를 확인하고, 각 장면의 같은 시각 PBR·진단 뷰 PNG 16장을 저장했다. 쌍둥이 홈 씬을 에디터에서 열어 12프레임을 실행했다.
+
 ## 2026-11-24 — Profiling 기본 도킹과 표시 전환
 
 - C++ 규칙과 에디터 배치를 확인했다. `Profiling`을 좌측 도구 창과 뷰포트 사이에 기본 표시하고, 상단 토글의 표시 상태를 색으로 구분한다. 저장된 도킹 위치를 유지하며 위치가 없는 작업공간에 기본 도킹을 추가한다. [에디터 배치](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md#에디터-배치)
 - MSVC Debug 빌드를 통과했다. 실제 에디터에서 기본 표시와 버튼으로 숨길 때 뷰포트가 넓어지는 동작을 확인했다. ImGui 도킹 검사에서 새 레이아웃, 저장 위치 유지, 이전 레이아웃에 도킹 추가, 다시 켤 때 같은 위치와 폭 복원을 확인했다.
+
+## 2026-11-24 — 씬 변형의 이름 맞추기
+
+- Surface Simulation 에셋·표시 계약과 C++·서식 규칙을 확인했다. 변형 에셋 파일과 ID를 `SnowOnCanvas_Ruffled`로 맞췄다. 씬 목록에서 `Snow on Canvas_Ruffled`를 기본 씬과 같은 `Demos`에 배치했다.
+- README, [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [대조 실험](../05_Experiments/04_Surface-Simulation-Validation.md#평면과-요철-바닥-대조)의 링크를 갱신했다.
+- Debug 빌드, 새 경로로 에디터 12프레임 실행, GPU 씬 검사를 통과했다.
+
+## 2026-11-24 — 시뮬레이션 작업공간과 표면 주입 브러시
+
+- C++ 작성 규칙과 에디터 흐름, Surface Simulation의 주입·수송 및 GPU 배치 계약을 확인했다.
+- 좌측 도킹과 상단 재생 도구를 정리했다. 우측은 `Simulation`과 `Scene Setup`으로 나누고 설정 초안·적용·되돌리기를 공유한다. 새 레이아웃은 `EditorWorkspace-v2.ini`에 저장한다.
+- 점·원·회전 사각형의 물·고체층 주입과 셀 온도 펄스를 연결했다. 면적 입력의 총량은 차트 안 표본 겹침에 따라 보존하며, CPU와 GPU가 고정 스텝 입력을 공유한다.
+- [에디터 코드 맵](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md), [실행 흐름](../02_Architecture/00_Flows/00_Main-Flow.md), [Surface Simulation 코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md), [상태·GPU 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)을 갱신했다.
+- MSVC Debug 빌드, CPU 기준 검사, Textile GPU 검사와 SPIR-V 검증을 통과했다. [검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md#에디터-국소-주입-검증)에 실제 화면 확인과 미실행 조작을 기록했다.
+
+## 2026-11-24 — 기울어진 액체 저장 부피 계산
+
+- C++·GLSL 작성 규칙과 Surface Simulation의 저장량·수송 계약을 확인했다.
+- CPU와 계산 셰이더에서 표본별 부분 잠김을 적분하고 수위 복원과 공유 면의 질량 제한에 적용했다. 중심 높이가 같은 영역에는 닫힌 형태의 역함수를 사용했다. [상태·부피 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- Debug 빌드, 계산 SPIR-V, CPU·GPU·캡처 CTest 3건이 통과했다. 36×20 벽돌의 최대 동일 바닥 경계 수심 차이가 0.553에서 0.227 mm로 줄었다. [검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md#기울어진-표본에서-잠긴-부피-적분)
+
+## 2026-11-24 — 평면과 요철 천의 대조 씬
+
+- C++·주석·서식 규칙과 Surface Simulation의 에셋·표시 계약을 확인했다.
+- 기본 눈 맞은 천의 바닥 표본을 평평하게 유지하고, 같은 프로파일을 쓰는 별도 에셋에 저작 가능한 요철을 추가했다. 씬 목록은 에셋 파일을 구별하며, 캡처와 검증에서 `--scene`으로 비교 에셋을 직접 연다.
+- [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md), README와 [대조 실험](../05_Experiments/04_Surface-Simulation-Validation.md#평면과-요철-바닥-대조)을 갱신했다.
+- MSVC Debug 빌드, 두 씬의 CPU–GPU 검사와 같은 카메라 캡처를 통과했다. `.Scene`의 아이디와 형상 설정 외 값이 일치하고, 높이차가 각각 0 및 3.571 mm임을 확인했다. 새 씬을 에디터 경로로 열고 12프레임을 실행했다.
+
+## 2026-11-24 — 눈 맞은 천의 용융수와 젖은 자국
+
+- C++·GLSL·서식 규칙과 Surface Simulation의 상태·표시 계약을 확인했다.
+- `SnowOnCanvas.Scene`에 눈 중심을 받는 얕은 홈을 저작하고 양쪽 건조율을 맞췄다. `FabricAbsorption`의 흡수율을 낮췄다. `SnowyCoat`의 광학 경로 배율은 얇은 유막의 굴절색에만 적용한다.
+- [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [전후 비교](../05_Experiments/04_Surface-Simulation-Validation.md#용융수-가시성과-젖은-자국-비교)를 갱신했다.
+- MSVC Debug 빌드, 표시 SPIR-V 3종 검증, 천 CPU–GPU 검사, 중심부 면밀도 비교를 통과했다. 그리드와 축을 끈 전후 4뷰 PNG와 면밀도·질량 2D 그림을 저장했다.
+
+## 2026-11-24 — 에셋별 편집 폼
+
+- C++·주석·서식 규칙과 Surface Simulation의 실행 설정 및 에셋 계약을 확인했다.
+- 우측 `Simulation → Assets`에서 현재 씬의 파일을 종류별 드롭다운으로 고른다. 선택한 파일의 폼에서 물성, 표시 범위, 규칙 계수, 외관 값 또는 씬 필드값을 세션 초안에 편집한다. 적용과 에셋 기본값 복원은 기존 실행 경로를 사용한다.
+- README와 [메인 흐름](../02_Architecture/00_Flows/00_Main-Flow.md), [에디터 코드 맵](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md), [Surface Simulation 코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)을 갱신했다.
+- MSVC Debug 빌드와 `--check-surface --surface-scene textile`이 통과했다. `run.ps1`로 눈 맞은 천을 열어 `Assets` 탭과 `SnowyCoat.SurfaceProfile` 폼을 확인했다. 드롭다운 전환과 값 적용의 직접 조작 검증은 데스크톱 입력 충돌로 완료하지 못했다.
+
+## 2026-11-24 — 상태 소스를 고르는 두께·면밀도 뷰
+
+- C++·GLSL과 Surface Simulation의 상태·표시·GPU 계약을 확인했다.
+- `Layer Thickness`와 `Areal Mass`는 활성 뷰의 `Source`를 사용한다. 측정 항목과 재질 표시 이름을 분리하고 상태 채널의 지원 범위로 소스를 제한했다. `SurfaceDiagnostics.glsl`은 액체 수면·고체 밀도·영역 면적을 각각 읽고, 범례와 같은 에셋 기준으로 색을 정규화한다.
+- [상태·표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md), README를 갱신했다.
+- Debug 빌드와 정점·프래그먼트 SPIR-V 검증을 통과했다. 눈 맞은 천의 물·눈 두께와 흡수수 면밀도, 동결 트레이의 얼음, 벽돌의 기존 `depth` 키를 GPU로 캡처했다. 눈의 단위 환산과 `depth` 호환은 각각 동일한 색상 범위를 준 좌우 뷰의 RGB가 모든 픽셀에서 일치했다. 흡수수 두께와 탄화율 면밀도는 명령행에서 거부했다. 실제 에디터에서 두 측정 항목과 두께 범례를 확인했다. `Source`를 메뉴 바로 아래로 옮긴 최종 빌드는 데스크톱 입력 충돌로 드롭다운 선택을 재검증하지 못했다.
+
+## 2026-11-24 — 4뷰 상태 비교와 오버레이 기본값
+
+- C++·GLSL 서식과 Surface Simulation의 상태·표시 계약을 확인했다.
+- 차트와 메쉬에서 월드 그리드와 축의 시작값을 껐다. `Layer & Substrate` 비교는 PBR, 바닥 등고선, 표면층 히트맵, 바닥 상태 히트맵을 같은 카메라로 배치한다. GLSL에서 위치별 상태색을 합성하고 개별 뷰와 저장 영역의 액체 면밀도 계산을 공유한다.
+- [상태·표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md), [에디터 코드 맵](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md), README를 갱신했다.
+- MSVC Debug 빌드와 그래픽 SPIR-V 검증을 통과했다. 눈 맞은 천과 벽돌을 `pbr,elevation,layer-states,substrate-states`로 캡처하여 두 그룹이 채워진 경우와 바닥 상태 그룹이 빈 경우를 확인했다. 에디터 비교 메뉴 조작은 검증용 창을 전면으로 전환하지 못해 완료하지 못했다.
+
+## 2026-11-24 — 홈 벽면의 표시 수심
+
+- GLSL·코드 스타일과 Surface Simulation의 렌더 계약을 확인했다.
+- 수면 정점 복원에서 현재 면의 바닥 정점 높이를 사용해 이웃 벽의 높이가 낮은 홈의 수심을 높이지 않게 했다. [렌더 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)
+- Debug 셰이더 빌드, 정점 셰이더 SPIR-V 검증, 캡처 CTest를 통과했다. 벽돌 6초 전후의 Smooth 캡처를 비교했고, 원시 캡처의 PNG 해시 일치를 확인했다. [검증](../05_Experiments/04_Surface-Simulation-Validation.md#홈의-벽면-곁에서-밝아진-수심)
+
+## 2026-11-24 — 저장 영역을 표시하는 스페이스 주입
+
+- C++·주석·빌드 서식 규칙과 Surface Simulation의 화면·입력 계약을 확인했다.
+- `SurfaceSimulation`은 뷰포트 커서 아래 저장 영역을 표시하고 스페이스의 최초 키 입력에만 한 회분을 큐에 넣는다. `SurfaceSimulationDisplay`는 마지막 표시 자세를 기준으로 상면의 선택과 영역 투영을 계산한다. 에디터에서 예약 급수의 실행 여부를 별도로 조절한다.
+- [상태·GPU 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#수동-주입과-범위-표시), [에디터 코드 맵](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md), README를 갱신했다.
+- MSVC Debug 빌드, `MDSS_SurfaceSimulationReference`, `--check-surface --surface-scene runoff`가 통과했다. GPU 테스트는 수동 주입량과 예약 급수량이 지정된 두 영역에 따로 한 번씩 반영되는지 확인한다. 벽돌 에디터는 실제로 열었으며 데스크톱 입력 충돌로 커서 표시와 키 반복 조작은 직접 검증하지 못했다.
 
 ## 2026-11-24 — 벽돌 외곽의 물 줄무늬
 
 - Surface Simulation 상태·렌더 계약과 GLSL, C++ 및 빌드 서식 규칙을 확인했다.
 - 벽돌의 급수 사각형을 5 mm 테두리에서 1 mm 홈 입구로 옮겼다. 벽돌 검증에 양의 수심을 가진 테두리 표본 수를 추가했고, 최대 급수 수심의 기준 높이는 씬의 급수 위치에서 읽는다.
 - Debug 빌드와 벽돌 CPU·GPU 검사, RGB 캡처 CTest가 통과했다. Smooth를 끈 6초 캡처를 대조하고 8초 수심에서 젖은 테두리 표본 108 → 0개를 확인했다. [검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md#벽돌-테두리의-줄무늬)
+
+## 2026-11-24 — 벽돌의 고정 면적 자동 급수
+
+- Agent-Vault의 C++·GLSL·주석·빌드 서식 규칙과 Surface Simulation 계약을 확인했다.
+- `BrickRunoff.Scene`에서 자동 급수의 물리 면적을 지정한다. `SceneAsset`이 읽은 사각형을 액체 저장 영역별 배분율로 바꾸고 CPU 기준 단계와 GPU 준비 패스에서 공유한다.
+- [상태·GPU 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md), [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md#고정-면적-자동-급수)를 갱신했다. Obsidian의 구현 Rationale에 비교 그림과 입력·수위 복원 문서의 링크를 추가했다.
+- MSVC Debug 빌드, CPU 기준·Vulkan GPU·캡처 CTest와 새 계산 SPIR-V 검증이 통과했다. 벽돌 기본 격자의 2초 시점을 네 뷰로 캡처했다.
+
+## 2026-11-24 — Glacier Cut의 굳은 용암 외관
+
+- C++·GLSL 규칙과 Surface Simulation의 재질·표시 계약을 확인했다.
+- 용암의 높이 표본을 별도 불투명 레이어로 그려 얼음과의 경계가 보이게 했다. 굳은 표면의 음영은 높이 기울기와 암석 색 편차를 사용한다. [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md) · [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)
+- Debug GPU에서 18·112·370프레임을 확인하고 냉각 상태의 동일 카메라 전후를 기록했다. [캡처 비교](../05_Experiments/04_Surface-Simulation-Validation.md#굳은-용암-외관-비교)
+
+## 2026-11-24 — 씬 제목·로그 탭과 Profile 설정
+
+- C++·문서 작업 규칙과 에디터 흐름, Surface Simulation 재질·상태 계약을 확인했다.
+- 뷰포트는 중앙에 씬 이름을 표시하고 Log 탭은 검색·필터로 시작한다. 설정 섹션은 양쪽 구분선 제목을 사용한다.
+- Profile 탭에서 씬의 상태를 확인하고 계산에 쓰는 액체 물성과 국소 갱신 계수를 세션 동안 조정할 수 있다. 적용하거나 기본값을 복원하면 시뮬레이션이 다시 시작된다.
+- [에디터 코드 맵](../02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI.md), [Surface Simulation 코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md), [상태 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), 에디터 실행 흐름과 README를 갱신했다.
+- MSVC Debug 빌드, `MDSS_SurfaceSimulationReference`, `--check-surface --surface-scene kiln`과 `textile` 검증이 통과했다. 실제 에디터에서 씬 제목과 Log 탭을 확인했다. Kiln Spillway의 탄화율을 0으로 적용해 재시작한 뒤 기본값 0.53을 복원했다. Snow on Canvas의 용융·흡수·건조 계수와 상태 목록, 에셋 기본값 복원 시 재시작을 확인했다.
+
+## 2026-11-24 — Surface Lab 상태 비교 뷰의 범례와 셀 격자
+
+- 문서 워크플로, C++·GLSL 규칙, Surface Lab의 렌더 흐름과 상태·표시 계약을 확인했다.
+- 에디터의 `By view` 팔레트와 면밀도 범례를 추가했다. `Cell state bars`가 그리는 네 채널을 같은 2×2 순서의 범례로 표시한다. `Cell Grid`는 활성 히트맵 위에 계산 셀 경계를 옅게 합성한다.
+- [상태·표시 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md)과 [코드 맵](../02_Architecture/02_Source/03_Surface-Lab.md)을 갱신했다. 상태 계산, 그래픽 버퍼 배치와 CLI 뷰 키에는 변경이 없다.
+- 별도 MSVC Debug 빌드, Surface Lab CPU·GPU·캡처 검사 3건과 프래그먼트 SPIR-V 검증 2건이 통과했다. SnowOnCanvas 에디터에서 적설 초기와 융해 중의 색과 범례를 확인하고, 상단 `Cell Grid`로 활성 뷰의 격자를 켰다가 껐다.
+
+## 2026-11-24 — Glacier Cut의 얼음 용융과 응결 구름
+
+- C++·GLSL 규칙과 Surface Lab의 재질·표시 계약을 확인했다.
+- 빙하 수로에 지정 접촉 열원, 유한 표층 얼음, 닫힌 하류 홈을 설정했다. 표시 정점은 남은 얼음 두께에 따라 낮아지고 용암은 시간과 지정 온도에 따라 전진·냉각된다.
+- 셀별 수증기 스프라이트를 면적당 증발률 기반의 체적 적분 표시로 교체했다. 관련 [상태·표시 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md)과 [코드 맵](../02_Architecture/02_Source/03_Surface-Lab.md)을 갱신했다.
+- Debug 빌드, CPU·GPU 물질 수지, Glacier Cut·Kiln·Charring Wood 캡처를 확인했다. [결과와 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#glacier-cut-용융과-응결-구름)
+
+## 2026-11-24 — Surface Lab 계산 격자의 축당 상한 통합
+
+- C++·GLSL 작성 규칙과 Surface Lab 상태·GPU 계약을 확인했다. CPU, 계산 셰이더와 표시 셰이더가 형상 및 계산 격자에 축당 64의 같은 상한을 사용한다. 그래픽 버퍼 오프셋과 Scene·UI의 기존 상한 경로를 맞췄다.
+- 빌드 중 확인한 타임스탬프 인터페이스 변경에 맞춰 포켓 벤치마크는 Solver 통계, 오프라인 캡처 로그는 Draw 통계를 읽도록 연결했다.
+- 별도 MSVC Debug 빌드, SurfaceLabReference·SurfaceLabGpu·SurfaceLabCapture, SPIR-V 6개가 통과했다. 64×64에서는 마지막 셀에서 수송·흡수·유출을 검사하고 CPU와 GPU의 최대 질량 차이 3.41061×10⁻¹³ kg을 확인했다. 벽돌의 64×64 4뷰를 RGB로 캡처했다.
+- [Surface Lab 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Lab.md), [검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md)과 Obsidian의 GPU 패스 문서를 갱신했다.
+
+## 2026-11-24 — 데모 격자와 수면 경계
+
+- C++·GLSL 규칙, Surface Lab 상태·표시 계약과 기존 월류 실험을 확인했다.
+- 벽돌, 천 및 공용 데모의 기본 계산 격자를 올렸다. 포켓의 2×1 월류 기준은 별도 실험으로 보존했다.
+- PBR과 수심에 저장 영역 연결을 따르는 표시 수위 보간을 적용했다. 두 뷰 설정에서 보간 전후를 고를 수 있다.
+- Debug 빌드, 기본 씬별 4뷰 캡처, 포켓 입력 4종의 CPU·GPU 물 수지 및 동일 프레임 비교를 확인했다. [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#데모-격자와-수면-경계)
+
+## 2026-11-24 — 공통 제목과 구분선 정렬
+
+- Code Style·C++·Document Workflow와 에디터 배치 문서를 확인했다. 공통 제목 위젯과 씬 제목에 중앙 정렬된 ImGui 구분선을 적용해 선을 제목 양옆에 표시한다. 에디터 소스 맵에 이를 기록했다.
+
+- C++ 포맷 후 Debug 빌드가 통과했다. 실제 창의 `Rules & Boundaries`와 씬 제목을 비롯한 공통 제목에서 양옆 선의 중앙 정렬을 확인했다.
+
+## 2026-11-24 — 주황 테마와 프로파일러 판독성
+
+- Code Style·C++·Document Workflow, Scene/Input/Debug UI 소스 맵, 성능 측정 문서와 Epic의 에디터 인터페이스·뷰포트 도구줄 개요를 확인했다. 씬 이름을 도구줄에서 제목 줄로 옮기고 주요 제목의 글자 크기·중앙 정렬·여백과 주황 포인트를 공유했다. 우측 조작을 Playback, Solver, Input, Geometry, Profile로 나누고 Solver 아래에는 Discretization과 Rules & Boundaries를 둔다.
+- 프로파일러 표시값을 1초 간격으로 게시하고 Hold readings를 추가했다. 같은 제목 규칙과 폭에 맞춰 늘어나는 열을 GPU·CPU 시간 표에 사용한다. HEAD의 메쉬 타이밍 39개 항목을 모두 유지하고 Other overlay draw를 추가했다. 메쉬의 주요 시간 그룹을 기본으로 펼친다.
+- 차트에 굴절 prepass·색상 패스 시간, CPU 1초 평균·최댓값, FPS·프레임 간격과 격자·표본·영역·면·스텝 작업량을 표시한다. Scene/Input/Debug UI 소스 맵과 성능 측정 문서를 동기화했다.
+
+- Debug 빌드, runoff CPU/GPU와 basin GPU 계측 검증, 오프라인 PNG 회귀를 통과했다. 실창에서 주황 테마, 가운데 씬 제목, 좁게 도킹한 시간 표의 열과 약 2.7초간 진행 중에도 고정된 계측값을 확인했다.
 
 ## 2026-11-24 — 뷰포트 상단 바, 프로파일링과 에디터 테마
 
@@ -190,6 +615,26 @@
 - 변경된 C++ 포맷 후 Debug `MDSS` 빌드, CPU/GPU runoff 검증과 오프라인 캡처 회귀를 통과했다. GPU 회귀는 예약 급수와 수동 주입이 서로 다른 영역에 각각 한 번 들어가는지 검사한다. CTest는 10개 중 9개 통과했고 `MDSS_SurfaceMapping`의 준비된 UV seam fixture 경고 검사 1개가 실패했다.
 - 실행 화면에서 패널 배치와 월드 그리드·축 표시를 확인했다. 카메라 이동과 뷰포트 클릭 주입의 실창 검증은 사용자 데스크톱 조작과 겹쳐 완료하지 못했다.
 
+## 2026-11-24 — 적설 높이, 젖은 천, 물막 지속 시간
+
+- C++·GLSL 규칙과 Surface Lab의 재질·렌더링 계약을 확인했다.
+- 눈을 별도 불투명 윗면으로 그렸다. 정점 변위와 음영은 고체 질량의 연속 높이를 읽고, 눈이 녹으면 같은 높이장이 낮아진다. 천의 흡수수 면밀도는 보간한 뒤 표시 전용 응답에 연결했다.
+- 박막이 움직이는 시간을 확보하도록 천의 흡수 계수를 1.80에서 0.60 s⁻¹로 조정했다. 수송 후 용융과 흡수를 적용하는 순서를 유지했다.
+- Debug 빌드, Surface Lab GPU 검사 및 같은 시점의 상태별 캡처를 확인했다. [수치와 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#적설-높이와-용융수-지속-시간)
+
+## 2026-11-24 — 천 위 적설 외관
+
+- C++·GLSL 포맷 및 주석 규칙, Surface Lab 에셋과 표시 계약을 확인했다.
+- `SnowyCoat.SurfaceProfile`의 `appearance.snow`가 고체 물 상태와 표시용 벌크 밀도를 연결한다. 셀 중심 사이의 보간, 로컬 좌표의 알갱이 패턴과 픽셀 폭 기반 경계 완화를 적용했다.
+- Debug 엔진을 빌드하고 적설이 줄어 젖은 천으로 드러나는 세 시점을 캡처했다. 기존 검증의 천 JSON과 새 천 JSON을 비교했다. [적설 캡처와 검증](../05_Experiments/04_Surface-Simulation-Validation.md#천-위-적설)
+
+## 2026-11-24 — 물리 에셋 확장자와 씬 프로파일 이관
+
+- AGENTS·Document Map·C++/주석/포맷 규칙, 에셋 계약과 Surface Lab 흐름을 확인했다.
+- 벽돌·천에 `SurfaceLabScene` 로더를 연결했다. 재질·상태·국소 갱신·프로파일의 버전과 참조를 확인한 뒤 현재 박막 솔버의 슬롯에 연결한다. 얼음 밀도를 CPU·GPU·표시에 전달한다.
+- 기존 메시 씬 17개와 40개 오브젝트의 배치를 직접 참조로 이관했다. 기존 버전 씬을 읽을 수 있고 v2는 기본값 및 표면별 오버라이드를 저장한다. 배포 에셋에서 구형 맵·프로파일·액체 JSON과 참조가 없는 회전 클립을 내렸다. 기존 수치 실험 프로파일은 연구·테스트 픽스처에 남겼다.
+- 전체 씬 19개를 열어 프레임을 실행했다. 배포 파일 정리 후 Surface Lab GPU 13케이스, 캡처 회귀, 벽돌·산 벤치마크 스모크와 커플링 plate·mud 스모크를 실행했다. 상세 결과는 [에셋 이관 검증](../05_Experiments/04_Surface-Simulation-Validation.md#에셋-이관-검증)에 기록했다.
+
 ## 2026-11-24 — 공통 계산 격자의 분리된 액체 홈과 형상 세트
 
 - C++·GLSL·Python, Code Style, Surface Lab 상태·GPU 계약, 검증과 성능 기록 절차를 확인했다.
@@ -197,6 +642,78 @@
 - `Assets/Geometry` 바로 아래에 원본 OBJ, 노멀, 높이, 변위 맵을 세 형상별로 배치했다. Scene 탭과 CLI에서 교체한다. 빌드를 막던 장면 v2 버전 전달, JSON 타입 비교, 캐시 해시 문자열 인자를 바로잡았다.
 - [상태 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Lab.md), [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian의 Implementation Rationale과 실험 기록을 갱신했다.
 - MSVC Debug 빌드와 SurfaceLabReference·SurfaceLabGpu·SurfaceLabCapture 세 테스트, SPIR-V 6개, 형상 3세트 × 입력 4종을 검증했다. 3 mm 고개와 6 mm 턱의 수평·기울임 전달을 확인하고, RX 6700 XT에서 두 형상의 GPU 타임스탬프를 수집했다.
+
+## 2026-11-24 — VS Code Python 진단 정리
+
+- AGENTS·Document Map, Code Style, Python 규칙, Document Workflow, Source Map 및 Surface Lab 검증 절차를 확인했다.
+- B1과 연결 표면 연구의 고정 의존성을 프로젝트의 `Build/` 아래에 설치했다. Pyright에서 연결 표면 연구의 기존 `Prior` 모듈과 별도 NumPy·SciPy 버전을 해석하도록 설정했다.
+- B1·연결 표면 연구 및 Surface Lab 도구에서 고정 길이 튜플, 반복 뒤 사용하는 값, 재생 입력 버퍼와 그래프 저장 경로의 타입을 수정했다. 의존성 설치 명령을 [Validation & Tests](../05_Experiments/01_Validation-and-Tests.md)에 기록했다. 기존 진입점과 입력·출력 형식은 유지되어 Source Map·Flow·Contract 변경은 필요하지 않다.
+- Pyright는 Python 파일 65개에서 오류·경고·정보 0건을 보고했고 VS Code Problems도 0건을 확인했다. 임시 경로에서 B1 계산과 PNG, Surface Lab 형상 및 PNG·SVG, 연결 표면 `N24_T7_83` 1회 반복의 26개 실행과 기존 결과 복사본의 집계·그래프 생성을 검증했다. C++ 빌드와 연결 표면 연구 전체 재실행은 수행하지 않았다.
+
+## 2026-11-24 — Surface Lab 액체 재질과 수송 일반화
+
+- AGENTS·Document Map, C++·GLSL 작성 및 포맷 규칙, 기존 Asset·State 계약, Surface Lab 수송·GPU 계약과 코드 맵을 확인했다.
+- 수위·턱·유량을 `LiquidRunoff` CPU 및 Compute 경로에서 계산한다. 기본 `Water.json` 또는 CLI에서 지정한 재질 JSON의 밀도·동적 점도·국소 규칙을 읽고 GPU에 전달한다. 용융·동결과 기존 바닥 반응은 `WaterMaterial`의 선택 규칙으로 옮겼다.
+- 범용 표시 경로의 파일명과 셰이더 경로를 `SurfaceLab`으로 정리하고 Material, Surface Lab, Shader 소스 경로와 GPU SSBO 오프셋을 Vault에 동기화했다. 기존 CLI 뷰 키와 장면 입력을 보존했다.
+- 영향 파일 42개에 포맷 파이프라인을 적용하고 2회 출력 일치를 확인했다. 별도 Debug 빌드와 SurfaceLabReference·SurfaceLabGpu·SurfaceLabCapture 3개를 통과했다. CPU와 GPU의 파일 기반 점성 액체 수송량·수위·질량 보존을 검사했고, CLI RGB 캡처와 잘못된 물성 필드 거부, SPIR-V 6개와 추가 SSBO 오프셋을 검증했다.
+- 이전 `Water` 경로의 파일과 참조는 모두 옮겼다. 자동 승인 검토가 빈 디렉터리 삭제 명령을 차단해 로컬에는 빈 경로 4개가 남아 있다.
+
+## 2026-11-24 — Surface Lab 표면 외관 설정 정리
+
+- AGENTS, Document Map, Code Style·C++·Doxygen, Surface Lab 상태·GPU 계약과 기존 엔진의 State 등록·렌더 흐름을 확인했다.
+- 바탕색·텍스처 경로·미터당 반복 횟수를 `Rendering/Surface/SurfaceAppearance.h`로 옮겼다. 표시 두께, 얼음 굴절률·바닥 옵션, 가열 표시를 `SurfaceLabAppearance.h`에 두고 장면 구성, 표시 메시, 렌더러, 실험 리포트의 참조를 갱신했다.
+- Document Map과 Rendering·Surface Lab 소스 맵을 동기화했다. 이번 변경은 CPU 외관 입력을 구성하는 위치와 타입에 한정해 셰이더 인터페이스와 실행 순서의 계약을 유지한다.
+- 영향 C++ 파일 9개에서 `clang-format`과 Region 포맷이 반복해도 동일한 출력을 내는 것을 확인했다. 별도 MSVC x64 Debug 빌드 및 `MDSS_SurfaceLabReference`, `MDSS_SurfaceLabCapture`가 통과했다. 이전 세션의 PNG는 재빌드된 셰이더 구성이 달라 해시가 달랐으며, 이번 검증은 두 텍스처 모드의 RGB 캡처 회귀 조건을 확인했다.
+
+## 2026-11-24 — 나무 예열과 공통 얼음 광학
+
+- C++·GLSL 주석·접기 규칙과 Surface Lab의 ABI·표시 계약을 읽었다. Charring Wood는 주변 온도에서 시작하고 지정 열원을 시간에 따라 올리도록 CPU·GPU 입력을 맞췄다. 빙하의 얼음 광학을 얇은 얼음층과 동결 수면에서 공유한다.
+- [Surface Lab 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md), [소스 맵](../02_Architecture/02_Source/03_Surface-Lab.md), [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian의 Rendering과 얼음 Rationale을 갱신했다.
+- Debug 빌드, SPIR-V 6개, 장면 5개의 CPU·GPU 비교, RGB 캡처를 확인했다. 전체 CTest는 기존 SurfaceMapping 이음매 실패를 포함해 9/10이다.
+
+## 2026-11-24 — Surface Lab 주석과 코드 접기 보완
+
+- AGENTS와 Document Map, Code Style, Local Numbering, C++·GLSL, Source Comments, Doxygen, 포맷·검증 절차를 읽었다. Surface Lab의 상태·GPU 계약 및 Surface Mapping의 흐름·계약·소스 맵을 대조했다.
+- Surface Lab C++·GLSL과 열린 매핑 소스 37개에 책임별 섹션, 접기 마커, 한국어 API 설명을 보완했다. C++ 익명 네임스페이스 전체를 접을 수 있게 하고 GLSL 진입 파일에도 주석 마커를 배치했다. 현재 체크아웃의 수송 코드는 `WaterRunoff` 경로에서 확인했다.
+- 루트와 볼트의 VS Code 설정에 C++·GLSL 마커 인식을 연결하고 [Shader Source Index](../02_Architecture/02_Source/01_Shaders/00_Index.md)를 갱신했다. 작업 중 들어온 에디터·온도 입력 변경을 보존했다. 이 작업의 변경은 설명·탐색 범위이므로 계약과 실행 흐름 문서의 추가 변경은 필요하지 않았다.
+- `clang-format` 후 Region 포맷의 반복 안정성을 확인했다. 설치된 Maptz 공급자에서 LF와 CRLF의 Region 인식을 검증했고, 셰이더 진입점 6개의 Debug·Release SPIR-V가 포맷 전후 바이트 단위로 일치했다. SimulationTransport 및 NormalMapTransfer 통과. SurfaceMapping의 UV seam 검사 실패는 수정 전 바이너리에서도 재현했다.
+- 기존 `MDSS.exe`가 사용 중이어서 `Build/Validation/style-regions-20261124`에 별도 MSVC x64 Debug 빌드를 완료했다. SurfaceLabReference, SurfaceLabGpu, SurfaceLabCapture를 모두 통과했다. IDE 확인은 확장 공급자의 접기 범위 검사로 수행했다.
+
+## 2026-11-24 — Surface Lab 동결·용융과 데모 카메라
+
+- **읽은 문서**는 Agent Vault 진입 규칙, C++·GLSL 포맷 규칙, Surface Lab의 물량·GPU 레이아웃·표시 계약이다.
+- **구현**은 동결과 온도 입력, 밀도 환산 표시 높이, 트레이 눈금, 프레임별 카메라 연출이다.
+- **문서와 검증**은 상태 계약, 코드 맵, [동결·용융 실험](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian Implementation과 Rationale에 기록했다. Debug, SPIR-V 6개, CPU/GPU의 8초 상변화, 31프레임과 4뷰를 확인했다. 전체 CTest는 기존 SurfaceMapping 실패를 포함하여 9/10이다.
+
+## 2026-11-24 — Surface Lab 격자·상태 진단 뷰
+
+- **읽은 문서**는 Agent Vault 진입 규칙, C++·GLSL 포맷 규칙과 Surface Lab 상태·렌더 계약이다.
+- **구현**은 계산 셀과 형상 샘플 진단, 표면층의 질량 히트맵, 네 상태 타일, 비교 프리셋과 CLI 뷰 목록이다. 수치 계산과 표시 스냅샷을 재사용했다.
+- **문서와 검증**은 상태 계약, 코드 맵, [캡처 기록](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian Rationale에 기록했다. Debug, SPIR-V 5개, CTest 3개, 상태 타일의 색 구분, 비균일 격자, 다중 뷰와 RGB 회귀 캡처를 확인했다.
+
+## 2026-11-24 — Glacier cut 맑은 얼음
+
+- **읽은 문서**는 Agent Vault 진입 규칙, C++·GLSL 포맷 규칙, Surface Lab 상태·렌더 계약, 얼음 PBR의 Rationale이다.
+- **구현**은 높이장의 입사·출사 굴절, 한 번의 내부 반사, 투과색 확인용 받침과 약한 감쇠·산란이다.
+- **문서와 검증**은 상태 계약, [전후 캡처와 검증](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian 렌더링과 Rationale에 기록했다. Debug, 셰이더 5개, CTest 3개, 기존 RGB 캡처, 빙하 PBR·4뷰, Fresnel과 CPU/GPU 결과의 일치를 확인했다.
+
+## 2026-11-24 — Surface Lab 수면 경계 표시
+
+- **읽은 문서**는 Agent Vault 진입 규칙, C++·GLSL 포맷 규칙, Surface Lab의 표시 스냅샷과 형상 계약이다.
+- **구현**은 뷰별 수면 경계 보간, 얕은 물 색의 합성, 포켓의 기본값과 캡처용 CLI다. 계산 수위와 표시 수위는 별도로 읽는다.
+- **문서와 검증**은 상태 계약의 그래픽 ABI와 [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian Rationale에 기록했다. Debug, SPIR-V 다섯 개, CTest 세 개, 캡처 회귀, 포켓의 건조·넘기 전·넘긴 후 화면과 원본 OBJ CPU/GPU 결과를 확인했다.
+
+## 2026-11-24 — Surface Lab 메조형상 포켓과 입력 비교
+
+- **읽은 문서**는 Agent Vault 진입 규칙, Document Map, C++·Python 포맷 규칙, Surface Lab 계약과 형상 소스 근거다.
+- **구현**은 두 셀에서 채워지는 포켓 장면, 원본 OBJ 및 세 맵의 전환, 저장량과 넘침 시점의 CPU/GPU 실험, Python 비교 그림이다. 기존 형상 입력과 물 수송을 재사용했다.
+- **문서와 검증**은 [상태 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md)과 [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian 실험 및 Rationale에 기록했다. Debug, 네 입력의 CPU/GPU 비교와 캡처를 검증했다. 전체 CTest에서 기존 SurfaceMapping 이음매 테스트가 실패했다.
+
+## 2026-11-24 — Surface Lab 높이와 얼음 재질
+
+- **읽은 문서**는 Agent Vault 진입 규칙, Document Map, C++·GLSL 포맷 규칙, Surface Lab 계약과 기존 렌더링 선택 근거다.
+- **구현**은 세 단차의 계단형 수로, 고체 얼음 바닥의 빙하 수로, 비교 뷰의 PBR·등고선과 카메라 각도 설정이다.
+- **문서와 검증**은 Surface Lab 계약, 코드 배치, [장면 수치와 캡처](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian Rationale에 기록했다. Debug 빌드, SPIR-V 5개, CTest 3개, 두 장면의 8초 CPU/GPU 비교, PBR·등고선·Fresnel RGB 캡처 및 기존 캡처 회귀 검사를 통과했다.
 
 ## 2026-11-24 — Surface Lab 불꽃 표현
 
@@ -211,32 +728,12 @@
 - **문서:** Surface Lab 계약·소스 맵·실험 결과와 Obsidian 렌더링 문서를 갱신했다. 텍스처 저장 위치에 원본과 가공 내역을 기록했다.
 - **검증:** Debug 빌드, SPIR-V 세 개, 기준 CTest 세 개, Vulkan 캡처 회귀 검사, 다섯 장면과 UI 캡처 재생성을 완료했다. 게시 이미지 19장의 RGB 포맷과 투명도 청크 부재를 확인했다.
 
-## 2026-11-24 — 기존 에디터에서 Surface Lab 실행
+## 2026-11-24 — Surface Lab 시연 경로와 실험 UI
 
-- **읽은 문서**는 Agent Vault 진입 규칙, C++·Python 작성과 포맷 규칙, 상태·표시 계약, Scene과 Renderer 기록 흐름이다.
-- **구현**은 기본 실행의 Kiln spillway, 기존 UI 프레임 안의 1–4뷰, 씬 브라우저 분류, 상태·형상·외관 설정, 에디터의 검증 그림 표시와 PNG 캡처다. 기존 씬은 같은 창에서 전환할 수 있고, 기본 편집 화면의 구름·빗줄기는 선택한 경우에 표시한다.
-- **문서와 검증**은 Main Flow, Surface Lab 계약과 코드 맵, Obsidian 렌더링/Pipeline Rationale, [에디터 실행 검증](../05_Experiments/04_Surface-Simulation-Validation.md)에 기록했다. Debug 빌드와 실행 스크립트로 기존 에디터를 열어 Cavity, 4뷰, 실험, PNG와 기존 씬 전환을 확인했다. CTest는 9/10이며 기존 SurfaceMapping 이음매 실패가 남았다.
-
-## 2026-11-24 — 상태별 범례와 표면 시뮬레이션 에디터 이관
-
-- **구현**은 상태 파일의 `displayName`과 `displayMax`, 씬 또는 프로파일의 선언 순서를 사용한다. 개별 히트맵과 그룹별 막대가 같은 GPU 상태 슬롯을 읽고, 자홍색부터 순서대로 만든 색을 범례와 공유한다. `Compare → Layer & Substrate`는 두 상태 그룹을 각각 한 뷰에 그린다.
-- **이관**은 세션과 검증 코드를 `Source/Application/Editor/SurfaceSimulation`, 표시 코드를 `Source/Rendering/Surface/Simulation`과 대응하는 셰이더 경로로 옮겼다. 자동화 도구는 `--capture-surface`, `--reference-surface`, `--check-surface`로 실행한다.
-- **문서**는 에셋 계약, 렌더링 소스 맵, 검증 링크와 Obsidian 에셋 배치를 갱신했다. 기존 캡처는 `Captures/Surface`에 이관했다.
-- **검증**은 `run.ps1`에서 Snow on Canvas의 두 비교 뷰와 범례를 직접 확인했다. [에디터 캡처](../../../Build/SurfaceStateViewVerification/editor-layer-substrate.jpg), [GPU 비교 로그](../../../Build/SurfaceStateViewVerification/gpu.log), [두 뷰의 자동 캡처](../../../Build/SurfaceStateViewVerification/textile-layer-substrate.png)를 남겼다. GPU 검증과 텍스처 캡처 회귀 검사를 통과했다.
-
-## 2026-11-25 — 데모 외관과 변형 재생 정리
-
-- 코드 스타일, C++·GLSL 규칙과 Surface Simulation 계약을 읽었다. 두 천 씬의 알베도를 아이보리·머스터드 체크로 교체하고, Kiln Spillway의 새 이름을 Heated Water Channel로 정했다. 금속은 은회색 브러시드 스틸로 표시하고, 연료 패드 영역에 탄화와 불꽃을 한정했다.
-- 배포 씬 9개 계열에서 카메라·기울기·급수·가열 스케줄을 맞췄다. 젖은 나무 변형은 급수 애니메이션을 띄우기 전에 급수 면적에 2.4 g을 초기 배분한다. 이전 시간 입력은 [검증용 씬](../../../Scripts/Research/Fixtures/SceneTiming/README.md)에 보관했다.
-- 액체 외관을 추가한 물성 구조체와 계산 버퍼의 충돌을 해결했다. 계산용 GPU 물성은 고정된 16바이트 구조로 명시하고 그래픽 속성은 렌더 필드에서 읽는다. [상태·형상·GPU 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [검증](../05_Experiments/04_Surface-Simulation-Validation.md#체크무늬-천-가열-수로와-계열별-재생)을 갱신했다.
-- 공유 빌드의 MSVC PDB 경합으로 독립 Debug 빌드에서 검증했다. SPIR-V 검사, RGB·텍스처 캡처 검사와 PBR 캡처를 확인했다.
-- 독립 빌드의 전체 Surface Simulation CPU·GPU 비교 25건이 통과했다. 캡처의 색 변경 후에도 새 수로의 흡수수와 연료 패드 밖 탄화율은 0이었다.
-
-> **모든 코드 변경 작업에서 작업 단위 최소 1건 기록 필수.** 상세 설계는 Architecture/ADR, 실제 테스트 결과는 Experiments에 기록한다.
-
-| 날짜 | 작업 / 코드 범위 | 읽은 주요 문서 | 갱신 문서 또는 영향 없음 근거 | 검증 상태 |
-|---|---|---|---|---|
-| `YYYY-MM-DD` | `{{TASK_AND_CODE_PATHS}}` | `{{READ_DOCS}}` | `{{UPDATED_DOCS_OR_NO_IMPACT_REASON}}` | `{{COMMAND_AND_RESULT_OR_NOT_RUN}}` |
+- **읽은 문서:** Agent Vault 진입 규칙, Document Map, 00 Engineering Standards의 C++/GLSL/Python·포맷·문서·검증 규칙, Geometry/Solver/GPU 레이아웃 계약과 렌더 흐름, 검증 이력.
+- **구현:** 범용 `SurfaceState/Water`, `SurfaceState/Geometry`, `Rendering/Water`, `Application/SurfaceLab`으로 책임을 나누었다. 네 방향 수송과 국소 변화, 수위 복원과 이중 표시 슬롯, 4뷰와 물 표현·팔레트, 장면별 수치 실험, PNG/SVG/JSON을 연결했다.
+- **문서:** [구현 지도](../02_Architecture/02_Source/03_Surface-Lab.md), [상태 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md), [수증기와 불의 선택](../03_Decisions/06_Surface-Emissions.md), [실험·캡처](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian Implementation과 Rationale을 갱신했다.
+- **검증:** Debug 빌드, SPIR-V 검증 4개, 5장면 및 4변형 CPU/GPU 비교, 4종 형상 비교, UI·캡처·타임스탬프를 확인했다. 전체 CTest는 9/10이었다. SurfaceMapping seam fixture의 기존 실패를 별도로 기록했다.
 
 ## 2026-11-16 — Clear Python and IntelliSense Problems
 
@@ -499,3 +996,112 @@
 - **서식:** Shader 전체의 중첩 Region 들여쓰기와 종료 마커를 검사·수정하고, 작업 성격이 달라지는 곳에 빈 줄과 목적 주석을 배치했다.
 - **문서:** Code Reading Guide 및 Source별 탐색 경로를 실제 함수명에 맞춰 수정했다. Project Brief와 Architecture 정본에 작업 차수/버전 명칭을 추가하지 않았다.
 - **검사:** ZIP 경로 보존, Region 짝과 중첩 깊이·들여쓰기, 괄호, GLSL 전처리 조건, 문서 링크를 정적 점검했다. 외부 의존성과 완전한 빌드 파일이 없어 컴파일·shader SPIR-V·실행 동등성 검사는 수행하지 못했다.
+
+## 2026-11-24 — 기존 에디터에서 Surface Lab 실행
+
+- **읽은 문서**는 Agent Vault 진입 규칙, C++·Python 작성과 포맷 규칙, 상태·표시 계약, Scene과 Renderer 기록 흐름이다.
+- **구현**은 기본 실행의 Kiln spillway, 기존 UI 프레임 안의 1–4뷰, 씬 브라우저 분류, 상태·형상·외관 설정, 에디터의 검증 그림 표시와 PNG 캡처다. 기존 씬은 같은 창에서 전환할 수 있고, 기본 편집 화면의 구름·빗줄기는 선택한 경우에 표시한다.
+- **문서와 검증**은 Main Flow, Surface Lab 계약과 코드 맵, Obsidian 렌더링/Pipeline Rationale, [에디터 실행 검증](../05_Experiments/04_Surface-Simulation-Validation.md)에 기록했다. Debug 빌드와 실행 스크립트로 기존 에디터를 열어 Cavity, 4뷰, 실험, PNG와 기존 씬 전환을 확인했다. CTest는 9/10이며 기존 SurfaceMapping 이음매 실패가 남았다.
+
+## 2026-11-24 — 현재 씬 라이브러리와 프로파일 편집
+
+- **화면**에 `File / Window / Capture`, 분류와 검색을 갖춘 `Scene Library`, `Scene Objects`, `Details`, 하단 `Timeline / Experiments / Profiler`를 배치했다. 기본 실행은 Kiln Spillway다. Cavity Fill & Spill 판은 `Cavity Plate`로 표시한다. 뷰 모드는 `Appearance / Geometry / Data / Diagnostics`로 묶고 Heatmap 소스와 팔레트는 뷰별로 지정한다.
+- **프로파일**은 `SurfaceLabScene`의 검증된 연결에서 읽는다. `Details → Profile`에서 벽돌의 수송 물성과 천의 용융·흡수·건조 물리를 조절한다. 적용은 현재 실행을 재시작하고 복구는 디스크의 자산 값을 로드한다.
+- **배포 에셋**은 `BrickRunoff.Scene`, `SnowOnCanvas.Scene`과 해당 프로파일을 사용한다. 구형 데모 씬, 전용 클립, 프로파일, 데모 생성 스크립트와 기본 성능 행렬을 제거했다. 논문 검증에 사용했던 저작 입력은 연구 픽스처에 이관했다.
+- **검증**은 `run.ps1` 기본 장면, 명시한 `SnowOnCanvas.Scene`의 12프레임 실행, 빠진 참조 점검, 눈 용융 계수 0과 점도 변경의 CPU/GPU 경로, 4뷰 표시다. CTest 10개 중 9개가 통과했다. `MDSS_SurfaceMapping`의 기존 이음매 경고 단언이 실패한다.
+
+## 2026-11-24 — 데모 씬 파일과 공통 렌더 기본값
+
+- **읽은 문서**는 C++·주석 규칙, Surface Lab 계약과 코드 맵이다. 카탈로그의 일곱 데모를 `SurfaceLabScene` v1 에셋으로 이관했다. 라이브러리와 CLI가 같은 파일을 읽고 적용 시 로드된 설정으로 실행한다. 절차적 형상과 장면별 국소 규칙은 기존 구현을 사용한다.
+- **렌더 기본값**은 `DefaultSurfaceLabView`에서 `PBR + refraction`으로 정한다. 새 세션의 첫 뷰에 적용하며, 에디터에서 선택한 모드는 장면 전환 시 이어 쓴다.
+- **문서**는 Surface Lab 계약·코드 맵과 Obsidian의 에셋 배치를 갱신했다.
+- **검증**은 `run.ps1`로 `GlacierCut.Scene`을 열어 12프레임을 실행하고, 이관 전후 CPU 기준 결과 JSON 17개가 바이트 단위로 일치하는지 확인했다. GPU 비교가 모두 통과했고 벽돌의 렌더 모드 생략 캡처와 PBR 명시 캡처도 바이트 단위로 일치했다.
+
+## 2026-11-24 — 상태별 범례와 표면 시뮬레이션 에디터 이관
+
+- **구현**은 상태 파일의 `displayName`과 `displayMax`, 씬 또는 프로파일의 선언 순서를 사용한다. 개별 히트맵과 그룹별 막대가 같은 GPU 상태 슬롯을 읽고, 자홍색부터 순서대로 만든 색을 범례와 공유한다. `Compare → Layer & Substrate`는 두 상태 그룹을 각각 한 뷰에 그린다.
+- **이관**은 세션과 검증 코드를 `Source/Application/Editor/SurfaceSimulation`, 표시 코드를 `Source/Rendering/Surface/Simulation`과 대응하는 셰이더 경로로 옮겼다. 자동화 도구는 `--capture-surface`, `--reference-surface`, `--check-surface`로 실행한다.
+- **문서**는 에셋 계약, 렌더링 소스 맵, 검증 링크와 Obsidian 에셋 배치를 갱신했다. 기존 캡처는 `Captures/Surface`에 이관했다.
+- **검증**은 `run.ps1`에서 Snow on Canvas의 두 비교 뷰와 범례를 직접 확인했다. [에디터 캡처](../../../Build/SurfaceStateViewVerification/editor-layer-substrate.jpg), [GPU 비교 로그](../../../Build/SurfaceStateViewVerification/gpu.log), [두 뷰의 자동 캡처](../../../Build/SurfaceStateViewVerification/textile-layer-substrate.png)를 남겼다. GPU 검증과 텍스처 캡처 회귀 검사를 통과했다.
+
+## 2026-11-24 — 데모의 기울기와 경계 확인
+
+- 자동 기울기 최대각을 Brick Runoff 25°, Terraced Catchment 22°, Kiln Spillway 18°로 설정했다. 3초부터 8초까지 Y축을 따라 기울며, 벽돌의 기본 카메라 거리는 모서리가 화면 안에 들어오도록 기존의 1.2배로 조정했다.
+- 세 장면의 CPU·GPU 시나리오 및 질량 수지 검사를 통과했다. [수평과 최대 기울기 비교](../05_Experiments/Artifacts/SurfaceSimulation/DemoTiltComparison.png)를 고정 카메라에서 캡처했다. 사용 중인 MDSS.exe가 잠겨 있어 카메라 수정은 같은 소스의 별도 이름 Debug 실행 파일에서 검증했다.
+- [Surface Simulation 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)에 열린 출구의 방향, 턱 높이, 유출 질량의 처리 방식을 기록했다.
+
+## 2026-11-24 — 외곽 경계 기본값과 출구 표시
+
+- 코드 스타일, C++ 주석 규칙, 문서 작업 절차와 Surface Simulation 계약을 읽었다.
+- 씬의 `openOutlet`을 생략하면 `Closed`로 불러온다. Solver 설정에 `Open +X edge`, `Active boundary`, `Show outlet edge`를 추가했다. 계산 형상의 실제 출구에 대응하는 렌더 메시 테두리를 표시 스냅샷의 자세와 각 뷰의 카메라로 투영한다.
+- [ADR-0001](../03_Decisions/00_Records/ADR-0001-Surface-Boundaries.md)에 선택 근거와 단면 그림을 넣고 [구현 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#표면-물의-외곽-경계)을 갱신했다.
+- C++ 포맷을 적용한 뒤 별도 이름으로 Debug를 빌드했다. 전체 Surface Simulation CPU·GPU 검사에서 시나리오 보고서 16개가 통과했다. `openOutlet`을 생략한 임시 씬으로 에디터를 열었다. 실제 벽돌 뷰에서 기울어진 +X 테두리와 라벨을 확인했고, `Closed`를 선택한 뒤 적용할 때 마커가 사라지는 것을 확인했다.
+
+## 2026-11-24 — Snow on Canvas의 융해수와 천 외관
+
+- 코드 스타일, C++·GLSL 규칙과 Surface Simulation 상태·그래픽 계약을 읽었다.
+- 공유 표면 프로파일의 수면 합성 기준과 PBR 보조 조명을 렌더 필드에 연결했다. `SnowyCoat`에서 색과 반사 가시성을 조정하고, 직조·체크 무늬와 거칠기를 보존한 적갈색 텍스처를 두 천 씬에 사용했다.
+- [표면 렌더 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [융해수 캡처·검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md#눈에-가려진-얇은-융해수-표시)을 갱신했다.
+- C++ 포맷, GLSL Region 검사, 별도 이름의 Debug 빌드, SPIR-V 검증 및 Surface Simulation CPU·GPU 시나리오 검사 16개를 통과했다. 천의 CPU·GPU 보고서와 수심 세 프레임은 전후 일치했다.
+
+## 2026-11-24 — 데모의 자동 급수와 물 출처 표시
+
+- Agent-Vault 코드 스타일, C++ 및 주석 기준, 문서 작업 절차와 Surface Simulation 계약을 확인했다.
+- 에디터 도구 모음과 프레젠테이션에 물 출처를 표시한다. 자동 급수는 솔버가 물을 받는 저장 영역의 경계와 실제 제출 누계·목표량을 보여 준다. 초기 액체와 눈·얼음 용융 씬에는 해당 출처를 표시한다.
+- [Surface Simulation 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#자동-급수와-물-출처-표시)에 누계 기준, 표시 범위와 토글 경로를 기록했다.
+- C++ 포맷, 별도 이름 Debug 빌드와 Surface Simulation CPU·GPU 비교를 통과했다. 벽돌을 재시작해 0.72초의 0.43 / 1.2 g과 밝은 입구, 완료 후 1.2 / 1.2 g과 옅은 입구를 확인했다. 프레젠테이션에 완료 문구와 입구가 표시되는 것도 확인했다.
+
+## 2026-11-25 — 데모 외관과 변형 재생 정리
+
+- 코드 스타일, C++·GLSL 규칙과 Surface Simulation 계약을 읽었다. 두 천 씬의 알베도를 아이보리·머스터드 체크로 교체하고, Kiln Spillway의 새 이름을 Heated Water Channel로 정했다. 금속은 은회색 브러시드 스틸로 표시하고, 연료 패드 영역에 탄화와 불꽃을 한정했다.
+- 배포 씬 9개 계열에서 카메라·기울기·급수·가열 스케줄을 맞췄다. 젖은 나무 변형은 급수 애니메이션을 띄우기 전에 급수 면적에 2.4 g을 초기 배분한다. 이전 시간 입력은 [검증용 씬](../../../Scripts/Research/Fixtures/SceneTiming/README.md)에 보관했다.
+- 액체 외관을 추가한 물성 구조체와 계산 버퍼의 충돌을 해결했다. 계산용 GPU 물성은 고정된 16바이트 구조로 명시하고 그래픽 속성은 렌더 필드에서 읽는다. [상태·형상·GPU 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [검증](../05_Experiments/04_Surface-Simulation-Validation.md#체크무늬-천-가열-수로와-계열별-재생)을 갱신했다.
+- 공유 빌드의 MSVC PDB 경합으로 독립 Debug 빌드에서 검증했다. SPIR-V 검사, RGB·텍스처 캡처 검사와 PBR 캡처를 확인했다.
+- 독립 빌드의 전체 Surface Simulation CPU·GPU 비교 25건이 통과했다. 캡처의 색 변경 후에도 새 수로의 흡수수와 연료 패드 밖 탄화율은 0이었다.
+
+## 2026-11-25 — 공용 PBR 스트립과 재질 거칠기
+
+- Agent-Vault 코드 스타일, C++·GLSL 및 포맷 절차와 Surface Simulation 상태 계약을 검토했다.
+- 공용 환경 반사에 월드 방향으로 고정된 스트립을 추가했다. 물·얼음의 거칠기와 굴절률, 바닥의 마른·젖은 거칠기와 굴절률을 `.PhysicalMaterial`에서 읽는다. 에디터와 자동 캡처에서 스트립을 끌 수 있다. 반복적인 수면 반사 줄무늬를 줄이려고 PBR 잔물결 근사를 완만하게 조정했다.
+- [표시 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), [실험과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#공용-스트립-조명-비교)를 갱신했다.
+- Debug 빌드, GLSL 빌드·검증, CPU·GPU 비교, 텍스처 캡처 회귀를 통과했다. 고정 프레임의 조명 ON/OFF와 재질 거칠기 변경에서 두께 뷰 RGB가 모두 일치했다. 실행 중인 기본 에디터의 파일 잠금을 피하려고 별도 이름의 Debug 에디터에서 토글을 직접 확인했다.
+
+## 2026-11-25 — 바닥 재질 노멀과 광택
+
+- 코드 스타일, C++·GLSL 및 포맷 절차와 Surface Simulation 계약을 검토했다.
+- 바닥 재질의 선택적 노멀 맵을 선형 텍스처로 연결했다. 뷰별 토글, 캡처 옵션, 강도 편집을 추가했다. 바닥 PBR의 프레넬 반사와 공용 소프트박스가 캔버스와 블록 표면의 광택을 보여 주도록 조정했다.
+- [렌더링 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md), [캡처 비교](../05_Experiments/04_Surface-Simulation-Validation.md#재질-노멀-맵과-바닥-광택-비교) 및 번들 노멀의 출처를 갱신했다.
+- Debug 빌드, SPIR-V, 텍스처 캡처 회귀와 벽돌·천의 CPU/GPU 비교를 확인했다. 기본 두 씬에서 PBR 시각 차이와 물 두께 이미지의 픽셀 일치를 검증했다.
+
+## 2026-11-25 — 재질의 정반사 배율
+
+- Agent-Vault C++·GLSL, 주석, Region 포맷 규칙과 Surface Simulation 계약을 확인했다.
+- 벽돌과 천의 물리 재질 외관에 specularScale을 추가했다. 에디터 Scene Setup의 Assets에 0~4 범위의 재질 입력을 두고, 바닥 굴절률에서 계산한 정면 반사율에 배율을 적용했다. 키를 생략하면 1.0으로 해석한다.
+- [렌더링 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [고정 프레임 비교](../05_Experiments/04_Surface-Simulation-Validation.md#거칠기와-정반사-배율-비교)를 갱신했다.
+- 별도 이름의 Debug 빌드, Surface Simulation SPIR-V 6개와 텍스처 캡처 회귀를 통과했다. 벽돌과 두 캔버스 씬에서 조건별 PBR 차이와 동일한 물 두께 픽셀을 확인했다. 이전 재질의 기본값과 상한 초과 입력도 캡처 실행에서 검증했다.
+
+## 2026-11-25 — BrickCube 노멀 기반 용암 씬
+
+- Agent-Vault C++·GLSL, 주석과 포맷 절차 및 Surface Simulation 계약을 확인했다.
+- BrickCube 노멀 PNG를 높이로 복원해 용암의 저장·수송에 연결했다. 씬의 상면 알베도와 본체 표시 두께를 지정하고, 액체 재질·상태·표면 프로파일을 등록했다. 에디터의 자동 입구 및 수동 주입을 같은 액체 상태에 연결했다.
+- 용암은 저장 질량에서 구한 수위를 기준으로 불투명하게 그린다. [씬과 셰이더 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [CPU·GPU 및 같은 프레임 비교](../05_Experiments/04_Surface-Simulation-Validation.md#brickcube-노멀로-복원한-상면의-용암-수송)를 갱신했다.
+- 별도 이름의 Debug 빌드, SPIR-V, 기존 텍스처 캡처 회귀 및 정상·거의 평평한 바닥의 CPU/GPU 질량 비교를 확인했다. 캡처로 외관·두께·그리드를 확인했다.
+
+## 2026-11-25 — 강철 접촉 냉각과 배포 씬 점검
+
+- Agent-Vault C++·GLSL·평가 규칙과 Surface Simulation 계약을 검토했다.
+- 가열 수로 두 씬의 눈 상태와 초기 얼음을 제거했다. 강철의 초기 온도, 열용량과 접촉 열전달을 씬 설정으로 연결했다. 물이 기화하며 빼앗은 열을 바닥 온도에 반영하고 이 온도를 PBR 및 상태 진단에서 읽는다.
+- 배포 21개를 점검했다. 초원 두 씬에는 이미 계산 중 갱신되던 바닥 온도 상태를 추가했다. 빙하 두 씬의 4분할 카메라 구도를 조정했다. 활성 계산값과 씬의 상태 선언을 대조하는 검사도 추가했다.
+- 별도 이름 Debug 빌드, 기존 캡처 회귀, 관련 SPIR-V와 CPU·GPU 계산 28개 보고서를 확인했다. 가열 수로의 무급수·상온 대조군 및 초원 온도 상태 누락 대조군을 실행했다. [계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [실험·캡처](../05_Experiments/04_Surface-Simulation-Validation.md#배포-씬-전수-점검)를 갱신했다.
+
+## 2026-11-25 — Firebreak 불꽃·기화·탄화 외관
+
+- Agent-Vault C++·GLSL과 주석·포맷 절차, 표면 상태 계약과 배출 효과 결정을 확인했다.
+- 낮은 불꽃 분기를 제거하고 모든 Surface Simulation 불꽃에 Charring Wood의 체적 렌더링을 연결했다. 가열된 표면수·흡수수의 기화 질량을 초원의 물 장부와 공용 응결 렌더링에 전달했다. 탄화의 명암과 무광 대비를 초원에 적용했다.
+- Debug 빌드, SPIR-V, 텍스처 캡처 회귀와 CPU/GPU 젖은·마른 비교를 확인했다. 나머지 계산 케이스 26개를 같은 시뮬레이션 구현에서 확인했다. [배출 효과 결정](../03_Decisions/06_Surface-Emissions.md)과 [검증·비교 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#firebreak의-공통-불꽃기화탄화-외관)를 갱신했다.
+
+## 2026-11-25 — 단일 GPU 솔버와 활성 영역 갱신
+
+- Agent-Vault C++·GLSL 및 Surface Simulation 계약을 확인했다. 구형 Surface State GPU 솔버·셰이더, 에디터의 구형 씬·벤치마크 진입점과 구형 솔버에 의존하는 빌드 타깃을 제거했다. 공용 GPU 자원과 매핑 검증, 기존 성능·연구 자료는 유지했다.
+- `LiquidRunoff`에 GPU 활성 작업 목록과 간접 디스패치를 적용했다. 마른 표면과 국소 주입에서 전체 갱신과 비교하고 건조 이웃으로의 전파를 확인했다. [수송 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md#01-수송과-연산-순서) · [성능 검토](../05_Experiments/02_Performance-Measurements.md#현재-surface-simulation-최적화-검토)
+- 분리 MSVC Debug 빌드 및 SPIR-V 검증, RX 6700 XT에서 Surface Simulation GPU·캡처 회귀와 BrickRunoff 에디터 시작 검사를 통과했다. 공용 회귀는 SurfaceMapping의 기존 seam fixture 경고 검사에서 실패했다. 활성 갱신의 GPU 시간 개선율은 미측정이다.

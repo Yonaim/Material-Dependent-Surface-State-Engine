@@ -1,0 +1,12 @@
+# 재사용하는 재질의 물성 및 외관을 정의한다.
+version: 1
+id: Lava
+# 상별 물성. 밀도 [kg/m³]로 질량을 부피로 바꾸고, 동적 점도 [Pa·s]로 수송 저항을 계산한다.
+phases:
+  liquid:
+    densityKgM3: 2600
+    dynamicViscosityPaS: 4.0
+    incandescent: true
+    yieldStressPa: 0
+    angleOfReposeDeg: 0
+    phaseChange: []

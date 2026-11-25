@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Terraced Catchment · Standard vs Wide Inlet",
+  "koreanTitle": "계단식 집수 지형 · 기본 급수와 넓은 급수",
+  "description": "공급하는 총량을 맞추고 급수구 폭에 따라 어느 단에 물이 고이는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../TerracedCatchment.Scene",
+      "label": "Standard inlet"
+    },
+    {
+      "scene": "../TerracedCatchment_WideInlet.Scene",
+      "label": "Wide inlet"
+    }
+  ]
+}

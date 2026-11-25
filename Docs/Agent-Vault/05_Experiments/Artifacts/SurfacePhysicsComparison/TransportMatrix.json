@@ -1,0 +1,566 @@
+[
+  {
+    "cells": 16,
+    "substeps": 1,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 0.789926,
+        "p90_ms_per_frame": 0.88028,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.786347,
+        "p90_ms_per_frame": 0.87976,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.789547,
+        "p90_ms_per_frame": 0.881,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.0011009912296628954,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0010899553453782573,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00011004446348295005,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 4.754167079925537,
+    "gpu_checked": false,
+    "head_limited_faces": 193045,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 5.427409632829949e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.5125110487438118e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 16,
+    "substeps": 2,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 1.17779,
+        "p90_ms_per_frame": 1.2728,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.17841,
+        "p90_ms_per_frame": 1.27228,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.18291,
+        "p90_ms_per_frame": 1.27728,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.0011009539521609213,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0010899098560912535,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00011008969316050887,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 4.695833683013916,
+    "gpu_checked": false,
+    "head_limited_faces": 331463,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 6.57976784168568e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.4474917590351872e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 16,
+    "substeps": 4,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 2.15532,
+        "p90_ms_per_frame": 2.258,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 2.16029,
+        "p90_ms_per_frame": 2.26336,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 2.15382,
+        "p90_ms_per_frame": 2.25324,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.00110093681345802,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0010898885957431048,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00011011235341351622,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 4.670833587646484,
+    "gpu_checked": false,
+    "head_limited_faces": 599357,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 1.3761658479438665e-09,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.5776769196413182e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 16,
+    "substeps": 8,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 4.11069,
+        "p90_ms_per_frame": 4.23184,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 4.10934,
+        "p90_ms_per_frame": 4.24504,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 4.12086,
+        "p90_ms_per_frame": 4.2536,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.0011009287611187801,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0010898784676101059,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00011012373078189697,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 4.6583333015441895,
+    "gpu_checked": false,
+    "head_limited_faces": 1098457,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 2.1577659659044457e-09,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.533304978452958e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 32,
+    "substeps": 1,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 0.361684,
+        "p90_ms_per_frame": 0.382,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.362046,
+        "p90_ms_per_frame": 0.38192,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.361992,
+        "p90_ms_per_frame": 0.38256,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.001095613058149425,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0009931265158229508,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00020687331232271955,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 5.358333587646484,
+    "gpu_checked": false,
+    "head_limited_faces": 1024834,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 2.1248036663479297e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.8259816454686052e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 32,
+    "substeps": 2,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 0.531216,
+        "p90_ms_per_frame": 0.5566,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.53195,
+        "p90_ms_per_frame": 0.55692,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.532776,
+        "p90_ms_per_frame": 0.55728,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.0010959507370529309,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0009950724870577687,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00020492775833125254,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 5.1041669845581055,
+    "gpu_checked": false,
+    "head_limited_faces": 1757869,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 2.5124820366567713e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.7439116108893636e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 32,
+    "substeps": 4,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 0.998336,
+        "p90_ms_per_frame": 1.03676,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.00738,
+        "p90_ms_per_frame": 1.04352,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.00518,
+        "p90_ms_per_frame": 1.04504,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.001096117010042974,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0009958786286006216,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00020412211567089056,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 4.9708333015441895,
+    "gpu_checked": false,
+    "head_limited_faces": 3137886,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 7.036454752196164e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.7487503175008568e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 32,
+    "substeps": 8,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 1.95699,
+        "p90_ms_per_frame": 2.00044,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.95718,
+        "p90_ms_per_frame": 2.00532,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.95269,
+        "p90_ms_per_frame": 1.99724,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.0010961691012987274,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.000996205249975901,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00020379612480864173,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 4.912500381469727,
+    "gpu_checked": false,
+    "head_limited_faces": 5535905,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 1.3341585058945782e-09,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.6012068444345118e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 64,
+    "substeps": 1,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 0.401451,
+        "p90_ms_per_frame": 0.42008,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.403024,
+        "p90_ms_per_frame": 0.42344,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.402444,
+        "p90_ms_per_frame": 0.42116,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.001045715240856282,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0004475644545891555,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.0007524353873193745,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 6.712500095367432,
+    "gpu_checked": false,
+    "head_limited_faces": 4906778,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 2.0732571605688865e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 2.6520490404205755e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 64,
+    "substeps": 2,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 0.795912,
+        "p90_ms_per_frame": 0.80952,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.817317,
+        "p90_ms_per_frame": 0.8338,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 0.798222,
+        "p90_ms_per_frame": 0.81372,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.001067970191384049,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0009036486335389782,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00029635127935270415,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 5.950000286102295,
+    "gpu_checked": false,
+    "head_limited_faces": 8097901,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 1.8093002139910053e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 2.2341511663120957e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 64,
+    "substeps": 4,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 1.54419,
+        "p90_ms_per_frame": 1.57212,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.53722,
+        "p90_ms_per_frame": 1.5618,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 1.54985,
+        "p90_ms_per_frame": 1.57556,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.0010691085693643743,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0009085846268135356,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00029141529054863,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 5.520833492279053,
+    "gpu_checked": false,
+    "head_limited_faces": 14545049,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 3.096623790721509e-10,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.990100243953483e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  },
+  {
+    "cells": 64,
+    "substeps": 8,
+    "timing_runs": [
+      {
+        "mean_ms_per_frame": 3.02607,
+        "p90_ms_per_frame": 3.06824,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 3.02628,
+        "p90_ms_per_frame": 3.0668,
+        "frames_measured": 118
+      },
+      {
+        "mean_ms_per_frame": 3.09839,
+        "p90_ms_per_frame": 3.14292,
+        "frames_measured": 118
+      }
+    ],
+    "bed_ice_ior": 0.0,
+    "bed_relief_mm": 5.000000476837158,
+    "cpu_gpu_mass_error_kg": 0.0,
+    "donor_limited_regions": 0,
+    "downstream_mass_kg": 0.0010695588992817306,
+    "final_absorbed_kg": 0.0,
+    "final_char": 0.0,
+    "final_ice_kg": 0.0,
+    "final_outlet_kg": 0.0009106322104344144,
+    "final_sink_kg": 0.0,
+    "final_surface_kg": 0.00028936899891648937,
+    "first_absorbed_kg": 0.0,
+    "first_contact_area_mm2": 0.0,
+    "first_outlet_10mg_s": 5.262500286102295,
+    "gpu_checked": false,
+    "head_limited_faces": 27197038,
+    "initial_ice_kg": 0.0,
+    "mass_ledger_error_kg": 1.176423569670959e-09,
+    "peak_absorbed_kg": 0.0,
+    "peak_flame": 0.0,
+    "peak_steam_kg_s": 0.0,
+    "receiver_kg": 0.0,
+    "reconstructed_mass_error_kg": 1.9130237388259556e-10,
+    "scenario_checks": false,
+    "source_mass_kg": 0.001200000040626037,
+    "wet_rim_samples": 0
+  }
+]

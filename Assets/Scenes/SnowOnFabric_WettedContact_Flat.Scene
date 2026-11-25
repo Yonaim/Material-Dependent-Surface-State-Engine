@@ -1,0 +1,33 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "SnowOnFabric_WettedContact_Flat",
+  "geometry": "WovenPatch",
+  "surfaceProfile": "FabricAbsorptionSample",
+  "geometrySamplesPerCell": 8,
+  "simulationCells": [
+    8,
+    6
+  ],
+  "sizeM": [
+    0.14,
+    0.1
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "startPaused": true,
+  "initialPlaybackRate": 0.1,
+  "pourKg": 0.0,
+  "maxTiltRadians": 0,
+  "initialLiquidKg": 0.00144,
+  "scheduledInlet": {
+    "centerM": [
+      0,
+      0
+    ],
+    "sizeM": [
+      0.06,
+      0.06
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "HeatedWaterChannel_ThermalSteelThin",
+  "surfaceTexture": "../Textures/SurfaceSimulation/AmbientCG/Metal010.png",
+  "surfaceNormal": "../Textures/SurfaceSimulation/AmbientCG/Metal010Normal.png",
+  "environment": {
+    "texture": "../Textures/SurfaceSimulation/AmbientCG/IndoorEnvironmentHDRI014.hdr",
+    "exposure": 5.0,
+    "yawDegrees": -120
+  },
+  "geometry": "Spillway",
+  "geometrySamplesPerCell": 4,
+  "simulationCells": [
+    10,
+    8
+  ],
+  "sizeM": [
+    0.1,
+    0.08
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0.0,
+  "surfaceProfile": "ThermalSteelThin",
+  "bodyThicknessM": 0.0005,
+  "heightMap": {
+    "texture": "../Geometry/flat.height.png",
+    "heightRangeM": 0.001
+  },
+  "substrateEnergyPulse": {
+    "energyJm2": 2000000,
+    "durationS": 2.0
+  }
+}

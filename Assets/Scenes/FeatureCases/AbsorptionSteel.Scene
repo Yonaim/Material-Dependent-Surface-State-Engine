@@ -1,0 +1,40 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "AbsorptionSteel",
+  "geometry": "MaterialSpecimens",
+  "surfaceProfile": "SteelAbsorptionSample",
+  "geometrySamplesPerCell": 4,
+  "transportSubsteps": 2,
+  "simulationCells": [
+    8,
+    8
+  ],
+  "sizeM": [
+    0.1,
+    0.1
+  ],
+  "bodyThicknessM": 0.025,
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "initialLiquidKg": 0,
+  "pourKg": 0.02,
+  "pourStartSeconds": 2,
+  "pourSeconds": 0.25,
+  "maxTiltRadians": 0,
+  "geometryInput": {
+    "type": "NormalMap",
+    "path": "../../Textures/SurfaceSimulation/AmbientCG/Sponge001Normal.png",
+    "scale": 0.4
+  },
+  "scheduledInlet": {
+    "centerM": [
+      0,
+      0
+    ],
+    "sizeM": [
+      0.1,
+      0.1
+    ]
+  }
+}

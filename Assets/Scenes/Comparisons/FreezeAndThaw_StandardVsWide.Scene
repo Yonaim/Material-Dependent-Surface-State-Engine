@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Freeze and Thaw · Standard vs Wide Tray",
+  "koreanTitle": "동결과 해빙 · 기본 용기와 넓은 용기",
+  "description": "같은 질량의 물이 얼고 녹으면서 높이가 얼마나 바뀌는지 용기 넓이별로 비교한다.",
+  "cases": [
+    {
+      "scene": "../FreezeAndThaw.Scene",
+      "label": "Standard tray"
+    },
+    {
+      "scene": "../FreezeAndThaw_WideTray.Scene",
+      "label": "Wide tray"
+    }
+  ]
+}

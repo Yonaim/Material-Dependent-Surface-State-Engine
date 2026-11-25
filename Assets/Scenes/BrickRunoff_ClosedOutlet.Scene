@@ -1,0 +1,39 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "BrickRunoff_ClosedOutlet",
+  "environment": {
+    "texture": "../Textures/SurfaceSimulation/AmbientCG/DayEnvironmentHDRI049.hdr",
+    "exposure": 1.7,
+    "yawDegrees": 30
+  },
+  "geometry": "GroovedPlate",
+  "surfaceProfile": "BrickRunoff",
+  "geometrySamples": [
+    36,
+    20
+  ],
+  "simulationCells": [
+    12,
+    5
+  ],
+  "sizeM": [
+    0.09,
+    0.05
+  ],
+  "smoothDisplay": false,
+  "openOutlet": false,
+  "pourKg": 0.0012,
+  "scheduledInlet": {
+    "centerM": [
+      -0.0309375,
+      0.0015625
+    ],
+    "sizeM": [
+      0.005625,
+      0.003125
+    ]
+  },
+  "maxTiltRadians": 0.43633231,
+  "fields": {}
+}

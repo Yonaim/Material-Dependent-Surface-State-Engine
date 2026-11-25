@@ -79,13 +79,13 @@ binding 23은 Scene 공유 uint-word Reaction table이다. Profile별 Rule 범�
 
 연구 도구가 `bResearchReactionLedger=true`로 instance를 생성하고 Solver flag bit 28을 명시적으로 켜면 기존 scratch 뒤에 `N × M` float 장부를 추가한다. 전체 크기는 `N × (5K + 2M + 4)` float이며 binding·기존 plane offset은 유지한다. texel별 Rule extent를 매 dispatch 시작에 0으로 초기화하고, 유입 전환 및 continuous 구간 중 실제 적용한 유한 구간의 소비 제한 후 extent만 누적한다. 제품 기본 경로는 이 옵션을 켜지 않는다. 호출자는 장부 allocation과 flag를 함께 선택해야 한다.
 
-Texel Inspector는 내부 구간 수·공급량 제한 횟수·시간 예산 초과·산술 오류를 표시한다. Profile 패널은 Rule의 소비·생성·조건을 조회한다. Rule 수정은 `.SRProfile` 편집 후 Scene 재로드로 적용한다. GPU query의 기존 Pass 2 timestamp 구간에는 Reaction 실행이 포함된다.
+메시 솔버의 Texel 진단은 내부 구간 수·공급량 제한 횟수·시간 예산 초과·산술 오류를 기록한다. GPU query의 Pass 2 timestamp 구간에는 Reaction 실행이 포함된다. 현재 에디터의 프로파일 편집과 반응은 [박막 계약](08_Surface-Simulation.md)에서 다룬다.
 
-## Lit 예제
+## 과거 메시 솔버 실험
 
-`Assets/Scenes/IceReactionLab.Scene`은 MarbleCube 판 세 개와 render-only stage/벡터 라벨을 사용한다. State는 `ice`, `waterfilm`, `heat`다. 용융은 Ice 1과 Heat 0.45를 소비해 WaterFilm 1을 생성하며, 별도 냉각 규칙은 물을 소비하지 않고 Heat 감소를 촉진한다. 계수는 현상학적 모델 값이며 실제 열량 단위로 보정한 열역학 모델은 아니다.
+Ice Reaction Lab 실험은 MarbleCube 판 세 개와 render-only stage 라벨을 사용했다. 연구 템플릿은 `Scripts/Research/Fixtures/AuthoringScene.json`에 있다. 용융은 Ice 1과 Heat 0.45를 소비해 WaterFilm 1을 만들며, 별도 냉각 규칙은 Heat 감소를 촉진한다. 계수는 현상학적 모델 값이다.
 
-`Assets/Scenes/ReactionTransitionComparison.Scene`은 같은 Fuel 초기량과 1초 시점의 동일한 Heat 입력을 세 판에 적용한다. 왼쪽은 Reaction 규칙이 없다. 가운데는 version 5의 일대일 소비형 전이 `Heat → Burn → Scorched`를 적용한다. 오른쪽은 `Fuel + Heat → Burn`, `Burn → Scorched`의 다중 입력 Reaction을 적용한다. 가운데는 Fuel이 남고 오른쪽은 연료 공급량에 따라 Burn 생성이 제한된다. Burn은 일시적인 발광 효과, Scorched는 남는 어두운 표면 흔적이다. 이 Scene에는 Lava·Ice·WaterFilm State가 없다. 계수는 시각 설명용이며 물리 단위로 보정한 연소 모델은 아니다. 제작 및 재생 방법은 `Assets/Scenes/ReactionTransitionComparison.README.md`에 둔다.
+Reaction Transition 실험은 같은 Fuel 초기량과 1초 시점의 동일한 Heat 입력을 세 판에 적용했다. 왼쪽을 제어군으로 두고 가운데는 `Heat → Burn → Scorched`, 오른쪽은 `Fuel + Heat → Burn`과 `Burn → Scorched`를 실행했다. 가운데는 Fuel이 남고 오른쪽은 연료 공급량에 따라 Burn 생성이 제한된다. Burn은 일시적인 발광, Scorched는 남는 어두운 흔적이다. 구형 시연의 측정 결과는 PERF-044에 남아 있다.
 
 비교 씬의 각 판은 위쪽 한 면만 State solver에 등록하고 나머지 다섯 면은 render-only 메시로 그린다. 기존 여섯 면 시뮬레이션은 눈에 보이지 않는 옆면까지 Reaction Pass를 실행해 프레임 비용이 컸다. 같은 UV 윗면의 State는 변경 전후 같은 step에서 비트 단위로 일치한다. 측정값은 [[05_Experiments/02_Performance-Measurements#PERF-044 — Reaction Transition 비교 씬의 윗면만 시뮬레이션|PERF-044]]에 기록한다.
 

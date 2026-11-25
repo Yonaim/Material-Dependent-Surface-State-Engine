@@ -11,7 +11,7 @@
 
 | C++ 기록·자원 책임 | Shader 단계 | 검사할 연결 조건 |
 |---|---|---|
-| `SurfaceStepRecording.cpp`, `SurfaceStateSolver.cpp` | `SurfaceSolverPass1.comp` → `SurfaceSolverPass2.comp` → 선택적 `SurfaceReaction.comp` | Current/Next A/B, RawFlux·Reaction scratch, barrier, push constant |
+| `SurfaceSimulationGpu.cpp` | `Simulation/Surface/SurfaceSimulationStep.comp` | 준비, 활성 작업 그룹 예약, 수송과 셀 갱신 |
 | `SurfaceContactApplication.cpp` | Pass 2의 `InputDelta` 소비 | 처음 실행되는 step, Contact 중복 반영 여부 |
 | `SurfaceGeometryUpdate.cpp`, Solver 기록 | `SurfaceAccumulationHeight.comp` 및 Dynamic Geometry/Weight | State 기반 형상 ON/OFF, Current 재구축과 Next 갱신 |
 | `RenderStateTexture.cpp` | `RenderStateTexture.comp` | state channel lookup, render 전용 texture binding |
@@ -40,3 +40,7 @@
 - [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|누락되었던 CPU Surface Cache]] — `.Surface` fingerprint, version, rebuild fallback.
 
 이 Source 지도는 코드 위치와 연결을 설명한다. 빌드·GPU 실행·렌더·테스트 결과는 [[05_Experiments/01_Validation-and-Tests|Validation]]에서 확인한다.
+
+## Surface Simulation
+
+[Surface Simulation 코드 배치](03_Surface-Simulation.md)에서 응용·형상 입력·수송·렌더링·검증 도구의 경계를 확인한다.

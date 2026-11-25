@@ -1,0 +1,35 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "GlacierCut_MeltPocket",
+  "environment": {
+    "texture": "../Textures/SurfaceSimulation/AmbientCG/DayEnvironmentHDRI067.hdr",
+    "exposure": 1.15,
+    "yawDegrees": -28
+  },
+  "geometry": "GlacialBed",
+  "snowMassScale": 1.75,
+  "contactHeatFadeSeconds": 4.4,
+  "geometrySamplesPerCell": 4,
+  "simulationCells": [
+    16,
+    12
+  ],
+  "sizeM": [
+    0.176,
+    0.122
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "surfaceProfile": "SteelWithWaterAndSnow",
+  "shallowBasin": {
+    "centerUV": [
+      0.37,
+      0.56
+    ],
+    "radiusM": 0.023,
+    "depthM": 0.0025
+  }
+}

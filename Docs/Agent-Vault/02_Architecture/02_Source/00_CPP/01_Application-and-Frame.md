@@ -7,8 +7,8 @@
 | [main.cpp](../../../../../Source/main.cpp) | `main` | `ParseApplicationLaunchOptions` 후 `FApplication::Run`을 호출하는 프로세스 진입점 |
 | [Application.h](../../../../../Source/Application/Application.h) | `FApplication` 선언 | 엔진 주요 객체 소유, 앱 lifecycle·main loop API |
 | [Application.cpp](../../../../../Source/Application/Application.cpp) | 생성·초기화·`Run`·정리 경로 | 설정→window/Vulkan→asset/scene→surface/render/UI 초기화와 종료 순서를 연결 |
-| [BenchmarkOptions.h](../../../../../Source/Application/BenchmarkOptions.h) | `FBenchmarkOptions`, `FApplicationLaunchOptions` | CLI에서 정해지는 benchmark·Scene·옵션 데이터 |
-| [BenchmarkOptions.cpp](../../../../../Source/Application/BenchmarkOptions.cpp) | `ParseApplicationLaunchOptions` | `argv`에서 실행 옵션을 검증·구성해 `main`에 반환 |
+| [ApplicationLaunchOptions.h](../../../../../Source/Application/ApplicationLaunchOptions.h) | `FBenchmarkOptions`, `FApplicationLaunchOptions` | CLI에서 정해지는 benchmark·Scene·옵션 데이터 |
+| [ApplicationLaunchOptions.cpp](../../../../../Source/Application/ApplicationLaunchOptions.cpp) | `ParseApplicationLaunchOptions` | `argv`에서 실행 옵션을 검증·구성해 `main`에 반환 |
 | [EngineConfig.h](../../../../../Source/Application/EngineConfig.h) | 설정 구조와 read/write API | 사용자 설정값과 설정 파일 경로의 선언 |
 | [EngineConfig.cpp](../../../../../Source/Application/EngineConfig.cpp) | 설정 읽기·파싱·기본값 처리 | 파일에서 runtime 설정을 읽고 잘못된 값에 기본 정책 적용 |
 | [PerformanceSettings.h](../../../../../Source/Application/PerformanceSettings.h) | performance setting 구조·serialization | 성능 비교용 실행 옵션을 파일로 저장·복원 |

@@ -1,0 +1,11 @@
+# 무유약 소성 점토의 무광 바닥 외관을 정의한다.
+version: 1
+id: Terracotta
+appearance:
+  # 흡수 자국에도 거친 표면을 유지해 위에 고인 물의 반사와 구별한다.
+  dryRoughness: 0.92
+  wetRoughness: 0.88
+  refractiveIndex: 1.46
+  specularScale: 0.42
+  normalTexture: FiredClayNormal.png
+  normalStrength: 0.75

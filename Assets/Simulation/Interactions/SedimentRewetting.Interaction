@@ -1,0 +1,12 @@
+# 재사용할 국소 규칙의 모델과 계수. 적용 상태와 입력은 SurfaceProfile에서 연결한다.
+version: 1
+id: SedimentRewetting
+model: SoilWaterMix
+# 젖은 접촉 면적당 흙 혼합 속도 [kg/(m²·s)].
+rateKgM2Second: 5.0
+# 흙 1 kg을 섞는 데 필요한 자유수 질량 [kg/kg].
+waterPerSoil: 0.4
+# 진흙에 섞인 잔여 물에 대한 1차 건조 계수 [1/s].
+dryPerSecond: 0.8
+# 재습윤 속도 [kg/(m²·s)]. 같은 영역에 남은 자유수로 제한한다.
+rewetKgM2Second: 10.0

@@ -107,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('name')
     parser.add_argument('--before')
     parser.add_argument('--after')
-    parser.add_argument('--wide', action='store_true')
+    parser.add_argument('--scene', action='append', help='Explicit benchmark scene path; repeat for more scenes.')
     parser.add_argument('--before-settings', default='{}')
     parser.add_argument('--after-settings', default='{}')
     args = parser.parse_args()
@@ -116,13 +116,13 @@ if __name__ == '__main__':
     elif args.command == 'run':
         raise SystemExit(run_plan(LAB / (args.name + '-plan.json')))
     else:
+        if not args.scene:
+            parser.error('pair requires at least one explicit --scene')
         cases = [
-            (f'Assets/Scenes/{scene}.Scene', resolution)
-            for scene in ['BrickCube', 'Mountain']
+            (scene, resolution)
+            for scene in args.scene
             for resolution in [256, 512]
         ]
-        if args.wide:
-            cases += [(str(LAB / 'BrickCube-Wide.Scene'), r) for r in [256, 512]]
         p = plan(
             args.name,
             args.before,

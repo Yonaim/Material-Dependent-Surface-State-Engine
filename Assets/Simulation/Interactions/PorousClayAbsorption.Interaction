@@ -1,0 +1,5 @@
+# 배수 흐름과 젖은 자국을 함께 보여주기 위한 데모용 흡수 계수다.
+version: 1
+id: PorousClayAbsorption
+model: Absorption
+ratePerSecond: 0.24

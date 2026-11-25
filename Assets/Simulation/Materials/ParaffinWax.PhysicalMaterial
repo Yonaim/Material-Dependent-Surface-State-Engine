@@ -1,0 +1,20 @@
+# 시연용 파라핀의 상별 밀도와 흐름 물성이다.
+version: 1
+id: ParaffinWax
+phases:
+  solid:
+    densityKgM3: 880
+    dynamicViscosityPaS: 100
+    # 높이장 시연에서 고체는 정지하도록 유체 수송의 항복 조건을 막는다.
+    yieldStressPa: 1000000
+  liquid:
+    densityKgM3: 780
+    dynamicViscosityPaS: 0.015
+    refractiveIndex: 1.43
+    roughness: 0.16
+transitions:
+  WaxSolidLiquid:
+    meltFrom: [solid]
+    liquid: liquid
+    freezeTo: solid
+    equilibriumTemperatureK: 323.15

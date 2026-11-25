@@ -1,0 +1,47 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "IceGate_FixedBed",
+  "geometry": "IceGateFork",
+  "geometrySamples": [
+    72,
+    48
+  ],
+  "simulationCells": [
+    24,
+    16
+  ],
+  "sizeM": [
+    0.24,
+    0.16
+  ],
+  "smoothDisplay": true,
+  "openOutlet": true,
+  "pourKg": 0.021,
+  "pourSeconds": 5.5,
+  "maxTiltRadians": 0,
+  "surfaceProfile": "IceGate",
+  "scheduledInlet": {
+    "centerM": [
+      -0.095,
+      0
+    ],
+    "sizeM": [
+      0.015,
+      0.026
+    ]
+  },
+  "initialFilm": [
+    {
+      "state": "layer.ice",
+      "boundsUV": [
+        0.44,
+        0.14,
+        0.52,
+        0.45
+      ],
+      "thicknessM": 0.011
+    }
+  ],
+  "filmBedCoupling": false
+}

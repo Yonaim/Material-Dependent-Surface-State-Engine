@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Soil-covered Stone Path · Evolving vs Fixed Bed",
+  "koreanTitle": "흙으로 덮인 돌길 · 변하는 바닥과 고정 바닥",
+  "description": "흙과 진흙의 높이 변화를 다음 물길에 반영하는 실행과 초기 바닥을 쓰는 실행을 비교한다.",
+  "cases": [
+    {
+      "scene": "../SoilCoveredStonePath.Scene",
+      "label": "Evolving bed"
+    },
+    {
+      "scene": "../SoilCoveredStonePath_FixedBed.Scene",
+      "label": "Fixed bed"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# 평형 온도로부터의 온도 차와 투영 면적에 비례해 두 상 사이에서 질량을 옮긴다.
+version: 1
+id: WaxMelt
+model: TemperatureDrivenMelt
+transition: WaxSolidLiquid
+rateKgM2SecondK: 0.17

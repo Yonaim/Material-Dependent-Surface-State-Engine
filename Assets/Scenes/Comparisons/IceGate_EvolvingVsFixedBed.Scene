@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Ice Gate Fork · Evolving vs Fixed Bed",
+  "koreanTitle": "얼음 마개 갈림길 · 변하는 바닥과 고정 바닥",
+  "description": "같은 얼음과 급수에서 용융으로 낮아진 높이를 수송에 반영할 때 물길이 어떻게 달라지는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../IceGate.Scene",
+      "label": "Evolving bed"
+    },
+    {
+      "scene": "../IceGate_FixedBed.Scene",
+      "label": "Fixed bed"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Meadow Firebreak · Watered vs Dry",
+  "koreanTitle": "초원의 젖은 띠 · 급수와 건조 대조",
+  "description": "같은 위치에서 불을 붙였을 때 급수한 띠가 불길의 도달 범위를 바꾸는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../MeadowFirebreak.Scene",
+      "label": "Watered meadow"
+    },
+    {
+      "scene": "../MeadowFirebreak_Dry.Scene",
+      "label": "Dry meadow"
+    }
+  ]
+}
