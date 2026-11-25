@@ -6,9 +6,9 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
+#include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "Scene/Transform.h"
 #include "SurfaceState/Runtime/SurfaceRuntimeData.h"
-
 #include <filesystem>
 #include <string>
 
@@ -16,7 +16,7 @@ namespace MDSS
 {
     class FStaticMeshInstance
     {
-    public:
+      public:
         // Instance construction
         FStaticMeshInstance() = default;
         FStaticMeshInstance(Asset::FMeshAssetHandle Mesh, FTransform InstanceTransform = {});
@@ -25,24 +25,28 @@ namespace MDSS
                             FTransform                              InstanceTransform,
                             std::filesystem::path                   MeshPath = {},
                             std::filesystem::path                   ProfileMapPath = {},
-                            std::string                             ObjectId = {});
+                            std::string                             ObjectId = {},
+                            Asset::FSurfaceProfileOverrides         Overrides = {});
 
         // Instance properties and asset references
-        [[nodiscard]] FTransform&                             GetTransform() noexcept;
-        [[nodiscard]] const FTransform&                       GetTransform() const noexcept;
+        [[nodiscard]] FTransform                             &GetTransform() noexcept;
+        [[nodiscard]] const FTransform                       &GetTransform() const noexcept;
         [[nodiscard]] Asset::FMeshAssetHandle                 GetMesh() const noexcept;
         [[nodiscard]] SurfaceState::FSurfaceRuntimeDataHandle GetSurfaceData() const noexcept;
         void SetSurfaceData(SurfaceState::FSurfaceRuntimeDataHandle Handle) noexcept;
-        [[nodiscard]] const std::filesystem::path& GetMeshPath() const noexcept;
-        [[nodiscard]] const std::filesystem::path& GetProfileMapPath() const noexcept;
-        [[nodiscard]] const std::string&           GetId() const noexcept;
+        [[nodiscard]] const std::filesystem::path &GetMeshPath() const noexcept;
+        [[nodiscard]] const std::filesystem::path &GetProfileMapPath() const noexcept;
+        /** @brief 메시 표면별로 기본 프로파일을 덮어쓰는 씬 입력을 반환한다. */
+        [[nodiscard]] const Asset::FSurfaceProfileOverrides &GetSurfaceProfileOverrides() const noexcept;
+        [[nodiscard]] const std::string                     &GetId() const noexcept;
 
-    private:
+      private:
         Asset::FMeshAssetHandle                 Mesh = Asset::InvalidAssetHandle;
         SurfaceState::FSurfaceRuntimeDataHandle SurfaceData = SurfaceState::InvalidSurfaceRuntimeDataHandle;
         FTransform                              InstanceTransform;
         std::filesystem::path                   SourceMeshPath;
         std::filesystem::path                   SourceProfileMapPath;
         std::string                             Id;
+        Asset::FSurfaceProfileOverrides         ProfileOverrides;
     };
 } // namespace MDSS

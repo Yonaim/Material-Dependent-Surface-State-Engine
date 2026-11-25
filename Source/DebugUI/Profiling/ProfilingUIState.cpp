@@ -4,7 +4,6 @@
  */
 
 #include "DebugUI/Profiling/ProfilingUIState.h"
-
 #include <algorithm>
 #include <cmath>
 
@@ -14,7 +13,7 @@ namespace MDSS
 // 00. Profiling State Transitions
 // ============================================================
 #pragma region 00_Profiling_State_Transitions
-// 표시 창의 누적·publish·reset 시점을 같은 집계 상태에 적용한다.
+    // 표시 창의 누적·publish·reset 시점을 같은 집계 상태에 적용한다.
 
     void FProfilingUIState::Reset() noexcept
     {
@@ -26,12 +25,13 @@ namespace MDSS
         Maximums.fill(-1.0F);
         WindowMaximums.fill(-1.0F);
         Recent100msAverages.fill(-1.0F);
+        PublishedRecentAverages.fill(-1.F);
         RecentSamples.clear();
         ElapsedSeconds = 0.0;
         bAverageAvailable = false;
     }
 
-    void FProfilingUIState::Accumulate(double FrameSeconds, const std::array<float, 40>& MetricValues)
+    void FProfilingUIState::Accumulate(double FrameSeconds, const std::array<float, 40> &MetricValues)
     {
         ElapsedSeconds += FrameSeconds;
         WindowElapsed += FrameSeconds;
@@ -64,7 +64,7 @@ namespace MDSS
         std::array<double, 43>        RecentSums{};
         std::array<std::uint32_t, 43> RecentCounts{};
 
-        for (const FSample& RecentSample : RecentSamples)
+        for (const FSample &RecentSample : RecentSamples)
         {
             for (std::size_t Index = 0; Index < RecentSample.Values.size(); ++Index)
             {
@@ -87,7 +87,7 @@ namespace MDSS
         }
     }
 
-    void FProfilingUIState::PublishWindow()
+    bool FProfilingUIState::PublishWindow()
     {
         if (WindowElapsed >= 1.0 && FrameSamples > 0)
         {
@@ -101,6 +101,7 @@ namespace MDSS
             }
 
             Maximums = WindowMaximums;
+            PublishedRecentAverages = Recent100msAverages;
             bAverageAvailable = true;
             WindowElapsed = 0.0;
             FpsSum = 0.0;
@@ -109,7 +110,9 @@ namespace MDSS
             MetricSums.fill(0.0);
             MetricSamples.fill(0U);
             WindowMaximums.fill(-1.0F);
+            return true;
         }
+        return false;
     }
 
 #pragma endregion

@@ -23,6 +23,29 @@ namespace MDSS::Rendering
         return ViewportIndex < ViewModes.size() ? ViewModes[ViewportIndex] : ERenderViewMode::Lit;
     }
 
+    void FRenderer::SetDebugProfileParameters(Asset::FSRProfileAssetHandle                 Profile,
+                                              SurfaceState::FStateId                       State,
+                                              const SurfaceState::FSurfaceStateParameters &Parameters,
+                                              bool                                         bKeepRuntimeOverride)
+    {
+        SurfaceStateSystem.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
+
+        if (TexelInspector)
+        {
+            TexelInspector->Invalidate();
+        }
+        const auto Key = std::make_pair(Profile, State);
+
+        if (bKeepRuntimeOverride)
+        {
+            DebugProfileParameterOverrides[Key] = Parameters;
+        }
+        else
+        {
+            DebugProfileParameterOverrides.erase(Key);
+        }
+    }
+
     void FRenderer::SetWireframeLineWidth(float Width) noexcept
     {
         if (std::isfinite(Width))

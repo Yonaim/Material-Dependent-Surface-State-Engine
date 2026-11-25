@@ -1,0 +1,22 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "CharringWood",
+  "surfaceTexture": "../Textures/SurfaceSimulation/AmbientCG/Wood049.png",
+  "surfaceNormal": "../Textures/SurfaceSimulation/AmbientCG/Wood049Normal.png",
+  "geometry": "WoodPatch",
+  "geometrySamples": [56, 40],
+  "simulationCells": [
+    14,
+    10
+  ],
+  "sizeM": [
+    0.14,
+    0.1
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "surfaceProfile": "CharringSurface"
+}

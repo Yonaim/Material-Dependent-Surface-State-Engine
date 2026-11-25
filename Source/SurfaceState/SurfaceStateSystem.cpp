@@ -55,40 +55,6 @@ namespace MDSS::SurfaceState
                                          Execution.bCompactScratchStorageEnabled});
         PrepareScratchStorage();
 
-        if (const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
-        {
-            Solver = std::make_unique<FSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
-        }
-
-        // Dynamic geometry buffers start empty.  The first state-driven solver step performs one
-        // force-full bootstrap before Pass 1, then normal steps use Solver -> Height -> Geometry -> Weights.
-        Execution.bForceFullGeometryOnNextStep = true;
-        Execution.bSeedPersistentActivityOnNextStep = true;
-        Execution.PendingInputActivation.assign(GPUResources->GetSceneInstanceCount(), false);
-        QueueInitialContacts();
-    }
-
-    void FSurfaceStateSystem::QueueInitialContacts()
-    {
-        const auto& Instances = Scene.GetStaticMeshInstances();
-
-        for (const FSceneInitialContact& Initial : Scene.GetInitialContacts())
-        {
-            const auto Target =
-                std::find_if(Instances.begin(),
-                             Instances.end(),
-                             [&](const FStaticMeshInstance& Instance) { return Instance.GetId() == Initial.Target; });
-            if (Target == Instances.end())
-                throw std::invalid_argument("Initial contact target is not in Scene: " + Initial.Target);
-            FSurfaceContactInput Contact;
-            Contact.TargetInstance = static_cast<FSurfaceInstanceID>(std::distance(Instances.begin(), Target));
-            Contact.State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Initial.State);
-            Contact.WorldPosition = Initial.WorldPosition;
-            Contact.Radius = Initial.Radius;
-            Contact.Strength = Initial.Strength;
-            Contact.Falloff = Initial.Falloff;
-            SubmitContact(Contact);
-        }
     }
 
     FSurfaceStateSystem::~FSurfaceStateSystem() = default;
@@ -100,17 +66,12 @@ namespace MDSS::SurfaceState
             throw std::invalid_argument("Replacement Surface State resources must use the same runtime owners.");
         }
 
-        Solver = std::move(Replacement.Solver);
-
         if (GPUResources)
             GPUResources->RetireBuffers(BufferPool);
         GPUResources = std::move(Replacement.GPUResources);
-        PendingContacts = std::move(Replacement.PendingContacts);
-        Execution.PendingInputActivation = std::move(Replacement.Execution.PendingInputActivation);
         Execution.DebugSolverSettings = Replacement.Execution.DebugSolverSettings;
         Execution.bTransferWeightSettingsDirty = Replacement.Execution.bTransferWeightSettingsDirty;
         Execution.bForceFullGeometryOnNextStep = Replacement.Execution.bForceFullGeometryOnNextStep;
-        Execution.bSeedPersistentActivityOnNextStep = Replacement.Execution.bSeedPersistentActivityOnNextStep;
         Execution.bStableDeltaTimeDirty = Replacement.Execution.bStableDeltaTimeDirty;
         Execution.CachedMaximumStableDeltaTime = Replacement.Execution.CachedMaximumStableDeltaTime;
         Execution.StableDeltaTimeModelMatrices = std::move(Replacement.Execution.StableDeltaTimeModelMatrices);
@@ -124,11 +85,6 @@ namespace MDSS::SurfaceState
 #pragma region 01_State_and_Contact_Management
 // 접촉 입력을 대기열에 넣고 State 리셋·재시작 경계를 관리한다.
 
-    void FSurfaceStateSystem::SubmitContact(FSurfaceContactInput Contact)
-    {
-        PendingContacts.push_back(std::move(Contact));
-    }
-
     void FSurfaceStateSystem::ResetState()
     {
         if (vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
@@ -136,20 +92,16 @@ namespace MDSS::SurfaceState
             throw std::runtime_error("Failed to wait for the graphics queue before resetting Surface State.");
         }
 
-        PendingContacts.clear();
         GPUResources->ResetStates();
 
         // Resetting State invalidates the derived simulation geometry.  Rebuild it before the next
         // state-driven solver step rather than tracking a separate revision/cache key.
         Execution.bForceFullGeometryOnNextStep = true;
-        Execution.bSeedPersistentActivityOnNextStep = true;
-        std::fill(Execution.PendingInputActivation.begin(), Execution.PendingInputActivation.end(), false);
     }
 
     void FSurfaceStateSystem::RestartState()
     {
         ResetState();
-        QueueInitialContacts();
         Execution.bStableDeltaTimeDirty = true;
         Execution.bForceFullGeometryOnNextStep = true;
     }
@@ -238,8 +190,6 @@ namespace MDSS::SurfaceState
             return;
         Execution.bSparseSolverEnabled = bEnabled;
 
-        if (bEnabled)
-            Execution.bSeedPersistentActivityOnNextStep = true;
     }
 
     void FSurfaceStateSystem::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
@@ -248,8 +198,6 @@ namespace MDSS::SurfaceState
             return;
         Execution.bActiveChannelMaskEnabled = bEnabled;
 
-        if (bEnabled)
-            Execution.bSeedPersistentActivityOnNextStep = true;
     }
 
     void FSurfaceStateSystem::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
@@ -258,8 +206,6 @@ namespace MDSS::SurfaceState
             return;
         Execution.bPerWorkgroupChannelMaskEnabled = bEnabled;
 
-        if (bEnabled)
-            Execution.bSeedPersistentActivityOnNextStep = true;
     }
 
     const FSurfaceSolverDebugSettings& FSurfaceStateSystem::GetDebugSolverSettings() const noexcept

@@ -31,7 +31,7 @@ namespace MDSS::Rendering
         bool            bWireframe;
         bool            bSurfaceLit;
         std::uint32_t   MaterialUniformOffset;
-        const FCamera*  ViewCamera;
+        const FCamera  *ViewCamera;
         glm::mat4       ViewProjection;
         FViewFrustum    ViewFrustum;
     };
@@ -40,20 +40,21 @@ namespace MDSS::Rendering
 // 00. Command Buffer Recording
 // ============================================================
 #pragma region 00_Command_Buffer_Recording
-// simulation·표시 compute·장면·UI를 제출할 command 순서로 기록한다.
+    // simulation·표시 compute·장면·UI를 제출할 command 순서로 기록한다.
 
     void FRenderer::RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
                                         std::uint32_t          ImageIndex,
-                                        const FScene&          SceneData,
-                                        const FDebugUI&        DebugInterface,
+                                        const FScene          &SceneData,
+                                        const FDebugUI        &DebugInterface,
                                         std::span<const float> SimulationSteps)
     {
         FCommandRecordingState Frame = BeginCommandRecording(CommandBuffer, SceneData, DebugInterface, SimulationSteps);
         RecordSimulationAndInspector(CommandBuffer, SceneData, Frame);
         PrepareDisplayResources(CommandBuffer, SceneData, DebugInterface, Frame);
+        DebugInterface.RecordSurfaceSimulation(CommandBuffer, Frame.FrameIndex);
         BeginSceneGraphicsPass(CommandBuffer, ImageIndex, Frame);
         RecordSceneViewports(CommandBuffer, SceneData, DebugInterface, Frame);
-        RecordUIAndEndCommandBuffer(CommandBuffer, ImageIndex, DebugInterface, Frame);
+        RecordUIAndEndCommandBuffer(CommandBuffer, DebugInterface, Frame);
     }
 
 #pragma endregion
@@ -62,11 +63,11 @@ namespace MDSS::Rendering
 // 01. Frame Preparation
 // ============================================================
 #pragma region 01_Frame_Preparation
-// 이 frame이 사용할 입력·시간·완료 자원을 준비한 뒤 기록 단계로 넘긴다.
+    // 이 frame이 사용할 입력·시간·완료 자원을 준비한 뒤 기록 단계로 넘긴다.
 
     FRenderer::FCommandRecordingState FRenderer::BeginCommandRecording(VkCommandBuffer        CommandBuffer,
-                                                                       const FScene&          SceneData,
-                                                                       const FDebugUI&        DebugInterface,
+                                                                       const FScene          &SceneData,
+                                                                       const FDebugUI        &DebugInterface,
                                                                        std::span<const float> SimulationSteps)
     {
         VkCommandBufferBeginInfo BeginInfo{};
@@ -91,12 +92,12 @@ namespace MDSS::Rendering
     }
 
     void FRenderer::RecordSimulationAndInspector(VkCommandBuffer               CommandBuffer,
-                                                 const FScene&                 SceneData,
-                                                 const FCommandRecordingState& Frame)
+                                                 const FScene                 &SceneData,
+                                                 const FCommandRecordingState &Frame)
     {
-        const auto& FrameIndex = Frame.FrameIndex;
-        const auto& LitHeightDisplayScale = Frame.LitHeightDisplayScale;
-        const auto& QueryBase = Frame.QueryBase;
+        const auto &FrameIndex = Frame.FrameIndex;
+        const auto &LitHeightDisplayScale = Frame.LitHeightDisplayScale;
+        const auto &QueryBase = Frame.QueryBase;
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
@@ -104,21 +105,21 @@ namespace MDSS::Rendering
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 21U);
         }
 
-        FrameCoordinator.RecordSimulation(
-            CommandBuffer, TimestampQueryPool, QueryBase + FixedTimestampQueryCount, SolverTimestampGroupCount * 8U);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 22U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 22U);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 4U);
         }
 
         if (TexelInspector && InspectedTexel &&
             DebugStateChannel < SurfaceData.GetSurfaceStateRegistry().GetStateCount())
         {
-            const auto& Resources = SurfaceStateSystem.GetGPUResources();
+            const auto &Resources = SurfaceStateSystem.GetGPUResources();
 
-            if (const auto* Descriptors = Resources.GetInstanceDescriptors(InspectedTexel->Instance))
+            if (const auto *Descriptors = Resources.GetInstanceDescriptors(InspectedTexel->Instance))
                 TexelInspector->Record(
                     CommandBuffer,
                     FrameIndex,
@@ -129,21 +130,23 @@ namespace MDSS::Rendering
                     LitHeightDisplayScale,
                     SceneData.GetStaticMeshInstances()[InspectedTexel->Instance].GetTransform().GetMatrix(),
                     Resources.IsCurrentStateAB(InspectedTexel->Instance),
-                    FrameCoordinator.GetStepSerial());
+                    0U);
         }
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 5U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 5U);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase);
         }
     }
 
     void FRenderer::PrepareDisplayResources(VkCommandBuffer         CommandBuffer,
-                                            const FScene&           SceneData,
-                                            const FDebugUI&         DebugInterface,
-                                            FCommandRecordingState& Frame)
+                                            const FScene           &SceneData,
+                                            const FDebugUI         &DebugInterface,
+                                            FCommandRecordingState &Frame)
     {
         // 뷰 모드와 텍스처 준비 → 인스턴스별 overlay geometry → 파이프라인 입력 상태를 구성한다.
         bool bAnyTexelGeometry = false;
@@ -166,7 +169,6 @@ namespace MDSS::Rendering
                 bSeparableCoverageSmoothingEnabled,
                 bSharedStateTextureSmoothingEnabled);
 
-
         Frame.ViewModes = std::move(ViewModes);
         Frame.bPrecomputeCoverage = bPrecomputeCoverage;
         Frame.FragmentMode = FragmentMode;
@@ -174,9 +176,8 @@ namespace MDSS::Rendering
         RecordInstanceDisplayResources(CommandBuffer, SceneData, Frame, DemoBindings, bAnyTexelGeometry, bAnyLitView);
     }
 
-    std::vector<ERenderViewMode> FRenderer::CollectDisplayViewModes(const FDebugUI& DebugInterface,
-                                                                    bool& bAnyTexelGeometry,
-                                                                    bool& bAnyLitView) const
+    std::vector<ERenderViewMode>
+    FRenderer::CollectDisplayViewModes(const FDebugUI &DebugInterface, bool &bAnyTexelGeometry, bool &bAnyLitView) const
     {
         std::vector<ERenderViewMode> ViewModes(DebugInterface.GetViewportCount(), ERenderViewMode::Lit);
 
@@ -192,38 +193,40 @@ namespace MDSS::Rendering
         return ViewModes;
     }
 
-    void FRenderer::RecordInstanceDisplayResources(VkCommandBuffer CommandBuffer,
-                                                    const FScene& SceneData,
-                                                    FCommandRecordingState& Frame,
-                                                    const FDemoSurfaceStateBindings& DemoBindings,
-                                                    bool bAnyTexelGeometry,
-                                                    bool bAnyLitView)
+    void FRenderer::RecordInstanceDisplayResources(VkCommandBuffer                  CommandBuffer,
+                                                   const FScene                    &SceneData,
+                                                   FCommandRecordingState          &Frame,
+                                                   const FDemoSurfaceStateBindings &DemoBindings,
+                                                   bool                             bAnyTexelGeometry,
+                                                   bool                             bAnyLitView)
     {
         // GPU 디스패치·바인딩·타임스탬프 순서를 유지하면서 인스턴스별 display geometry를 기록한다.
-        const auto& FrameIndex = Frame.FrameIndex;
-        const auto& LitHeightDisplayScale = Frame.LitHeightDisplayScale;
-        const auto& QueryBase = Frame.QueryBase;
-        const auto& OverlayQueryBase = Frame.OverlayQueryBase;
+        const auto                      &FrameIndex = Frame.FrameIndex;
+        const auto                      &LitHeightDisplayScale = Frame.LitHeightDisplayScale;
+        const auto                      &QueryBase = Frame.QueryBase;
+        const auto                      &OverlayQueryBase = Frame.OverlayQueryBase;
         const bool                       bOverlayRendering = bAnyLitView && CanRenderLitOverlays();
         std::vector<std::array<bool, 3>> OverlayActive(SceneData.GetStaticMeshInstances().size(),
                                                        {false, false, false});
         std::vector<VkDescriptorSet>     OverlayGeometrySets(SceneData.GetStaticMeshInstances().size(), VK_NULL_HANDLE);
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 12U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 12U);
         if (bAnyTexelGeometry || bOverlayRendering)
         {
-            const auto& Resources = SurfaceStateSystem.GetGPUResources();
+            const auto &Resources = SurfaceStateSystem.GetGPUResources();
 
             for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
             {
-                const auto* Shared = Resources.GetInstanceSharedGeometry(Instance);
-                const auto* Descriptors = Resources.GetInstanceDescriptors(Instance);
+                const auto *Shared = Resources.GetInstanceSharedGeometry(Instance);
+                const auto *Descriptors = Resources.GetInstanceDescriptors(Instance);
 
                 if (!Shared || !Descriptors || !Shared->GetTexelMeshIndexBuffer())
                     continue;
-                const auto& MeshInstance = SceneData.GetStaticMeshInstances()[Instance];
+                const auto &MeshInstance = SceneData.GetStaticMeshInstances()[Instance];
                 const auto  ChannelCount = static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(Instance));
                 const auto  Model = MeshInstance.GetTransform().GetMatrix();
                 const bool  bStateAB = Resources.IsCurrentStateAB(Instance);
@@ -263,13 +266,15 @@ namespace MDSS::Rendering
                 constexpr std::uint32_t CombinedSurfaceKey = 0xffffU;
                 constexpr std::uint32_t AllStateChannels = std::numeric_limits<std::uint32_t>::max();
                 const auto              RecordSurface =
-                    [&](SurfaceState::FTexelGeometryPreview& Preview, std::uint32_t Key, bool bSmoothCoverage)
+                    [&](SurfaceState::FTexelGeometryPreview &Preview, std::uint32_t Key, bool bSmoothCoverage)
                 {
                     const std::uint32_t LayerQuery = OverlayQueryBase + OverlayTimestampLayersSubmitted[FrameIndex] *
                                                                             OverlayTimestampQueriesPerLayer;
                     if (TimestampQueryPool != VK_NULL_HANDLE)
-                        vkCmdWriteTimestamp(
-                            CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery);
+                        vkCmdWriteTimestamp(CommandBuffer,
+                                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool,
+                                            LayerQuery);
                     Preview.Record(
                         CommandBuffer,
                         Instance,
@@ -293,14 +298,18 @@ namespace MDSS::Rendering
                                  : 0U));
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                     {
-                        vkCmdWriteTimestamp(
-                            CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery + 1U);
-                        vkCmdWriteTimestamp(
-                            CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery + 2U);
+                        vkCmdWriteTimestamp(CommandBuffer,
+                                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool,
+                                            LayerQuery + 1U);
+                        vkCmdWriteTimestamp(CommandBuffer,
+                                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool,
+                                            LayerQuery + 2U);
                     }
 
                     VkDescriptorSet        GeometrySet = Preview.GetOutputSet(Instance);
-                    const GPU::FGPUBuffer* GeometryBuffer = &Preview.GetOutputBuffer(Instance);
+                    const GPU::FGPUBuffer *GeometryBuffer = &Preview.GetOutputBuffer(Instance);
                     const auto             SmoothChannel = [&](SurfaceState::FStateId Channel)
                     {
                         HeightFieldSmoothing->Record(CommandBuffer,
@@ -337,10 +346,14 @@ namespace MDSS::Rendering
 
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                     {
-                        vkCmdWriteTimestamp(
-                            CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery + 3U);
-                        vkCmdWriteTimestamp(
-                            CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery + 4U);
+                        vkCmdWriteTimestamp(CommandBuffer,
+                                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool,
+                                            LayerQuery + 3U);
+                        vkCmdWriteTimestamp(CommandBuffer,
+                                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool,
+                                            LayerQuery + 4U);
                     }
 
                     OverlaySides->Record(
@@ -381,30 +394,33 @@ namespace MDSS::Rendering
         }
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 13U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 13U);
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 1U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 1U);
 
         Frame.bOverlayRendering = bOverlayRendering;
         Frame.OverlayActive = std::move(OverlayActive);
         Frame.OverlayGeometrySets = std::move(OverlayGeometrySets);
     }
 
-    void FRenderer::RecordTexelGeometryViews(
-        VkCommandBuffer CommandBuffer,
-        std::size_t Instance,
-        const FCommandRecordingState& Frame,
-        const SurfaceState::FSurfaceSharedGeometryGPUResources& Shared,
-        const SurfaceState::FSurfaceStateDescriptorResources& Descriptors,
-        std::uint32_t ChannelCount,
-        const glm::mat4& Model,
-        bool bStateAB)
+    void FRenderer::RecordTexelGeometryViews(VkCommandBuffer                                         CommandBuffer,
+                                             std::size_t                                             Instance,
+                                             const FCommandRecordingState                           &Frame,
+                                             const SurfaceState::FSurfaceSharedGeometryGPUResources &Shared,
+                                             const SurfaceState::FSurfaceStateDescriptorResources   &Descriptors,
+                                             std::uint32_t                                           ChannelCount,
+                                             const glm::mat4                                        &Model,
+                                             bool                                                    bStateAB)
     {
         // Preview가 필요한 viewport마다 동일 입력 snapshot으로 Geometry compute를 기록한다.
-        const auto& ViewModes = Frame.ViewModes;
-        const auto& LitHeightDisplayScale = Frame.LitHeightDisplayScale;
+        const auto &ViewModes = Frame.ViewModes;
+        const auto &LitHeightDisplayScale = Frame.LitHeightDisplayScale;
         for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
         {
             const ERenderViewMode Mode = ViewModes[ViewportIndex];
@@ -442,13 +458,13 @@ namespace MDSS::Rendering
 // 02. Graphics Pass and Viewports
 // ============================================================
 #pragma region 02_Graphics_Pass_and_Viewports
-// render pass의 시작·viewport draw·종료를 같은 attachment에 기록한다.
+    // render pass의 시작·viewport draw·종료를 같은 attachment에 기록한다.
 
     void FRenderer::BeginSceneGraphicsPass(VkCommandBuffer               CommandBuffer,
                                            std::uint32_t                 ImageIndex,
-                                           const FCommandRecordingState& Frame)
+                                           const FCommandRecordingState &Frame)
     {
-        const auto& QueryBase = Frame.QueryBase;
+        const auto &QueryBase = Frame.QueryBase;
 
         std::array<VkClearValue, 2> ClearValues{};
         ClearValues[0].color = {{0.03F, 0.04F, 0.06F, 1.0F}};
@@ -456,31 +472,43 @@ namespace MDSS::Rendering
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 2U);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, TimestampQueryPool, QueryBase + 15U);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, TimestampQueryPool, QueryBase + 17U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 2U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 15U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 17U);
         }
 
         MainGraphicsPass.Begin(CommandBuffer, MainFramebuffers, ImageIndex, SwapchainData.GetExtent(), ClearValues);
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, TimestampQueryPool, QueryBase + 16U);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, TimestampQueryPool, QueryBase + 18U);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 14U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 16U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 18U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 14U);
         }
     }
 
     void FRenderer::RecordSceneViewports(VkCommandBuffer               CommandBuffer,
-                                         const FScene&                 SceneData,
-                                         const FDebugUI&               DebugInterface,
-                                         const FCommandRecordingState& Frame)
+                                         const FScene                 &SceneData,
+                                         const FDebugUI               &DebugInterface,
+                                         const FCommandRecordingState &Frame)
     {
         const VkExtent2D Extent = SwapchainData.GetExtent();
 
@@ -490,9 +518,14 @@ namespace MDSS::Rendering
 
             if (NormalizedViewport.z <= 0.0F || NormalizedViewport.w <= 0.0F)
                 continue;
-            const FViewportRecordingState View = ConfigureViewport(
-                CommandBuffer, SceneData, DebugInterface, Frame, ViewportIndex, NormalizedViewport, Extent);
-            const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU = SurfaceStateSystem.GetGPUResources();
+            const FViewportRecordingState                   View = ConfigureViewport(CommandBuffer,
+                                                                                     SceneData,
+                                                                                     DebugInterface,
+                                                                                     Frame,
+                                                                                     ViewportIndex,
+                                                                                     NormalizedViewport,
+                                                                                     Extent);
+            const SurfaceState::FSurfaceGPUResourceManager &SurfaceGPU = SurfaceStateSystem.GetGPUResources();
             RecordBaseMeshes(CommandBuffer, SceneData, SurfaceGPU, Frame, View);
             RecordAccumulationOverlays(CommandBuffer, SceneData, SurfaceGPU, Frame, View);
             RecordWorldReferenceAndGizmo(CommandBuffer, SceneData, DebugInterface, View);
@@ -500,31 +533,36 @@ namespace MDSS::Rendering
     }
 
     void FRenderer::RecordUIAndEndCommandBuffer(VkCommandBuffer               CommandBuffer,
-                                                std::uint32_t                 ImageIndex,
-                                                const FDebugUI&               DebugInterface,
-                                                const FCommandRecordingState& Frame)
+                                                const FDebugUI               &DebugInterface,
+                                                const FCommandRecordingState &Frame)
     {
-        const auto& QueryBase = Frame.QueryBase;
+        const auto &QueryBase = Frame.QueryBase;
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 3U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 3U);
         DebugInterface.Render(CommandBuffer);
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 19U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 19U);
 
         MainGraphicsPass.End(CommandBuffer);
 
-        if (Benchmark.bBenchmarkCaptureEnabled)
-            RecordBenchmarkScreenshot(CommandBuffer, ImageIndex);
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 20U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 20U);
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 23U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 23U);
         if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to record Vulkan command buffer.");
@@ -537,18 +575,18 @@ namespace MDSS::Rendering
 // 03. Viewport Configuration
 // ============================================================
 #pragma region 03_Viewport_Configuration
-// 각 viewport의 mode·행렬·가시성 문맥을 draw 단계에 전달한다.
+    // 각 viewport의 mode·행렬·가시성 문맥을 draw 단계에 전달한다.
 
     FRenderer::FViewportRecordingState FRenderer::ConfigureViewport(VkCommandBuffer               CommandBuffer,
-                                                                    const FScene&                 SceneData,
-                                                                    const FDebugUI&               DebugInterface,
-                                                                    const FCommandRecordingState& Frame,
+                                                                    const FScene                 &SceneData,
+                                                                    const FDebugUI               &DebugInterface,
+                                                                    const FCommandRecordingState &Frame,
                                                                     std::size_t                   ViewportIndex,
-                                                                    const glm::vec4&              NormalizedViewport,
+                                                                    const glm::vec4              &NormalizedViewport,
                                                                     VkExtent2D                    Extent)
     {
-        const auto& ViewModes = Frame.ViewModes;
-        const auto& FragmentMode = Frame.FragmentMode;
+        const auto &ViewModes = Frame.ViewModes;
+        const auto &FragmentMode = Frame.FragmentMode;
 
         const ERenderViewMode Mode = ViewModes[ViewportIndex];
         const bool            bTexelGeometry = UsesTexelGeometry(Mode) && TexelGeometryPreview && TexelGeometryPipeline;
@@ -570,7 +608,7 @@ namespace MDSS::Rendering
             vkCmdSetLineWidth(CommandBuffer, bSupportsWireframeLineWidth ? WireframeLineWidth : 1.0F);
         }
 
-        const FCamera&      ViewCamera = DebugInterface.GetViewportCamera(SceneData, ViewportIndex);
+        const FCamera      &ViewCamera = DebugInterface.GetViewportCamera(SceneData, ViewportIndex);
         const std::uint32_t MaterialUniformOffset = static_cast<std::uint32_t>(MaterialUniformStride * ViewportIndex);
         const std::uint32_t ViewportX = std::min(
             static_cast<std::uint32_t>(std::max(NormalizedViewport.x, 0.0F) * static_cast<float>(Extent.width)),
@@ -623,38 +661,40 @@ namespace MDSS::Rendering
 // 04. Base Mesh Drawing
 // ============================================================
 #pragma region 04_Base_Mesh_Drawing
-// 기본 메시의 material·pipeline·descriptor를 선택해 draw한다.
+    // 기본 메시의 material·pipeline·descriptor를 선택해 draw한다.
 
     void FRenderer::RecordBaseMeshes(VkCommandBuffer                                 CommandBuffer,
-                                     const FScene&                                   SceneData,
-                                     const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
-                                     const FCommandRecordingState&                   Frame,
-                                     const FViewportRecordingState&                  View)
+                                     const FScene                                   &SceneData,
+                                     const SurfaceState::FSurfaceGPUResourceManager &SurfaceGPU,
+                                     const FCommandRecordingState                   &Frame,
+                                     const FViewportRecordingState                  &View)
     {
-        const auto& FrameIndex = Frame.FrameIndex;
-        const auto& QueryBase = Frame.QueryBase;
-        const auto& bOverlayRendering = Frame.bOverlayRendering;
-        const auto& bPrecomputeCoverage = Frame.bPrecomputeCoverage;
-        const auto& FragmentMode = Frame.FragmentMode;
-        const auto& OverlayActive = Frame.OverlayActive;
+        const auto &FrameIndex = Frame.FrameIndex;
+        const auto &QueryBase = Frame.QueryBase;
+        const auto &bOverlayRendering = Frame.bOverlayRendering;
+        const auto &bPrecomputeCoverage = Frame.bPrecomputeCoverage;
+        const auto &FragmentMode = Frame.FragmentMode;
+        const auto &OverlayActive = Frame.OverlayActive;
 
-        const auto& ViewportIndex = View.ViewportIndex;
-        const auto& Mode = View.Mode;
-        const auto& bTexelGeometry = View.bTexelGeometry;
-        const auto& bShowSurfaceDebug = View.bShowSurfaceDebug;
-        const auto& bCanShowSurfaceDebug = View.bCanShowSurfaceDebug;
-        const auto& bWireframe = View.bWireframe;
-        const auto& bSurfaceLit = View.bSurfaceLit;
-        const auto& MaterialUniformOffset = View.MaterialUniformOffset;
-        const auto& ViewProjection = View.ViewProjection;
-        const auto& ViewFrustum = View.ViewFrustum;
+        const auto &ViewportIndex = View.ViewportIndex;
+        const auto &Mode = View.Mode;
+        const auto &bTexelGeometry = View.bTexelGeometry;
+        const auto &bShowSurfaceDebug = View.bShowSurfaceDebug;
+        const auto &bCanShowSurfaceDebug = View.bCanShowSurfaceDebug;
+        const auto &bWireframe = View.bWireframe;
+        const auto &bSurfaceLit = View.bSurfaceLit;
+        const auto &MaterialUniformOffset = View.MaterialUniformOffset;
+        const auto &ViewProjection = View.ViewProjection;
+        const auto &ViewFrustum = View.ViewFrustum;
 
         if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 6U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 6U);
         std::size_t SceneIndex = 0;
 
-        for (const FStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
+        for (const FStaticMeshInstance &Instance : SceneData.GetStaticMeshInstances())
         {
             const std::size_t CurrentSceneIndex = SceneIndex++;
 
@@ -663,21 +703,22 @@ namespace MDSS::Rendering
                 continue;
             }
 
-            const Asset::FMeshAsset& Mesh = Assets.GetMesh(Instance.GetMesh());
+            const Asset::FMeshAsset &Mesh = Assets.GetMesh(Instance.GetMesh());
 
             // Debug texel geometry can extend beyond the source mesh; its bounds are not static.
-            if (!bTexelGeometry &&
-                !IsMeshSphereVisible(
-                    ViewFrustum, Mesh.GetBoundsCenter(), Mesh.GetBoundsRadius(), Instance.GetTransform().GetMatrix()))
+            if (!bTexelGeometry && !IsMeshSphereVisible(ViewFrustum,
+                                                        Mesh.GetBoundsCenter(),
+                                                        Mesh.GetBoundsRadius(),
+                                                        Instance.GetTransform().GetMatrix()))
                 continue;
-            const SurfaceState::FSurfaceStateDescriptorResources* SurfaceDescriptors =
+            const SurfaceState::FSurfaceStateDescriptorResources *SurfaceDescriptors =
                 SurfaceGPU.GetInstanceDescriptors(CurrentSceneIndex);
             if (bShowSurfaceDebug && (!bCanShowSurfaceDebug || SurfaceDescriptors == nullptr))
             {
                 continue;
             }
 
-            const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
+            const auto *Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
             const bool bInstanceOverlay = Mode == ERenderViewMode::Lit && bOverlayRendering &&
                                           (OverlayActive[CurrentSceneIndex][0] || OverlayActive[CurrentSceneIndex][1] ||
                                            OverlayActive[CurrentSceneIndex][2]);
@@ -689,11 +730,11 @@ namespace MDSS::Rendering
             {
                 if (!Shared || !Shared->GetTexelMeshIndexBuffer())
                     continue;
-                const auto& SurfaceMesh = Shared->GetTexelMeshVariant(SurfaceTexelMeshResolution);
+                const auto &SurfaceMesh = Shared->GetTexelMeshVariant(SurfaceTexelMeshResolution);
 
                 if (!bTexelGeometry && (!SurfaceMesh.IndexBuffer || !SurfaceMesh.VertexBuffer))
                     continue;
-                const auto& Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipelines[FragmentMode];
+                const auto &Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipelines[FragmentMode];
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline->GetHandle());
                 const auto                     Layout = Pipeline->GetLayout();
                 const FStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
@@ -714,23 +755,35 @@ namespace MDSS::Rendering
                     SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex) ? SurfaceDescriptors->GetABSet()
                                                                    : SurfaceDescriptors->GetBASet(),
                     TexelGeometryPreview->GetOutputSet(CurrentSceneIndex, bTexelGeometry ? ViewportIndex + 1U : 0U)};
-                vkCmdBindDescriptorSets(
-                    CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 1, Sets.size(), Sets.data(), 0, nullptr);
+                vkCmdBindDescriptorSets(CommandBuffer,
+                                        VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                        Layout,
+                                        1,
+                                        Sets.size(),
+                                        Sets.data(),
+                                        0,
+                                        nullptr);
                 if (!bTexelGeometry)
                 {
                     const VkDescriptorSet RenderSet =
                         RenderStateTexture->GetSet(CurrentSceneIndex, bPrecomputeCoverage);
-                    vkCmdBindDescriptorSets(
-                        CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 3, 1, &RenderSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(CommandBuffer,
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            Layout,
+                                            3,
+                                            1,
+                                            &RenderSet,
+                                            0,
+                                            nullptr);
                 }
 
-                for (const auto& Section : Mesh.GetSections())
+                for (const auto &Section : Mesh.GetSections())
                 {
                     if (Section.Material >= MaterialResources.size() ||
                         Section.Surface >=
                             (bTexelGeometry ? Shared->GetTexelMeshRanges().size() : SurfaceMesh.Ranges.size()))
                         continue;
-                    const auto& Range = bTexelGeometry ? Shared->GetTexelMeshRanges()[Section.Surface]
+                    const auto &Range = bTexelGeometry ? Shared->GetTexelMeshRanges()[Section.Surface]
                                                        : SurfaceMesh.Ranges[Section.Surface];
                     if (Range.IndexCount == 0)
                         continue;
@@ -750,7 +803,7 @@ namespace MDSS::Rendering
             }
 
             const bool  bInstanceSurfaceLit = bSurfaceLit && SurfaceDescriptors;
-            const auto& Pipeline = bInstanceSurfaceLit
+            const auto &Pipeline = bInstanceSurfaceLit
                                        ? *SurfaceLitPipelines[FragmentMode]
                                        : (bCanShowSurfaceDebug ? *SurfaceDebugPipeline
                                                                : (bWireframe ? WireframePipeline : StaticMeshPipeline));
@@ -771,7 +824,7 @@ namespace MDSS::Rendering
                                sizeof(PushConstants),
                                &PushConstants);
 
-            for (const Asset::FMeshSection& Section : Mesh.GetSections())
+            for (const Asset::FMeshSection &Section : Mesh.GetSections())
             {
                 if (Section.Material >= MaterialResources.size())
                 {
@@ -793,16 +846,28 @@ namespace MDSS::Rendering
                     const VkDescriptorSet StateSet = SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex)
                                                          ? SurfaceDescriptors->GetABSet()
                                                          : SurfaceDescriptors->GetBASet();
-                    vkCmdBindDescriptorSets(
-                        CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 1, 1, &StateSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(CommandBuffer,
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            Layout,
+                                            1,
+                                            1,
+                                            &StateSet,
+                                            0,
+                                            nullptr);
                 }
 
                 if (bInstanceSurfaceLit)
                 {
                     const VkDescriptorSet RenderSet =
                         RenderStateTexture->GetSet(CurrentSceneIndex, bPrecomputeCoverage);
-                    vkCmdBindDescriptorSets(
-                        CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 2, 1, &RenderSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(CommandBuffer,
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            Layout,
+                                            2,
+                                            1,
+                                            &RenderSet,
+                                            0,
+                                            nullptr);
                 }
 
                 vkCmdDrawIndexed(CommandBuffer,
@@ -815,8 +880,10 @@ namespace MDSS::Rendering
         }
 
         if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 7U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 7U);
     }
 
 #pragma endregion
@@ -825,33 +892,33 @@ namespace MDSS::Rendering
 // 05. Accumulation Overlay Drawing
 // ============================================================
 #pragma region 05_Accumulation_Overlay_Drawing
-// 표시 mode에 맞는 적층 상면·측면 geometry를 draw한다.
+    // 표시 mode에 맞는 적층 상면·측면 geometry를 draw한다.
 
     void FRenderer::RecordAccumulationOverlays(VkCommandBuffer                                 CommandBuffer,
-                                               const FScene&                                   SceneData,
-                                               const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
-                                               const FCommandRecordingState&                   Frame,
-                                               const FViewportRecordingState&                  View)
+                                               const FScene                                   &SceneData,
+                                               const SurfaceState::FSurfaceGPUResourceManager &SurfaceGPU,
+                                               const FCommandRecordingState                   &Frame,
+                                               const FViewportRecordingState                  &View)
     {
-        const auto& FrameIndex = Frame.FrameIndex;
-        const auto& QueryBase = Frame.QueryBase;
-        const auto& bOverlayRendering = Frame.bOverlayRendering;
-        const auto& bPrecomputeCoverage = Frame.bPrecomputeCoverage;
-        const auto& FragmentMode = Frame.FragmentMode;
-        const auto& OverlayActive = Frame.OverlayActive;
-        const auto& OverlayGeometrySets = Frame.OverlayGeometrySets;
+        const auto &FrameIndex = Frame.FrameIndex;
+        const auto &QueryBase = Frame.QueryBase;
+        const auto &bOverlayRendering = Frame.bOverlayRendering;
+        const auto &bPrecomputeCoverage = Frame.bPrecomputeCoverage;
+        const auto &FragmentMode = Frame.FragmentMode;
+        const auto &OverlayActive = Frame.OverlayActive;
+        const auto &OverlayGeometrySets = Frame.OverlayGeometrySets;
 
-        const auto& ViewportIndex = View.ViewportIndex;
-        const auto& Mode = View.Mode;
-        const auto& MaterialUniformOffset = View.MaterialUniformOffset;
-        const auto& ViewProjection = View.ViewProjection;
+        const auto &ViewportIndex = View.ViewportIndex;
+        const auto &Mode = View.Mode;
+        const auto &MaterialUniformOffset = View.MaterialUniformOffset;
+        const auto &ViewProjection = View.ViewProjection;
 
         if (bOverlayRendering && Mode == ERenderViewMode::Lit)
         {
             const auto DrawLayer = [&]()
             {
-                const auto&              TopPipeline = MudOverlayTopPipelines[FragmentMode];
-                const auto&              SidePipeline = MudOverlaySidePipelines[FragmentMode];
+                const auto              &TopPipeline = MudOverlayTopPipelines[FragmentMode];
+                const auto              &SidePipeline = MudOverlaySidePipelines[FragmentMode];
                 std::vector<std::size_t> Order;
 
                 for (std::size_t I = 0; I < OverlayActive.size(); ++I)
@@ -860,14 +927,14 @@ namespace MDSS::Rendering
                 for (const std::size_t I : Order)
                 {
                     constexpr std::uint32_t Channel = 0xffffU;
-                    const auto&             Instance = SceneData.GetStaticMeshInstances()[I];
-                    const auto&             Mesh = Assets.GetMesh(Instance.GetMesh());
-                    const auto*             Shared = SurfaceGPU.GetInstanceSharedGeometry(I);
-                    const auto*             Descriptors = SurfaceGPU.GetInstanceDescriptors(I);
+                    const auto             &Instance = SceneData.GetStaticMeshInstances()[I];
+                    const auto             &Mesh = Assets.GetMesh(Instance.GetMesh());
+                    const auto             *Shared = SurfaceGPU.GetInstanceSharedGeometry(I);
+                    const auto             *Descriptors = SurfaceGPU.GetInstanceDescriptors(I);
 
                     if (!Shared || !Descriptors)
                         continue;
-                    const auto& OverlayMesh = Shared->GetTexelMeshVariant(OverlayTexelMeshResolution);
+                    const auto &OverlayMesh = Shared->GetTexelMeshVariant(OverlayTexelMeshResolution);
 
                     if (!OverlayMesh.IndexBuffer || !OverlayMesh.VertexBuffer)
                         continue;
@@ -892,7 +959,9 @@ namespace MDSS::Rendering
                                          OverlaySides->GetTopIndexOffset(I, Channel, OverlayTexelMeshResolution),
                                          VK_INDEX_TYPE_UINT32);
                     const std::array<VkDescriptorSet, 3> TopSets{
-                        StateSet, ComputedSet, OverlaySides->GetSet(I, Channel, OverlayTexelMeshResolution)};
+                        StateSet,
+                        ComputedSet,
+                        OverlaySides->GetSet(I, Channel, OverlayTexelMeshResolution)};
                     vkCmdBindDescriptorSets(CommandBuffer,
                                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                                             TopLayout,
@@ -902,18 +971,24 @@ namespace MDSS::Rendering
                                             0,
                                             nullptr);
                     const VkDescriptorSet RenderSet = RenderStateTexture->GetSet(I, bPrecomputeCoverage);
-                    vkCmdBindDescriptorSets(
-                        CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, TopLayout, 4, 1, &RenderSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(CommandBuffer,
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            TopLayout,
+                                            4,
+                                            1,
+                                            &RenderSet,
+                                            0,
+                                            nullptr);
                     const VkBuffer TopDrawBuffer =
                         OverlaySides->GetTopDrawBuffer(I, Channel, OverlayTexelMeshResolution);
                     if (bOverlayTopDrawEnabled && OverlayDisplayMode != EOverlayDisplayMode::SidesOnly)
                     {
-                        for (const auto& Section : Mesh.GetSections())
+                        for (const auto &Section : Mesh.GetSections())
                         {
                             if (Section.Material >= MaterialResources.size() ||
                                 Section.Surface >= OverlayMesh.Ranges.size())
                                 continue;
-                            const auto& Range = OverlayMesh.Ranges[Section.Surface];
+                            const auto &Range = OverlayMesh.Ranges[Section.Surface];
 
                             if (Range.IndexCount == 0)
                                 continue;
@@ -945,7 +1020,9 @@ namespace MDSS::Rendering
                                        sizeof(Push),
                                        &Push);
                     const std::array<VkDescriptorSet, 3> SideSets{
-                        StateSet, ComputedSet, OverlaySides->GetSet(I, Channel, OverlayTexelMeshResolution)};
+                        StateSet,
+                        ComputedSet,
+                        OverlaySides->GetSet(I, Channel, OverlayTexelMeshResolution)};
                     vkCmdBindDescriptorSets(CommandBuffer,
                                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                                             SideLayout,
@@ -954,18 +1031,24 @@ namespace MDSS::Rendering
                                             SideSets.data(),
                                             0,
                                             nullptr);
-                    vkCmdBindDescriptorSets(
-                        CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, SideLayout, 4, 1, &RenderSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(CommandBuffer,
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            SideLayout,
+                                            4,
+                                            1,
+                                            &RenderSet,
+                                            0,
+                                            nullptr);
                     const VkBuffer SideDrawBuffer = OverlaySides->GetDrawBuffer(I, Channel, OverlayTexelMeshResolution);
 
                     if (bOverlaySidesDrawEnabled && OverlayDisplayMode != EOverlayDisplayMode::TopOnly)
                     {
-                        for (const auto& Section : Mesh.GetSections())
+                        for (const auto &Section : Mesh.GetSections())
                         {
                             if (Section.Material >= MaterialResources.size() ||
                                 Section.Surface >= OverlayMesh.Ranges.size())
                                 continue;
-                            const auto& Range = OverlayMesh.Ranges[Section.Surface];
+                            const auto &Range = OverlayMesh.Ranges[Section.Surface];
 
                             if (Range.IndexCount == 0)
                                 continue;
@@ -1017,30 +1100,46 @@ namespace MDSS::Rendering
             };
 
             if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
-                vkCmdWriteTimestamp(
-                    CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
+                vkCmdWriteTimestamp(CommandBuffer,
+                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                    TimestampQueryPool,
+                                    QueryBase + 8U);
             DrawLayer();
 
             if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
-                vkCmdWriteTimestamp(
-                    CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
+                vkCmdWriteTimestamp(CommandBuffer,
+                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                    TimestampQueryPool,
+                                    QueryBase + 9U);
             if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
-                vkCmdWriteTimestamp(
-                    CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
+                vkCmdWriteTimestamp(CommandBuffer,
+                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                    TimestampQueryPool,
+                                    QueryBase + 10U);
             if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
-                vkCmdWriteTimestamp(
-                    CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 11U);
+                vkCmdWriteTimestamp(CommandBuffer,
+                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                    TimestampQueryPool,
+                                    QueryBase + 11U);
         }
         else if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
         {
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 11U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 8U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 9U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 10U);
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 11U);
         }
     }
 
@@ -1050,16 +1149,16 @@ namespace MDSS::Rendering
 // 06. World Reference and Gizmo Drawing
 // ============================================================
 #pragma region 06_World_Reference_and_Gizmo_Drawing
-// Scene 기준선과 선택 gizmo를 현재 viewport에 기록한다.
+    // Scene 기준선과 선택 gizmo를 현재 viewport에 기록한다.
 
     void FRenderer::RecordWorldReferenceAndGizmo(VkCommandBuffer                CommandBuffer,
-                                                 const FScene&                  SceneData,
-                                                 const FDebugUI&                DebugInterface,
-                                                 const FViewportRecordingState& View)
+                                                 const FScene                  &SceneData,
+                                                 const FDebugUI                &DebugInterface,
+                                                 const FViewportRecordingState &View)
     {
-        const auto& ViewProjection = View.ViewProjection;
+        const auto &ViewProjection = View.ViewProjection;
 
-        const FCamera& ViewCamera = *View.ViewCamera;
+        const FCamera &ViewCamera = *View.ViewCamera;
 
         if (GizmoVertexBuffer != nullptr &&
             ((bWorldGridVisible && WorldGridVertexCount > 0) || (bWorldAxisVisible && WorldAxisVertexCount > 0)))

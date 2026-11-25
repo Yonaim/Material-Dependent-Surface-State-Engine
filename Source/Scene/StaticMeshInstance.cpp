@@ -4,7 +4,6 @@
  */
 
 #include "Scene/StaticMeshInstance.h"
-
 #include <utility>
 
 namespace MDSS
@@ -13,7 +12,7 @@ namespace MDSS
 // 00. FStaticMeshInstance Implementation
 // ============================================================
 #pragma region 00_TStaticMeshInstance_Implementation
-// 정적 메시 에셋 참조와 인스턴스 transform.
+    // 정적 메시 에셋 참조와 인스턴스 transform.
 
     FStaticMeshInstance::FStaticMeshInstance(Asset::FMeshAssetHandle Mesh, FTransform InstanceTransform)
         : FStaticMeshInstance(Mesh, SurfaceState::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
@@ -25,18 +24,24 @@ namespace MDSS
                                              FTransform                              InstanceTransform,
                                              std::filesystem::path                   MeshPath,
                                              std::filesystem::path                   ProfileMapPath,
-                                             std::string                             ObjectId)
-        : Mesh(Mesh), SurfaceData(SurfaceData), InstanceTransform(std::move(InstanceTransform)),
-          SourceMeshPath(std::move(MeshPath)), SourceProfileMapPath(std::move(ProfileMapPath)), Id(std::move(ObjectId))
+                                             std::string                             ObjectId,
+                                             Asset::FSurfaceProfileOverrides         Overrides)
+        : Mesh(Mesh),
+          SurfaceData(SurfaceData),
+          InstanceTransform(std::move(InstanceTransform)),
+          SourceMeshPath(std::move(MeshPath)),
+          SourceProfileMapPath(std::move(ProfileMapPath)),
+          Id(std::move(ObjectId)),
+          ProfileOverrides(std::move(Overrides))
     {
     }
 
-    FTransform& FStaticMeshInstance::GetTransform() noexcept
+    FTransform &FStaticMeshInstance::GetTransform() noexcept
     {
         return InstanceTransform;
     }
 
-    const FTransform& FStaticMeshInstance::GetTransform() const noexcept
+    const FTransform &FStaticMeshInstance::GetTransform() const noexcept
     {
         return InstanceTransform;
     }
@@ -56,17 +61,22 @@ namespace MDSS
         SurfaceData = Handle;
     }
 
-    const std::filesystem::path& FStaticMeshInstance::GetMeshPath() const noexcept
+    const std::filesystem::path &FStaticMeshInstance::GetMeshPath() const noexcept
     {
         return SourceMeshPath;
     }
 
-    const std::filesystem::path& FStaticMeshInstance::GetProfileMapPath() const noexcept
+    const std::filesystem::path &FStaticMeshInstance::GetProfileMapPath() const noexcept
     {
         return SourceProfileMapPath;
     }
 
-    const std::string& FStaticMeshInstance::GetId() const noexcept
+    const Asset::FSurfaceProfileOverrides &FStaticMeshInstance::GetSurfaceProfileOverrides() const noexcept
+    {
+        return ProfileOverrides;
+    }
+
+    const std::string &FStaticMeshInstance::GetId() const noexcept
     {
         return Id;
     }

@@ -1,0 +1,19 @@
+# 벽돌의 표면 물과 수송 상태를 연결한다.
+version: 1
+id: BrickRunoff
+substrate: Brick
+states:
+  layer:
+    - id: SurfaceWater
+      quantity: mass
+      unit: kg
+      material: Water
+      phase: liquid
+      displayName: Surface water
+      displayMax: 1.0
+      thicknessDisplayMaxMm: 4.0
+  substrate: []
+transport:
+  state: SurfaceWater
+fields: {}
+interactions: []

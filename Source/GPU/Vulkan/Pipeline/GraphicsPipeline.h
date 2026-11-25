@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include <vulkan/vulkan.h>
-
 #include <string>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 namespace MDSS::GPU
 {
@@ -36,6 +35,7 @@ namespace MDSS::GPU
         bool        bDepthWriteEnabled = false;
         VkCompareOp DepthCompareOp = VK_COMPARE_OP_LESS;
         bool        bBlendingEnabled = false;
+        bool        bColorAlphaWriteEnabled = true;
         bool        bDynamicLineWidth = false;
 
         std::vector<VkDescriptorSetLayout> DescriptorSetLayouts;
@@ -44,25 +44,25 @@ namespace MDSS::GPU
 
     class FGraphicsPipeline
     {
-    public:
+      public:
         // Pipeline lifecycle
         /**
          * @brief 설정에 지정된 shader와 fixed-function state로 pipeline을 생성한다.
          * @throws std::runtime_error shader 파일 또는 Vulkan pipeline 생성이 실패한 경우.
          */
-        FGraphicsPipeline(VkDevice Device, VkRenderPass FRenderPass, const FGraphicsPipelineConfig& Config);
+        FGraphicsPipeline(VkDevice Device, VkRenderPass FRenderPass, const FGraphicsPipelineConfig &Config);
         ~FGraphicsPipeline();
 
-        FGraphicsPipeline(const FGraphicsPipeline&) = delete;
-        FGraphicsPipeline& operator=(const FGraphicsPipeline&) = delete;
-        FGraphicsPipeline(FGraphicsPipeline&&) = delete;
-        FGraphicsPipeline& operator=(FGraphicsPipeline&&) = delete;
+        FGraphicsPipeline(const FGraphicsPipeline &) = delete;
+        FGraphicsPipeline &operator=(const FGraphicsPipeline &) = delete;
+        FGraphicsPipeline(FGraphicsPipeline &&) = delete;
+        FGraphicsPipeline &operator=(FGraphicsPipeline &&) = delete;
 
         [[nodiscard]] VkPipeline       GetHandle() const noexcept;
         [[nodiscard]] VkPipelineLayout GetLayout() const noexcept;
 
-    private:
-        static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
+      private:
+        static VkShaderModule CreateShaderModule(VkDevice Device, const char *Path);
 
         VkDevice         Device = VK_NULL_HANDLE;
         VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;

@@ -7,11 +7,10 @@
 
 #include "SurfaceState/GPU/Resources/SurfaceGPUBufferPool.h"
 #include "SurfaceState/GPU/Resources/SurfaceGPUResources.h"
-#include "SurfaceState/Solver/SurfaceStateSolver.h"
 #include "SurfaceState/State/SurfaceInput.h"
 
 #include <glm/mat3x3.hpp>
-#include <functional>
+#include <glm/mat4x4.hpp>
 #include <map>
 #include <optional>
 #include <glm/mat4x4.hpp>
@@ -44,6 +43,35 @@ namespace MDSS
 
 namespace MDSS::SurfaceState
 {
+    enum class ESurfaceSolverTerm : std::uint8_t
+    {
+        SaturationDrive,
+        GeometryDrive,
+        Decay,
+        ConcavityRetention,
+        DistanceWeight,
+        NormalWeight,
+        ProfileBoundaryWeight,
+        MesoDirectionNormal,
+        Count
+    };
+
+    struct FSurfaceSolverDebugSettings
+    {
+        bool bStateDrivenGeometryUpdateEnabled = true;
+        std::array<bool, static_cast<std::size_t>(ESurfaceSolverTerm::Count)>
+            Enabled{true, true, true, true, true, true, true, true};
+
+        [[nodiscard]] bool IsEnabled(ESurfaceSolverTerm Term) const noexcept
+        {
+            return Enabled[static_cast<std::size_t>(Term)];
+        }
+
+        void SetEnabled(ESurfaceSolverTerm Term, bool bEnabled) noexcept
+        {
+            Enabled[static_cast<std::size_t>(Term)] = bEnabled;
+        }
+    };
 
     class FSurfaceStateSystem final
     {
@@ -79,19 +107,8 @@ namespace MDSS::SurfaceState
 // State 초기화·접촉 예약과 일회성 초기 입력 관찰자를 제어한다.
 
         // State and contact management
-        void SubmitContact(FSurfaceContactInput Contact);
         void ResetState();
         void RestartState();
-
-        /**
-         * @brief 다음 RecordStep의 CPU contact 적용 후 Solver dispatch 전에 실행할 일회성 관찰자를 설정한다.
-         * @param Observer 호출 스레드에서 동기 실행되는 읽기용 callback. 비어 있으면 예약을 취소한다.
-         * @note callback이 참조하는 객체는 호출 시점까지 유효해야 한다. 실행 전에 예약을 해제한다.
-         */
-        void SetInitialInputReadbackObserver(std::function<void()> Observer)
-        {
-            InitialInputReadbackObserver = std::move(Observer);
-        }
 
         void SetDebugProfileParameters(Asset::FSRProfileAssetHandle   Profile,
                                        FStateId                       State,
@@ -109,11 +126,6 @@ namespace MDSS::SurfaceState
         // Simulation and GPU recording
         [[nodiscard]] float GetMaximumStableDeltaTime();
         void                PrepareTransferWeightCachesForSettingChange();
-        void                RecordStep(VkCommandBuffer CommandBuffer,
-                                       float           DeltaTime,
-                                       VkQueryPool     TimestampQueryPool = VK_NULL_HANDLE,
-                                       std::uint32_t   FirstStepQuery = 0,
-                                       bool            bPrepareRenderHeight = true);
 
 #pragma endregion
 
@@ -205,17 +217,6 @@ namespace MDSS::SurfaceState
             return Execution.bCompactScratchStorageEnabled;
         }
 
-        void SetRuntimeSolverFlagsEnabled(bool bEnabled) noexcept
-        {
-            if (Solver)
-                Solver->SetRuntimeFlagsEnabled(bEnabled);
-        }
-
-        [[nodiscard]] bool IsRuntimeSolverFlagsEnabled() const noexcept
-        {
-            return Solver && Solver->IsRuntimeFlagsEnabled();
-        }
-
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept
         {
             return Execution.bSparseSolverEnabled;
@@ -270,28 +271,6 @@ namespace MDSS::SurfaceState
 // 다음 Solver에 전달할 접촉 입력을 모아 rasterization 경계를 관리한다.
 
         // Pending contact application
-        void QueueInitialContacts();
-        void ApplyPendingContacts();
-
-        struct FContactInputBatch
-        {
-            std::size_t InstanceCount = 0;
-            std::size_t ChannelCount = 0;
-            std::vector<std::vector<float>> InputDeltas;
-            std::vector<std::vector<std::uint8_t>> InputGroupFlags;
-            std::vector<std::vector<std::uint32_t>> InputGroupMasks;
-            std::vector<std::uint32_t> InputChannelMasks;
-            std::vector<bool> bInstanceHasInput;
-        };
-
-        void RasterizePendingContact(const FSurfaceContactInput& Contact, FContactInputBatch& Batch);
-        void RasterizeValidatedContact(const FSurfaceContactInput& Contact, FContactInputBatch& Batch);
-        [[nodiscard]] std::optional<glm::vec3> ResolveMappedContactInfluenceCenter(
-            const FSurfaceContactInput& Contact, const FStaticMeshInstance& Instance,
-            const FSharedSurfaceGeometryData& Geometry, const glm::mat4& Model,
-            const std::vector<FSurfaceTexelGeometry>& Texels) const;
-        void UploadRasterizedContacts(const FContactInputBatch& Batch);
-
 #pragma endregion
 
 // ============================================================
@@ -300,15 +279,12 @@ namespace MDSS::SurfaceState
 #pragma region 05_Resource_Ownership_and_Runtime_State
 // GPU 소유 객체와 실행 cache를 분리해 시스템 수명에 연결한다.
 
-        std::function<void()>                       InitialInputReadbackObserver;
-        const GPU::FVulkanContext&                  Context;
-        const Asset::FAssetManager&                 Assets;
-        const FSurfaceDataManager&                  SurfaceData;
-        const FScene&                               Scene;
+        const GPU::FVulkanContext                  &Context;
+        const Asset::FAssetManager                 &Assets;
+        const FSurfaceDataManager                  &SurfaceData;
+        const FScene                               &Scene;
         FSurfaceGPUBufferPool                       BufferPool;
         std::unique_ptr<FSurfaceGPUResourceManager> GPUResources;
-        std::unique_ptr<FSurfaceStateSolver>        Solver;
-        std::vector<FSurfaceContactInput>           PendingContacts;
         struct FSolverExecutionState
         {
             FSurfaceSolverDebugSettings DebugSolverSettings;
@@ -327,8 +303,6 @@ namespace MDSS::SurfaceState
             bool                   bActiveChannelMaskEnabled = true;
             bool                   bPerWorkgroupChannelMaskEnabled = true;
             bool                   bSparseSimulationGeometryEnabled = true;
-            bool                   bSeedPersistentActivityOnNextStep = true;
-            std::vector<bool>      PendingInputActivation;
             float                  CachedMaximumStableDeltaTime = 1.0F / 60.0F;
             std::vector<glm::mat3> StableDeltaTimeModelMatrices;
         };

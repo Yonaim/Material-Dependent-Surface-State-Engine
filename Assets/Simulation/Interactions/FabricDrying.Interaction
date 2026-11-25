@@ -1,0 +1,6 @@
+# 재사용할 국소 규칙의 모델과 계수. 적용 상태와 입력은 SurfaceProfile에서 연결한다.
+version: 1
+id: FabricDrying
+model: FirstOrderDrying
+# 바탕에 남은 흡수수에 비례하는 1차 건조 계수 [1/s].
+ratePerSecond: 0.09

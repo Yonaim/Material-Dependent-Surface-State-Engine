@@ -1,0 +1,18 @@
+# 씬의 절차가 계산하는 상태의 저장 위치와 표시 범위를 선언한다.
+version: 1
+id: WaterRunoff
+# 표면의 저장 칸을 정의한다. material과 phase는 Materials의 물성을 참조한다.
+states:
+  # 표면 위에 놓인 상태. 질량은 kg으로 저장하고 표시 범위는 kg/m² 또는 mm로 지정한다.
+  layer:
+    - id: SurfaceWater
+      quantity: mass
+      unit: kg
+      material: Water
+      phase: liquid
+      displayName: Surface water
+      displayMax: 1.0
+      thicknessDisplayMaxMm: 4.0
+  substrate: []
+# use에 공유 규칙 ID를 쓰고 from, to, inputs 등으로 이 프로파일의 상태와 필드에 연결한다.
+interactions: []

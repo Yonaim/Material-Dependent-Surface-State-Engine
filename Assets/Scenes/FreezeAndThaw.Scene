@@ -1,0 +1,24 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "FreezeAndThaw",
+  "geometry": "PhaseTray",
+  "geometrySamples": [
+    36,
+    28
+  ],
+  "simulationCells": [
+    1,
+    1
+  ],
+  "sizeM": [
+    0.084,
+    0.056
+  ],
+  "smoothDisplay": false,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "initialLiquidKg": 0.012,
+  "surfaceProfile": "WaterAndIceSurface"
+}

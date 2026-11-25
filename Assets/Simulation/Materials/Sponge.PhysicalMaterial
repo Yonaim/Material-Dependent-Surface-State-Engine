@@ -1,0 +1,15 @@
+# 재사용하는 재질의 물성 및 외관을 정의한다.
+version: 1
+id: Sponge
+# PBR 외관과 텍스처. 이 값으로 수송이나 반응 속도를 바꾸지 않는다.
+appearance:
+  dryRoughness: 0.8
+  wetRoughness: 0.24
+  refractiveIndex: 1.46
+  specularScale: 1.0
+  # 깊이별 젖음 표현에 쓰는 시연값이다. 확산계수의 단위는 m²/s다.
+  wetnessDepth:
+    initialContrast: 0.3
+    diffusivityM2S: 0.000008
+  colorTexture: AmbientCG/Sponge001.png
+  normalTexture: AmbientCG/Sponge001Normal.png

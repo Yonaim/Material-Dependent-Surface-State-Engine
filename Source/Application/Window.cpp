@@ -4,12 +4,10 @@
  */
 
 #include "Application/Window.h"
-
 #include "Logger/Logger.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <mutex>
@@ -27,14 +25,15 @@ namespace MDSS
 // 00. Window Lifecycle
 // ============================================================
 #pragma region 00_Window_Lifecycle
-// GLFW 창과 입력 callback을 생성하고 종료 시 소유 창을 해제한다.
+    // GLFW 창과 입력 callback을 생성하고 종료 시 소유 창을 해제한다.
 
-    FWindow::FWindow(std::uint32_t Width, std::uint32_t Height, std::string Title)
+    FWindow::FWindow(std::uint32_t Width, std::uint32_t Height, std::string Title, bool bVisible)
     {
         InitializeGLFW();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_VISIBLE, bVisible ? GLFW_TRUE : GLFW_FALSE);
 
         Handle = glfwCreateWindow(static_cast<int>(Width), static_cast<int>(Height), Title.c_str(), nullptr, nullptr);
 
@@ -48,19 +47,19 @@ namespace MDSS
         glfwSetFramebufferSizeCallback(Handle, FramebufferSizeCallback);
 
         FLogger::Info("TApplication",
-                        "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
+                      "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
     }
 
-FWindow::~FWindow()
-{
-    if (Handle != nullptr)
+    FWindow::~FWindow()
     {
-        glfwDestroyWindow(Handle);
-        Handle = nullptr;
-    }
+        if (Handle != nullptr)
+        {
+            glfwDestroyWindow(Handle);
+            Handle = nullptr;
+        }
 
-    TerminateGLFW();
-}
+        TerminateGLFW();
+    }
 
 #pragma endregion
 
@@ -68,7 +67,7 @@ FWindow::~FWindow()
 // 01. Window State and Events
 // ============================================================
 #pragma region 01_Window_State_and_Events
-// 창 크기·종료 요청·이벤트 처리를 현재 프레임에 노출한다.
+    // 창 크기·종료 요청·이벤트 처리를 현재 프레임에 노출한다.
 
     bool FWindow::ShouldClose() const
     {
@@ -80,7 +79,7 @@ FWindow::~FWindow()
         glfwPollEvents();
     }
 
-    GLFWwindow* FWindow::GetNativeHandle() const noexcept
+    GLFWwindow *FWindow::GetNativeHandle() const noexcept
     {
         return Handle;
     }
@@ -95,7 +94,7 @@ FWindow::~FWindow()
         bFramebufferResized = false;
     }
 
-    void FWindow::GetFramebufferSize(std::uint32_t& Width, std::uint32_t& Height) const noexcept
+    void FWindow::GetFramebufferSize(std::uint32_t &Width, std::uint32_t &Height) const noexcept
     {
         int FramebufferWidth = 0;
         int FramebufferHeight = 0;
@@ -118,9 +117,9 @@ FWindow::~FWindow()
         }
     }
 
-    void FWindow::FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height)
+    void FWindow::FramebufferSizeCallback(GLFWwindow *WindowHandle, int Width, int Height)
     {
-        auto* WindowInstance = static_cast<FWindow*>(glfwGetWindowUserPointer(WindowHandle));
+        auto *WindowInstance = static_cast<FWindow *>(glfwGetWindowUserPointer(WindowHandle));
 
         if (WindowInstance == nullptr)
         {
@@ -139,7 +138,7 @@ FWindow::~FWindow()
 // 02. GLFW Lifecycle
 // ============================================================
 #pragma region 02_GLFW_Lifecycle
-// 창 사용에 필요한 GLFW 초기화와 종료 순서를 관리한다.
+    // 창 사용에 필요한 GLFW 초기화와 종료 순서를 관리한다.
 
     void FWindow::InitializeGLFW()
     {

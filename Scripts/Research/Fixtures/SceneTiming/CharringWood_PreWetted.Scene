@@ -1,0 +1,41 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "CharringWood_PreWetted",
+  "geometry": "WoodPatch",
+  "geometrySamples": [
+    56,
+    40
+  ],
+  "simulationCells": [
+    14,
+    10
+  ],
+  "sizeM": [
+    0.14,
+    0.1
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0.0024,
+  "maxTiltRadians": 0,
+  "states": {
+    "layer": [
+      "SurfaceWater"
+    ],
+    "substrate": [
+      "CharFraction"
+    ]
+  },
+  "pourSeconds": 0.1,
+  "scheduledInlet": {
+    "centerM": [
+      -0.0014,
+      0.006
+    ],
+    "sizeM": [
+      0.044,
+      0.042
+    ]
+  }
+}

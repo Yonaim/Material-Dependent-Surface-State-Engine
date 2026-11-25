@@ -1,5 +1,41 @@
 # Work Log — 코드 변경 및 문서 동기화
 
+## 2026-11-26 — 아래층 수위로 위층 바닥 복원
+
+- CPU·Vulkan 수송과 표시에서 아래층이 채운 위치만 위층 바닥에 반영한다. 각 서브스텝의 시작 수위로 공유 턱과 수용·잔류 부피를 평가하고, 질량을 확정한 뒤 아래에서 위로 수위를 갱신한다.
+- 같은 저장 영역에 3 mm 높이의 양쪽 어깨와 홈을 두고 평평할 때와 기울었을 때의 질량·수위를 비교했다. 5 mm 턱의 통과 여부와 실제 월류 기록도 CPU·Vulkan에서 확인했다. [실험 기록](../05_Experiments/04_Surface-Simulation-Validation.md#아래층이-채운-형상과-위층-수위)
+
+## 2026-11-26 — 표면 시뮬레이션 코드 명명과 책임 분리
+
+- 공용 도메인·초기 상태, CPU 기준 스텝, 단일 GPU 솔버, 그래픽 스냅샷을 파일 단위로 분리했다. 대표 액체의 상태와 GPU 읽기 진단의 범위를 타입에 반영했다.
+- 장면·실행 옵션·GPU 타이밍과 셰이더 파일명을 갱신했다. Agent-Vault 코드 맵·계약·흐름, CMake 셰이더 목록과 C++ 호출부를 동기화했다.
+- 변경 C++의 clang-format과 Region 후처리, MSVC Debug 빌드, Heated Water Channel 에디터 8프레임 실행을 확인했다. 시뮬레이션 셰이더 7개는 Vulkan 1.2 SPIR-V 검사를 통과했고 디버그 심볼 제거 후 전후 바이너리가 일치했다. 텍스처 켜기·끄기 캡처도 각각 전후 PNG가 일치했다.
+- Surface Simulation의 Reference·GPU·Capture 회귀 3건을 모두 통과했다. CPU 기준 결과 35개가 이전 빌드와 정확히 일치했고 GPU 검증은 마른 격자와 국소 주입에서 희소·전체 실행의 결과 일치를 확인했다. [CTest 기록](../../../Build/SurfaceNamingVerification/ctest.log)
+
+## 2026-11-26 — ThinFilm 실행 통합과 씬 검색 제거
+
+- Code Style, C++·GLSL, 주석·Region과 Surface Simulation 계약을 확인했다. 12개 수송 프로파일을 공통 ThinFilm 스키마로 묶었다. CPU·GPU는 각 층의 경계 유량과 같은 셀의 영역·바닥 규칙을 한 흐름에서 실행한다. 외투의 셀 단위 눈·흡수수와 고정 스텝당 한 번의 건조를 보존했다.
+- Scenes 패널의 텍스트 검색 위젯, 검색 상태와 문자열 필터를 제거했다. 그룹과 비교 조건 선택은 유지했다. Agent-Vault 계약·코드 맵·에디터 문서 및 개인 볼트의 모델·GPU 패스와 분류 그림을 맞췄다.
+- clang-format·Region 처리, MSVC Debug, Vulkan 1.2 SPIR-V, 15개 씬 CPU/Vulkan 검사, Python 6건, 비교 씬 실행과 외투 캡처를 확인했다. [측정 결과](../05_Experiments/04_Surface-Simulation-Validation.md#thinfilm-실행-경로-통합)
+
+## 2026-11-26 — 층별 수송 물성과 유효 바닥
+
+- Code Style, C++·GLSL, 주석·Region 규칙과 Surface Simulation의 수송·상태 계약을 확인했다. 단일층도 공유 재질의 안식각과 항복응력을 읽는다. CPU는 같은 면 유량 함수, GPU는 같은 이동성 함수와 면 거리 계산을 두 경로에서 사용한다. 다층의 유효 바닥은 각 수송 서브스텝의 시작 질량과 층 순서로 계산한다.
+- clang-format·Region 처리 후 MSVC Debug 빌드와 Vulkan 1.2 SPIR-V 검사를 통과했다. 단일·다층의 뉴턴 극한, 마찰·항복 조건, 정지한 아래층의 턱과 월류를 검증했다. 외투, 얼음 마개, 흙이 덮인 돌길과 계단형 수조의 CPU/Vulkan 검사 및 Python 기준 검사 6건을 통과했다. 수송 계약·소스 맵·개인 볼트의 Transport 및 결합 문서를 갱신했다. [검증 결과](../05_Experiments/04_Surface-Simulation-Validation.md#층별-이동성과-정지한-아래층의-턱)
+
+## 2026-11-25 — 공통 바닥 온도 상태
+
+- 코드 작성·주석·포맷 규칙을 확인했다. 씬 로더가 `SubstrateTemperature`를 공통 등록하고, CPU·GPU가 물 반응 전에 셀의 바닥 온도를 갱신한다. Snow on Canvas의 용융 규칙을 이 상태에 연결했다. [상태 계약](../02_Architecture/01_Contracts/08_Surface-Simulation.md)과 [코드 맵](../02_Architecture/02_Source/03_Surface-Simulation.md)을 갱신했다.
+- 표준 실행 파일을 사용 중인 에디터와 분리해 MSVC Debug와 계산 셰이더를 빌드했다. 배포 씬과 변형의 `--reference-surface` 및 `--check-surface`를 통과했다. CPU·GPU에서 물 반응 없이 선택한 셀의 온도 입력과 입력 종료를 확인했다. 최종 실행 파일의 Snow on Canvas 검사와 벽돌 바닥 상태 뷰 캡처를 확인했다. 로그와 캡처는 `Build/SubstrateTemperature`에 보관했다.
+
+## 2026-11-24 — 공통 계산 격자의 분리된 액체 홈과 형상 세트
+
+- C++·GLSL·Python, Code Style, Surface Lab 상태·GPU 계약, 검증과 성능 기록 절차를 확인했다.
+- 형상 전처리에서 계산 셀 내부의 홈과 접촉을 찾고, CPU 및 Vulkan 수송이 각 홈의 질량과 수위를 계산한다. 표시 경로는 형상 표본에 속한 홈의 수위를 읽는다. 부모 셀 단위 반응을 유지하고, 벽돌 전용 격자 절단을 제거했다.
+- `Assets/Geometry` 바로 아래에 원본 OBJ, 노멀, 높이, 변위 맵을 세 형상별로 배치했다. Scene 탭과 CLI에서 교체한다. 빌드를 막던 장면 v2 버전 전달, JSON 타입 비교, 캐시 해시 문자열 인자를 바로잡았다.
+- [상태 계약](../02_Architecture/01_Contracts/08_Surface-Lab.md), [코드 맵](../02_Architecture/02_Source/03_Surface-Lab.md), [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md), Obsidian의 Implementation Rationale과 실험 기록을 갱신했다.
+- MSVC Debug 빌드와 SurfaceLabReference·SurfaceLabGpu·SurfaceLabCapture 세 테스트, SPIR-V 6개, 형상 3세트 × 입력 4종을 검증했다. 3 mm 고개와 6 mm 턱의 수평·기울임 전달을 확인하고, RX 6700 XT에서 두 형상의 GPU 타임스탬프를 수집했다.
+
 > **모든 코드 변경 작업에서 작업 단위 최소 1건 기록 필수.** 상세 설계는 Architecture/ADR, 실제 테스트 결과는 Experiments에 기록한다.
 
 | 날짜 | 작업 / 코드 범위 | 읽은 주요 문서 | 갱신 문서 또는 영향 없음 근거 | 검증 상태 |

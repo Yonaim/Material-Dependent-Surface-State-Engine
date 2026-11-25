@@ -4,12 +4,12 @@
  */
 
 #include "Scene/SceneLoader.h"
-
 #include "AssetManager/Core/AssetManager.h"
 #include "Scene/StaticMeshInstance.h"
 #include "SurfaceState/Runtime/SurfaceDataManager.h"
 #include "SurfaceState/Types/SurfaceStateTypes.h"
-
+#include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
@@ -21,11 +21,15 @@
 
 namespace MDSS
 {
+// ============================================================
+// 00. Scene Document Parsing
+// ============================================================
+#pragma region 00_Scene_Document_Parsing
     namespace
     {
         using FJson = nlohmann::json;
 
-        const FJson& RequireMember(const FJson& Object, const char* Name, const std::string& Context)
+        const FJson &RequireMember(const FJson &Object, const char *Name, const std::string &Context)
         {
             if (!Object.is_object())
             {
@@ -42,11 +46,11 @@ namespace MDSS
             return *Found;
         }
 
-        std::string ReadString(const FJson& Object, const char* Name, const std::string& Context)
+        std::string ReadString(const FJson &Object, const char *Name, const std::string &Context)
         {
-            const FJson& Value = RequireMember(Object, Name, Context);
+            const FJson &Value = RequireMember(Object, Name, Context);
 
-            if (!Value.is_string() || Value.get_ref<const std::string&>().empty())
+            if (!Value.is_string() || Value.get_ref<const std::string &>().empty())
             {
                 throw std::runtime_error(Context + "." + Name + " must be a non-empty string.");
             }
@@ -54,26 +58,26 @@ namespace MDSS
             return Value.get<std::string>();
         }
 
-        std::uint32_t ReadVersion(const FJson& Value)
+        std::uint32_t ReadVersion(const FJson &Value)
         {
             if (!Value.is_number_unsigned() && !Value.is_number_integer())
             {
-                throw std::runtime_error("Scene version must be the integer 1.");
+                throw std::runtime_error("Scene version must be an integer.");
             }
 
             const std::int64_t Version = Value.get<std::int64_t>();
 
-            if (Version != 1)
+            if (Version != 1 && Version != 2)
             {
-                throw std::runtime_error("Unsupported Scene version; expected version 1.");
+                throw std::runtime_error("Unsupported Scene version; expected version 1 or 2.");
             }
 
             return static_cast<std::uint32_t>(Version);
         }
 
-        std::uint32_t ReadSimulationResolution(const FJson& Value)
+        std::uint32_t ReadSimulationResolution(const FJson &Value)
         {
-            constexpr const char* Error = "Scene simulationResolution must be the integer 128, 256 or 512.";
+            constexpr const char *Error = "Scene simulationResolution must be the integer 128, 256 or 512.";
             std::uint64_t         Number = 0;
 
             if (Value.is_number_unsigned())
@@ -93,7 +97,7 @@ namespace MDSS
                 throw std::runtime_error(Error);
             }
 
-            for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
+            for (const auto &Preset : SurfaceState::SurfaceSimulationResolutionPresets)
             {
                 if (Number == Preset.Resolution)
                     return Preset.Resolution;
@@ -102,7 +106,7 @@ namespace MDSS
             throw std::runtime_error(Error);
         }
 
-        float ReadFiniteFloat(const FJson& Value, const std::string& Context)
+        float ReadFiniteFloat(const FJson &Value, const std::string &Context)
         {
             if (!Value.is_number())
             {
@@ -120,7 +124,7 @@ namespace MDSS
             return Result;
         }
 
-        glm::vec3 ReadVector3(const FJson& Value, const std::string& Context)
+        glm::vec3 ReadVector3(const FJson &Value, const std::string &Context)
         {
             if (!Value.is_array() || Value.size() != 3)
             {
@@ -132,7 +136,7 @@ namespace MDSS
                     ReadFiniteFloat(Value[2], Context + "[2]")};
         }
 
-        FTransform ReadTransform(const FJson& Object, const std::string& Context)
+        FTransform ReadTransform(const FJson &Object, const std::string &Context)
         {
             FTransform Transform;
 
@@ -164,10 +168,10 @@ namespace MDSS
             return Transform;
         }
 
-        std::filesystem::path ResolveScenePath(const std::filesystem::path& SceneDirectory,
-                                               const std::string&           PathText,
-                                               const std::string&           Field,
-                                               const char*                  ExpectedExtension)
+        std::filesystem::path ResolveScenePath(const std::filesystem::path &SceneDirectory,
+                                               const std::string           &PathText,
+                                               const std::string           &Field,
+                                               const char                  *ExpectedExtension)
         {
             const std::filesystem::path RelativePath(PathText);
 
@@ -185,7 +189,41 @@ namespace MDSS
         }
 
         // Scene document parsing and schema checks are kept below the top-level load flow.
-        FJson ReadSceneDocument(const std::filesystem::path& Path)
+        std::filesystem::path ResolveSurfaceProfile(const std::filesystem::path &SceneDirectory,
+                                                    const std::string           &Reference)
+        {
+            const bool bId = !Reference.empty() && std::ranges::all_of(Reference,
+                                                                       [](const char C)
+                                                                       {
+                                                                           return (C >= 'A' && C <= 'Z') ||
+                                                                                  (C >= 'a' && C <= 'z') ||
+                                                                                  (C >= '0' && C <= '9') || C == '_';
+                                                                       });
+            if (bId)
+                return std::filesystem::path(MDSS_ASSET_DIR) / "Simulation" / "Profiles" /
+                       (Reference + ".SurfaceProfile");
+            return ResolveScenePath(SceneDirectory, Reference, "surfaceProfile", ".SurfaceProfile");
+        }
+
+        Asset::FSurfaceProfileOverrides ReadProfileOverrides(const FJson &Value, const std::filesystem::path &Directory)
+        {
+            if (!Value.is_object())
+                throw std::runtime_error("surfaceProfileOverrides must be an object keyed by mesh surface ID.");
+            Asset::FSurfaceProfileOverrides Overrides;
+            for (const auto &[Key, Profile] : Value.items())
+            {
+                SurfaceState::FSurfaceLocalID Id{};
+                const auto [End, Error] = std::from_chars(Key.data(), Key.data() + Key.size(), Id);
+                if (Error != std::errc{} || End != Key.data() + Key.size() || std::to_string(Id) != Key)
+                    throw std::runtime_error("Invalid surfaceProfileOverrides surface ID: " + Key);
+                Overrides.emplace(Id,
+                                  Profile.is_null() ? std::filesystem::path{}
+                                                    : ResolveSurfaceProfile(Directory, Profile.get<std::string>()));
+            }
+            return Overrides;
+        }
+
+        FJson ReadSceneDocument(const std::filesystem::path &Path)
         {
             std::ifstream Input(Path);
 
@@ -199,7 +237,7 @@ namespace MDSS
             {
                 Input >> Root;
             }
-            catch (const FJson::exception& Exception)
+            catch (const FJson::exception &Exception)
             {
                 throw std::runtime_error("Invalid Scene JSON in '" + Path.string() + "': " + Exception.what());
             }
@@ -207,7 +245,7 @@ namespace MDSS
             return Root;
         }
 
-        const FJson& ValidateSceneDocument(const FJson& Root)
+        const FJson &ValidateSceneDocument(const FJson &Root)
         {
             if (!Root.is_object())
             {
@@ -220,7 +258,7 @@ namespace MDSS
             }
 
             (void)ReadVersion(RequireMember(Root, "version", "Scene"));
-            const FJson& Objects = RequireMember(Root, "objects", "Scene");
+            const FJson &Objects = RequireMember(Root, "objects", "Scene");
 
             if (!Objects.is_array())
             {
@@ -230,9 +268,7 @@ namespace MDSS
             return Objects;
         }
 
-        void ApplySceneSettings(FScene& Scene,
-                                const FJson& Root,
-                                std::optional<std::uint32_t> ResolutionOverride)
+        void ApplySceneSettings(FScene &Scene, const FJson &Root, std::optional<std::uint32_t> ResolutionOverride)
         {
             if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
             {
@@ -254,7 +290,7 @@ namespace MDSS
                 if (!Camera->is_object())
                     throw std::runtime_error("Scene.camera must be an object.");
                 const std::string Context = "Scene.camera";
-                FCamera&          MainCamera = Scene.GetMainCamera();
+                FCamera          &MainCamera = Scene.GetMainCamera();
                 MainCamera.SetPosition(ReadVector3(RequireMember(*Camera, "position", Context), Context + ".position"));
                 MainCamera.SetTarget(ReadVector3(RequireMember(*Camera, "target", Context), Context + ".target"));
                 const float FieldOfView = ReadFiniteFloat(RequireMember(*Camera, "verticalFieldOfViewDegrees", Context),
@@ -263,21 +299,20 @@ namespace MDSS
                     throw std::runtime_error("Scene.camera.verticalFieldOfViewDegrees must be between 0 and 180.");
                 MainCamera.SetVerticalFieldOfViewDegrees(FieldOfView);
             }
-
         }
 
-        std::unordered_set<std::string> LoadSceneObjects(
-            FScene& Scene,
-            const FJson& Objects,
-            const std::filesystem::path& SceneDirectory,
-            Asset::FAssetManager& Assets,
-            SurfaceState::FSurfaceDataManager& SurfaceData)
+        std::unordered_set<std::string> LoadSceneObjects(FScene                            &Scene,
+                                                         const FJson                       &Objects,
+                                                         int                                SceneVersion,
+                                                         const std::filesystem::path       &SceneDirectory,
+                                                         Asset::FAssetManager              &Assets,
+                                                         SurfaceState::FSurfaceDataManager &SurfaceData)
         {
             std::unordered_set<std::string> ObjectIds;
 
             for (std::size_t Index = 0; Index < Objects.size(); ++Index)
             {
-                const FJson&      Object = Objects[Index];
+                const FJson      &Object = Objects[Index];
                 const std::string Context = "Scene objects[" + std::to_string(Index) + "]";
                 std::string       ObjectId;
 
@@ -293,21 +328,39 @@ namespace MDSS
                     ResolveScenePath(SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
                 const Asset::FMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
 
-                SurfaceState::FSurfaceRuntimeDataHandle SurfaceDataHandle = SurfaceState::InvalidSurfaceRuntimeDataHandle;
-                std::filesystem::path                   DistributionPath;
+                SurfaceState::FSurfaceRuntimeDataHandle SurfaceDataHandle =
+                    SurfaceState::InvalidSurfaceRuntimeDataHandle;
+                std::filesystem::path           DistributionPath;
+                Asset::FSurfaceProfileOverrides Overrides;
 
                 if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
                 {
-                    if (!Distribution->is_string() || Distribution->get_ref<const std::string&>().empty())
+                    if (!Distribution->is_string() || Distribution->get_ref<const std::string &>().empty())
                     {
                         throw std::runtime_error(Context + ".surfaceProfileMap must be a non-empty path string.");
                     }
 
-                    DistributionPath = ResolveScenePath(
-                        SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
-                    SurfaceDataHandle =
-                        SurfaceData.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
+                    DistributionPath = ResolveScenePath(SceneDirectory,
+                                                        Distribution->get<std::string>(),
+                                                        "surfaceProfileMap",
+                                                        ".SurfaceProfileMap");
                 }
+                if (Object.contains("surfaceProfile") || Object.contains("surfaceProfileOverrides"))
+                {
+                    if (SceneVersion != 2 || !DistributionPath.empty())
+                        throw std::runtime_error(Context +
+                                                 " inline surface profile binding requires Scene v2 and no sidecar.");
+                    if (Object.contains("surfaceProfile"))
+                        DistributionPath =
+                            ResolveSurfaceProfile(SceneDirectory, ReadString(Object, "surfaceProfile", Context));
+                    if (Object.contains("surfaceProfileOverrides"))
+                        Overrides = ReadProfileOverrides(Object.at("surfaceProfileOverrides"), SceneDirectory);
+                }
+                if (!DistributionPath.empty() || !Overrides.empty())
+                    SurfaceDataHandle = SurfaceData.LoadSurfaceData(MeshHandle,
+                                                                    DistributionPath,
+                                                                    Scene.GetSimulationResolution(),
+                                                                    Overrides);
 
                 FTransform Transform;
 
@@ -316,16 +369,20 @@ namespace MDSS
                     Transform = ReadTransform(*TransformJson, Context + ".transform");
                 }
 
-                Scene.AddStaticMeshInstance(FStaticMeshInstance(
-                    MeshHandle, SurfaceDataHandle, Transform, MeshPath, DistributionPath, std::move(ObjectId)));
+                Scene.AddStaticMeshInstance(FStaticMeshInstance(MeshHandle,
+                                                                SurfaceDataHandle,
+                                                                Transform,
+                                                                MeshPath,
+                                                                DistributionPath,
+                                                                std::move(ObjectId),
+                                                                std::move(Overrides)));
             }
 
             return ObjectIds;
         }
 
-        void LoadInitialSceneContacts(FScene& Scene,
-                                      const FJson& Root,
-                                      const std::unordered_set<std::string>& ObjectIds)
+        void
+        LoadInitialSceneContacts(FScene &Scene, const FJson &Root, const std::unordered_set<std::string> &ObjectIds)
         {
             if (const auto Contacts = Root.find("initialContacts"); Contacts != Root.end())
             {
@@ -333,7 +390,7 @@ namespace MDSS
                     throw std::runtime_error("Scene.initialContacts must be an array.");
                 for (std::size_t Index = 0; Index < Contacts->size(); ++Index)
                 {
-                    const FJson&         Contact = (*Contacts)[Index];
+                    const FJson         &Contact = (*Contacts)[Index];
                     const std::string    Context = "Scene.initialContacts[" + std::to_string(Index) + "]";
                     FSceneInitialContact Initial;
                     Initial.Target = ReadString(Contact, "target", Context);
@@ -346,21 +403,20 @@ namespace MDSS
                     Initial.WorldPosition =
                         ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
                     Initial.Radius = ReadFiniteFloat(RequireMember(Contact, "radius", Context), Context + ".radius");
-                    Initial.Strength = ReadFiniteFloat(RequireMember(Contact, "strength", Context), Context + ".strength");
+                    Initial.Strength =
+                        ReadFiniteFloat(RequireMember(Contact, "strength", Context), Context + ".strength");
 
                     if (const auto Falloff = Contact.find("falloff"); Falloff != Contact.end())
                         Initial.Falloff = ReadFiniteFloat(*Falloff, Context + ".falloff");
                     if (Initial.Radius <= 0.0F || Initial.Strength < 0.0F || Initial.Falloff < 0.0F)
-                        throw std::runtime_error(Context + " requires positive radius and nonnegative strength/falloff.");
+                        throw std::runtime_error(Context +
+                                                 " requires positive radius and nonnegative strength/falloff.");
                     Scene.AddInitialContact(std::move(Initial));
                 }
             }
-
         }
 
-        void LoadSceneAnimation(FScene& Scene,
-                                const FJson& Root,
-                                const std::filesystem::path& SceneDirectory)
+        void LoadSceneAnimation(FScene &Scene, const FJson &Root, const std::filesystem::path &SceneDirectory)
         {
             if (const auto Animation = Root.find("animation"); Animation != Root.end())
             {
@@ -368,30 +424,31 @@ namespace MDSS
                     ResolveScenePath(SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
                 Scene.SetDemoAnimation(AnimationPath, LoadDemoAnimation(AnimationPath, Scene));
             }
-
         }
     } // namespace
+#pragma endregion
 
 // ============================================================
-// 00. Scene Loading
+// 01. Scene Loading
 // ============================================================
-#pragma region 00_Scene_Loading
-// Scene 파일의 자산 참조·객체·설정을 실행 자료로 구성한다.
+#pragma region 01_Scene_Loading
+    // Scene 파일의 자산 참조·객체·설정을 실행 자료로 구성한다.
 
-    FScene FSceneLoader::Load(const std::filesystem::path&       Path,
-                              Asset::FAssetManager&              Assets,
-                              SurfaceState::FSurfaceDataManager& SurfaceData,
+    FScene FSceneLoader::Load(const std::filesystem::path       &Path,
+                              Asset::FAssetManager              &Assets,
+                              SurfaceState::FSurfaceDataManager &SurfaceData,
                               std::optional<std::uint32_t>       ResolutionOverride)
     {
-        const FJson Root = ReadSceneDocument(Path);
-        const FJson& Objects = ValidateSceneDocument(Root);
+        const FJson                 Root = ReadSceneDocument(Path);
+        const FJson                &Objects = ValidateSceneDocument(Root);
         const std::filesystem::path SceneDirectory = std::filesystem::absolute(Path).parent_path();
 
         FScene Scene;
         Scene.SetSourcePath(std::filesystem::absolute(Path).lexically_normal());
         ApplySceneSettings(Scene, Root, ResolutionOverride);
 
-        const auto ObjectIds = LoadSceneObjects(Scene, Objects, SceneDirectory, Assets, SurfaceData);
+        const auto ObjectIds =
+            LoadSceneObjects(Scene, Objects, ReadVersion(Root.at("version")), SceneDirectory, Assets, SurfaceData);
         LoadInitialSceneContacts(Scene, Root, ObjectIds);
         LoadSceneAnimation(Scene, Root, SceneDirectory);
 
@@ -402,12 +459,12 @@ namespace MDSS
 #pragma endregion
 
 // ============================================================
-// 01. Scene Saving
+// 02. Scene Saving
 // ============================================================
-#pragma region 01_Scene_Saving
-// 현재 Scene의 자산 참조와 설정을 파일 형식으로 기록한다.
+#pragma region 02_Scene_Saving
+    // 현재 Scene의 자산 참조와 설정을 파일 형식으로 기록한다.
 
-    void FSceneLoader::Save(const FScene& Scene, const std::filesystem::path& Path)
+    void FSceneLoader::Save(const FScene &Scene, const std::filesystem::path &Path)
     {
         const std::filesystem::path AbsolutePath = std::filesystem::absolute(Path).lexically_normal();
         const std::filesystem::path Directory = AbsolutePath.parent_path();
@@ -416,9 +473,9 @@ namespace MDSS
         Root["version"] = 1;
         Root["simulationResolution"] = Scene.GetSimulationResolution();
         Root["litHeightDisplayScale"] = Scene.GetLitHeightDisplayScale();
-        const FCamera&   Camera = Scene.GetMainCamera();
-        const glm::vec3& CameraPosition = Camera.GetPosition();
-        const glm::vec3& CameraTarget = Camera.GetTarget();
+        const FCamera   &Camera = Scene.GetMainCamera();
+        const glm::vec3 &CameraPosition = Camera.GetPosition();
+        const glm::vec3 &CameraTarget = Camera.GetTarget();
         Root["camera"] = {{"position", {CameraPosition.x, CameraPosition.y, CameraPosition.z}},
                           {"target", {CameraTarget.x, CameraTarget.y, CameraTarget.z}},
                           {"verticalFieldOfViewDegrees", Camera.GetVerticalFieldOfViewDegrees()}};
@@ -428,7 +485,7 @@ namespace MDSS
         {
             Root["initialContacts"] = FJson::array();
 
-            for (const auto& Contact : Scene.GetInitialContacts())
+            for (const auto &Contact : Scene.GetInitialContacts())
                 Root["initialContacts"].push_back(
                     {{"target", Contact.Target},
                      {"state", Contact.State},
@@ -440,14 +497,14 @@ namespace MDSS
 
         Root["objects"] = FJson::array();
 
-        for (const FStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
+        for (const FStaticMeshInstance &Instance : Scene.GetStaticMeshInstances())
         {
             if (Instance.GetMeshPath().empty())
             {
                 throw std::runtime_error("Cannot save Scene object without its source Mesh path.");
             }
 
-            const FTransform& Transform = Instance.GetTransform();
+            const FTransform &Transform = Instance.GetTransform();
             FJson             Object;
 
             if (!Instance.GetId().empty())
@@ -456,14 +513,25 @@ namespace MDSS
 
             if (!Instance.GetProfileMapPath().empty())
             {
-                Object["surfaceProfileMap"] =
+                const bool bInline = Instance.GetProfileMapPath().extension() == ".SurfaceProfile";
+                if (bInline)
+                    Root["version"] = 2;
+                Object[bInline ? "surfaceProfile" : "surfaceProfileMap"] =
                     Instance.GetProfileMapPath().lexically_relative(Directory).generic_string();
+            }
+            if (!Instance.GetSurfaceProfileOverrides().empty())
+            {
+                Root["version"] = 2;
+                for (const auto &[Id, Profile] : Instance.GetSurfaceProfileOverrides())
+                    Object["surfaceProfileOverrides"][std::to_string(Id)] =
+                        Profile.empty() ? FJson(nullptr)
+                                        : FJson(Profile.lexically_relative(Directory).generic_string());
             }
 
             Object["transform"] = {
                 {"position", {Transform.Position.x, Transform.Position.y, Transform.Position.z}},
                 {"rotationDegrees",
-                 {Transform.RotationDegrees.x, Transform.RotationDegrees.y, Transform.RotationDegrees.z}},
+                    {Transform.RotationDegrees.x, Transform.RotationDegrees.y, Transform.RotationDegrees.z}},
                 {"scale", {Transform.Scale.x, Transform.Scale.y, Transform.Scale.z}}};
             Root["objects"].push_back(std::move(Object));
         }

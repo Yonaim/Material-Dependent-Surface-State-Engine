@@ -1,0 +1,47 @@
+# 표면의 상태, 입력 필드 및 계산 규칙을 연결한다.
+version: 1
+id: SoilCoveredStonePath
+# 표면을 받치는 재질의 ID. Materials에서 물성과 바탕 외관을 읽는다.
+substrate: Stone
+# 표면의 저장 칸을 정의한다. material과 phase는 Materials의 물성을 참조한다.
+states:
+  # 아래층부터 위층 순서다. 각 층은 kg을 저장하며 각 표본에서 아래층과 기준 형상 중 높은 쪽을 수송 바닥으로 쓴다.
+  layer:
+    - id: soil
+      quantity: mass
+      unit: kg
+      material: LooseSoil
+      phase: bulk
+      color: [0.49, 0.3, 0.16]
+      displayName: Dry soil
+      thicknessDisplayMaxMm: 4
+    - id: mud
+      quantity: mass
+      unit: kg
+      material: Mud
+      phase: bulk
+      color: [0.28, 0.14, 0.071]
+      displayName: Mud
+      thicknessDisplayMaxMm: 3
+    - id: SurfaceWater
+      quantity: mass
+      unit: kg
+      material: Water
+      phase: liquid
+      color: [1.0, 0.16, 1.0]
+      displayName: Surface water
+      displayMax: 1.0
+      thicknessDisplayMaxMm: 4.0
+  substrate: []
+# 렌더링에서 사용하는 외관 값과 표시할 상태의 연결이다.
+appearance:
+  liquidCoverageDepthMeters: 0.0028
+# 층 순서는 아래에서 위다. state는 급수와 기본 수심 표시가 사용하는 액체다.
+transport:
+  state: SurfaceWater
+# use에 공유 규칙 ID를 쓰고 from, to, inputs 등으로 이 프로파일의 상태와 필드에 연결한다.
+interactions:
+  - use: SoilWaterMix
+    soil: soil
+    mud: mud
+    water: SurfaceWater

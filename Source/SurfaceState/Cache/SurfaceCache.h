@@ -7,7 +7,6 @@
 
 #include "AssetManager/Assets/MeshSourceData.h"
 #include "SurfaceState/Geometry/SharedSurfaceGeometryData.h"
-
 #include <filesystem>
 #include <optional>
 #include <span>
@@ -25,7 +24,7 @@ namespace MDSS::SurfaceState
 
     class FSurfaceCache final
     {
-    public:
+      public:
         // Bump whenever mapping, sampling, integration or derivative rules change.
         static constexpr std::uint32_t PreprocessVersion = 4;
 
@@ -41,26 +40,28 @@ namespace MDSS::SurfaceState
                  std::span<const Asset::FMeshTriangleSource> Triangles,
                  std::vector<FSurfaceDefinition>             Surfaces,
                  std::span<const std::filesystem::path>      NormalMapPaths,
-                 const std::filesystem::path&                DistributionPath,
+                 const std::filesystem::path                &DistributionPath,
                  std::vector<std::filesystem::path>          ProfilePaths,
-                 std::span<const FSurfaceProfileIndex>       ProfileIndicesBySurface);
+                 std::span<const FSurfaceProfileIndex>       ProfileIndicesBySurface,
+                 bool                                        bReadDistributionFile = true);
 
         /** @brief Stable Mesh/Map identity directory; retain separate resolution variants. */
-        [[nodiscard]] static std::filesystem::path GetPath(const std::filesystem::path& CacheRoot,
-                                                           const std::filesystem::path& MeshPath,
-                                                           const std::filesystem::path& DistributionPath,
-                                                           std::uint32_t                Resolution);
+        [[nodiscard]] static std::filesystem::path GetPath(const std::filesystem::path &CacheRoot,
+                                                           const std::filesystem::path &MeshPath,
+                                                           const std::filesystem::path &DistributionPath,
+                                                           std::uint32_t                Resolution,
+                                                           std::string_view             AssignmentKey = {});
 
         // Cache serialization
         /** @brief Missing, stale or corrupt cache returns nullopt with a diagnostic. */
         [[nodiscard]] static std::optional<FSharedSurfaceGeometryData>
-        Load(const std::filesystem::path& Path, const FSurfaceCacheDescriptor& Expected, std::string& Diagnostic);
+        Load(const std::filesystem::path &Path, const FSurfaceCacheDescriptor &Expected, std::string &Diagnostic);
 
         /** @brief Write explicit little-endian fields to a temporary file, then rename into place.
          * Throws on failure; callers may continue using the freshly built Runtime data.
          */
-        static void Save(const std::filesystem::path&      Path,
-                         const FSurfaceCacheDescriptor&    Descriptor,
-                         const FSharedSurfaceGeometryData& Geometry);
+        static void Save(const std::filesystem::path      &Path,
+                         const FSurfaceCacheDescriptor    &Descriptor,
+                         const FSharedSurfaceGeometryData &Geometry);
     };
 } // namespace MDSS::SurfaceState

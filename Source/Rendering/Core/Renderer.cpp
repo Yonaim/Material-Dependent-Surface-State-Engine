@@ -305,13 +305,6 @@ namespace MDSS::Rendering
             vkDeviceWaitIdle(Context.GetDevice());
         }
 
-        if (Benchmark.BenchmarkOutput.is_open())
-        {
-            for (const std::string& Line : Benchmark.BenchmarkJsonLines)
-                Benchmark.BenchmarkOutput << Line << '\n';
-            Benchmark.BenchmarkOutput.flush();
-        }
-
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkDestroyQueryPool(Context.GetDevice(), TimestampQueryPool, nullptr);
@@ -397,7 +390,6 @@ namespace MDSS::Rendering
         const VkSemaphore SignalSemaphore = SubmitFrameCommands(CommandBuffer, ImageIndex);
         const bool bRecreateSwapchain = PresentFrameImage(ImageIndex, AcquireResult, SignalSemaphore);
 
-        FinalizeFrameBenchmark(FrameIndex, SceneData, DebugInterface);
         FrameContext.AdvanceFrame();
 
         if (bRecreateSwapchain)
@@ -540,18 +532,6 @@ namespace MDSS::Rendering
             bTimestampQueriesSubmitted[FrameIndex] = true;
             SolverTimestampStepsSubmitted[FrameIndex] = FrameCoordinator.GetStepCount();
 
-            if (Benchmark.bBenchmarkCaptureEnabled)
-            {
-                Benchmark.BenchmarkSubmissions[FrameIndex] = {Benchmark.NextBenchmarkFrameIndex++,
-                                                              FrameCoordinator.GetStepCount(),
-                                                              ProfilingStats.SimulationResolution,
-                                                              ProfilingStats.SurfaceTexelMeshResolution,
-                                                              ProfilingStats.OverlayTexelMeshResolution,
-                                                              ProfilingStats.SimulationInstances,
-                                                              ProfilingStats.StateChannels,
-                                                              ProfilingStats.SimulationTexels,
-                                                              ProfilingStats.SimulatedThisFrameSeconds};
-            }
         }
 
         return CommandBuffer;
@@ -625,25 +605,6 @@ namespace MDSS::Rendering
         }
 
         return bSwapchainNeedsRecreation;
-    }
-
-    void FRenderer::FinalizeFrameBenchmark(std::uint32_t FrameIndex,
-                                           const FScene& SceneData,
-                                           const FDebugUI& DebugInterface)
-    {
-        if (Benchmark.bBenchmarkCaptureEnabled)
-        {
-            Benchmark.BenchmarkSubmissions[FrameIndex].CpuMilliseconds = {ProfilingStats.FrameFenceWaitCpuMilliseconds,
-                                                                          ProfilingStats.AcquireCpuMilliseconds,
-                                                                          ProfilingStats.CommandRecordCpuMilliseconds,
-                                                                          ProfilingStats.QueueSubmitCpuMilliseconds,
-                                                                          ProfilingStats.PresentCpuMilliseconds};
-            if (!Benchmark.bBenchmarkMetadataWritten &&
-                Benchmark.NextBenchmarkFrameIndex > Benchmark.BenchmarkWarmupFrames)
-                WriteBenchmarkMetadata(SceneData, DebugInterface);
-            if (Benchmark.AuthoringScreenshot)
-                WriteAuthoringCheckpoint(SceneData);
-        }
     }
 
 #pragma endregion
@@ -868,19 +829,18 @@ namespace MDSS::Rendering
                                                bool bResetStateSettings)
     {
         // 이전 Solver 옵션과 필요한 런타임 override만 새 Solver로 이관한다.
-            Replacement.SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
-            Replacement.SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
-            Replacement.SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
-            Replacement.SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
-            Replacement.SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
-            Replacement.SetCompactScratchStorageEnabled(SurfaceStateSystem.IsCompactScratchStorageEnabled());
-            Replacement.SetRuntimeSolverFlagsEnabled(SurfaceStateSystem.IsRuntimeSolverFlagsEnabled());
-            Replacement.SetAdaptiveGeometryEnabled(SurfaceStateSystem.IsAdaptiveGeometryEnabled());
-            Replacement.SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
-            Replacement.SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
-            Replacement.SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
-            Replacement.SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
-            Replacement.SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
+        Replacement.SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
+        Replacement.SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
+        Replacement.SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
+        Replacement.SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
+        Replacement.SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
+        Replacement.SetCompactScratchStorageEnabled(SurfaceStateSystem.IsCompactScratchStorageEnabled());
+        Replacement.SetAdaptiveGeometryEnabled(SurfaceStateSystem.IsAdaptiveGeometryEnabled());
+        Replacement.SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
+        Replacement.SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
+        Replacement.SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
+        Replacement.SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
+        Replacement.SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
 
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {

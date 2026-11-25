@@ -1,0 +1,11 @@
+# 재사용하는 재질의 물성 및 외관을 정의한다.
+version: 1
+id: Brick
+# PBR 외관과 텍스처. 이 값으로 수송이나 반응 속도를 바꾸지 않는다.
+appearance:
+  dryRoughness: 0.8
+  wetRoughness: 0.3
+  refractiveIndex: 1.46
+  specularScale: 1.0
+  normalTexture: FiredClayNormal.png
+  normalStrength: 0.75

@@ -4,9 +4,9 @@
  */
 
 #include "Application/Application.h"
-#include "Application/BenchmarkOptions.h"
+#include "Application/ApplicationLaunchOptions.h"
+#include "Application/Editor/SurfaceSimulation/SurfaceSimulation.h"
 #include "Logger/Logger.h"
-
 #include <exception>
 #include <iostream>
 #include <stdexcept>
@@ -20,37 +20,39 @@
 // 00. Application Entry Point
 // ============================================================
 #pragma region 00_Application_Entry_Point
-// 명령행 실행 옵션을 준비한 뒤 Application 수명으로 제어를 넘긴다.
+    // 명령행 실행 옵션을 준비한 뒤 Application 수명으로 제어를 넘긴다.
 
-int main(int Argc, char* Argv[])
-{
-    MDSS::FApplicationLaunchOptions LaunchOptions;
-    try
+    int main(int Argc, char *Argv[])
     {
-        LaunchOptions = MDSS::ParseApplicationLaunchOptions(Argc, Argv);
-    }
-    catch (const std::invalid_argument& Exception)
-    {
-        std::cerr << Exception.what() << '\n' << MDSS::GetApplicationUsage() << '\n';
+        MDSS::FApplicationLaunchOptions LaunchOptions;
+        try
+        {
+            LaunchOptions = MDSS::ParseApplicationLaunchOptions(Argc, Argv);
+        }
+        catch (const std::invalid_argument &Exception)
+        {
+            std::cerr << Exception.what() << '\n' << MDSS::GetApplicationUsage() << '\n';
 
-        return 2;
-    }
+            return 2;
+        }
 
-    try
-    {
-        MDSS::FApplication FApplication(std::move(LaunchOptions.Benchmark),
-                                        LaunchOptions.RenderTileSize,
-                                        LaunchOptions.bPerWorkgroupChannelMask,
-                                        std::move(LaunchOptions.ScenePath));
-        FApplication.Run(LaunchOptions.FrameLimit);
-    }
-    catch (const std::exception& Exception)
-    {
-        MDSS::FLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
+        try
+        {
+            if (LaunchOptions.Lab != MDSS::ESurfaceSimulationLaunch::None)
+            {
+                MDSS::SurfaceSimulation::Run(LaunchOptions);
+                return 0;
+            }
+            MDSS::FApplication FApplication(std::move(LaunchOptions.ScenePath));
+            FApplication.Run(LaunchOptions.FrameLimit);
+        }
+        catch (const std::exception &Exception)
+        {
+            MDSS::FLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
 
-        return 1;
-    }
+            return 1;
+        }
 
-    return 0;
-}
+        return 0;
+    }
 #pragma endregion

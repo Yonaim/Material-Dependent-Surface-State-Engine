@@ -29,3 +29,5 @@
 변경 시 호출자/소비자, Doxygen 주석, 관련 테스트를 함께 확인한다. 코드와 계약이 다르면 **의도된 보장과 관찰된 구현을 구분**해 기록한다.
 
 계약의 성격별 하위 디렉터리와 인덱스 구성은 [Architecture Organization](../../00_Engineering-Standards/00_Core/02_Architecture-Organization.md)을 따른다.
+
+- [Surface Simulation 상태·형상·GPU 계약](08_Surface-Simulation.md)

@@ -1,0 +1,36 @@
+# 재사용하는 재질의 물성 및 외관을 정의한다.
+version: 1
+id: Water
+# 상별 물성. 밀도 [kg/m³]로 질량을 부피로 바꾸고, 동적 점도 [Pa·s]로 수송 저항을 계산한다.
+phases:
+  liquid:
+    densityKgM3: 1000
+    dynamicViscosityPaS: 0.001
+    refractiveIndex: 1.333
+    roughness: 0.12
+    yieldStressPa: 0
+    angleOfReposeDeg: 0
+    phaseChange: [IceLiquid]
+  ice:
+    densityKgM3: 917
+    refractiveIndex: 1.31
+    roughness: 0.13
+    frostRoughness: 0.44
+    dynamicViscosityPaS: 100
+    yieldStressPa: 30
+    angleOfReposeDeg: 0
+    phaseChange: [IceLiquid]
+  snow:
+    densityKgM3: 250
+    dynamicViscosityPaS: 2
+    yieldStressPa: 0
+    angleOfReposeDeg: 35
+    phaseChange: [IceLiquid]
+# 같은 재질의 상변환 정의. 동작하는 규칙과 조건은 Interactions와 SurfaceProfile에서 연결한다.
+transitions:
+  IceLiquid:
+    meltFrom: [ice, snow]
+    liquid: liquid
+    freezeTo: ice
+    equilibriumTemperatureK: 273.15
+    latentHeatJPerKg: 334000

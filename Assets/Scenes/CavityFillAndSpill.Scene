@@ -1,0 +1,28 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "CavityFillAndSpill",
+  "geometry": "CavityChart",
+  "geometrySamples": [
+    64,
+    40
+  ],
+  "simulationCells": [
+    16,
+    8
+  ],
+  "sizeM": [
+    0.1,
+    0.062
+  ],
+  "smoothDisplay": true,
+  "openOutlet": true,
+  "pourKg": 0.009,
+  "maxTiltRadians": 0,
+  "heightMap": {
+    "texture": "../Geometry/pocket.height.png",
+    "heightRangeM": 0.01
+  },
+  "pourSeconds": 4,
+  "surfaceProfile": "WaterRunoff"
+}

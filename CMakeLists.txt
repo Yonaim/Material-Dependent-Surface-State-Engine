@@ -87,6 +87,18 @@ target_include_directories(MDSS_nlohmann_json SYSTEM INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/nlohmann_json/include"
 )
 
+# YAML reader for the Surface Simulation authoring formats.
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    yaml-cpp
+    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+    GIT_TAG yaml-cpp-0.9.0
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
 # Dear ImGui debug/editor UI. We build only the core plus GLFW/Vulkan backends.
 FetchContent_Declare(
     imgui
@@ -126,7 +138,7 @@ target_include_directories(MDSS SYSTEM PRIVATE
     "${tinyobjloader_SOURCE_DIR}"
     "${stb_SOURCE_DIR}"
 )
-target_link_libraries(MDSS PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
+target_link_libraries(MDSS PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json yaml-cpp::yaml-cpp)
 
 include(CMake/ShaderManifest.cmake)
 file(GLOB_RECURSE MDSS_DISCOVERED_SHADER_ENTRIES CONFIGURE_DEPENDS
@@ -139,8 +151,7 @@ file(GLOB_RECURSE MDSS_DISCOVERED_SHADER_ENTRIES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.tese"
 )
 foreach(ShaderRelativePath IN LISTS MDSS_DISCOVERED_SHADER_ENTRIES)
-    if(NOT ShaderRelativePath IN_LIST MDSS_SHADER_ENTRIES AND
-       NOT ShaderRelativePath IN_LIST MDSS_SHADER_PLACEHOLDERS)
+    if(NOT ShaderRelativePath IN_LIST MDSS_SHADER_ENTRIES)
         message(FATAL_ERROR "Unregistered shader entry point: ${ShaderRelativePath}")
     endif()
 endforeach()
@@ -209,6 +220,7 @@ foreach(ShaderRelativePath IN LISTS MDSS_SHADER_ENTRIES)
                 -o "${ShaderBinary}"
         DEPENDS "${ShaderSource}" ${MDSS_SHADER_INCLUDES}
                 "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceState/Types/SurfaceSolverRates.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceState/Simulation/SurfaceGridLimits.h"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
     )
@@ -241,6 +253,7 @@ add_dependencies(MDSS MDSS_Shaders)
 
 target_compile_definitions(MDSS PRIVATE
     MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+    MDSS_SURFACE_PLOT_SCRIPT="${CMAKE_CURRENT_SOURCE_DIR}/Tools/surface_simulation_plot.py"
     MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
     MDSS_SURFACE_CACHE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Cache/Surface"
     MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
@@ -251,6 +264,9 @@ target_include_directories(MDSS PRIVATE "${CMAKE_BINARY_DIR}/generated")
 
 if(MSVC)
     target_compile_options(MDSS PRIVATE /W4 /permissive-)
+    # The scene catalog contains UTF-8 Korean descriptions.
+    set_property(SOURCE Source/DebugUI/Editor/DebugUIWorkspace.cpp APPEND PROPERTY
+        COMPILE_OPTIONS /utf-8)
 else()
     target_compile_options(MDSS PRIVATE -Wall -Wextra -Wpedantic)
 endif()
@@ -261,6 +277,7 @@ set_target_properties(MDSS PROPERTIES
 
 include(CTest)
 if(BUILD_TESTING)
+    add_test(NAME MDSS_SurfaceSimulationReference COMMAND MDSS --reference-surface)
     set(MDSS_SURFACE_PACKING_SOURCES
         Source/SurfaceState/GPU/Packing/SharedGeometryPacking.cpp
         Source/SurfaceState/GPU/Packing/TransferWeightPacking.cpp
@@ -293,37 +310,12 @@ if(BUILD_TESTING)
         OFF
     )
     if(MDSS_BUILD_VULKAN_SCENE_TESTS)
-        # Exercise the actual Scene/AssetManager/Renderer resource lifecycle with a small native Vulkan window.
-        set(MDSS_SCENE_TEST_SOURCES ${MDSS_SOURCES})
-        list(FILTER MDSS_SCENE_TEST_SOURCES EXCLUDE REGEX "/main\\.cpp$")
-        add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp Tests/SurfaceDebugRenderingTests.cpp ${MDSS_SCENE_TEST_SOURCES})
-        add_dependencies(MDSS_SceneResourceTests MDSS_Shaders)
-        target_include_directories(MDSS_SceneResourceTests PRIVATE Source)
-        target_include_directories(MDSS_SceneResourceTests PRIVATE "${CMAKE_BINARY_DIR}/generated")
-        target_include_directories(MDSS_SceneResourceTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
-        target_link_libraries(MDSS_SceneResourceTests PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
-        target_compile_definitions(MDSS_SceneResourceTests PRIVATE
-            MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
-            MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
-            MDSS_SURFACE_CACHE_DIR="${CMAKE_CURRENT_BINARY_DIR}/SceneTestCache"
-            MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
-            GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE
+        add_test(NAME MDSS_SurfaceSimulationGpu COMMAND MDSS --check-surface)
+        add_test(NAME MDSS_SurfaceSimulationCapture
+            COMMAND "${CMAKE_COMMAND}" "-DMDSS_EXECUTABLE=$<TARGET_FILE:MDSS>"
+                    "-DCAPTURE_DIR=${CMAKE_CURRENT_BINARY_DIR}/SurfaceSimulationCaptureTest"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/Tests/SurfaceSimulationCaptureTest.cmake"
         )
-        if(MSVC)
-            target_compile_options(MDSS_SceneResourceTests PRIVATE /W4 /permissive-)
-        else()
-            target_compile_options(MDSS_SceneResourceTests PRIVATE -Wall -Wextra -Wpedantic)
-        endif()
-        add_test(NAME MDSS_SceneResources COMMAND MDSS_SceneResourceTests)
-        add_test(NAME MDSS_ScratchDescriptorLifetime COMMAND MDSS_SceneResourceTests --scratch-layout-only)
-        set_tests_properties(MDSS_ScratchDescriptorLifetime PROPERTIES SKIP_RETURN_CODE 77)
-        add_test(NAME MDSS_DemoAnimation COMMAND MDSS_SceneResourceTests --demo-animation)
-        add_test(NAME MDSS_CavityFillDisplayBound COMMAND MDSS_SceneResourceTests --cavity-fill-bound)
-        add_test(NAME MDSS_LavaScene COMMAND MDSS_SceneResourceTests --lava-scene)
-        add_test(NAME MDSS_OverlaySideCompaction COMMAND MDSS_SceneResourceTests --overlay-side-compaction)
-        set_tests_properties(MDSS_SceneResources PROPERTIES SKIP_RETURN_CODE 77)
-        set_tests_properties(MDSS_OverlaySideCompaction PROPERTIES SKIP_RETURN_CODE 77)
-        set_tests_properties(MDSS_LavaScene PROPERTIES SKIP_RETURN_CODE 77)
     endif()
 
     add_executable(MDSS_SurfaceCacheTests
@@ -453,7 +445,6 @@ if(BUILD_TESTING)
         Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
         ${MDSS_SURFACE_PACKING_SOURCES}
         ${MDSS_SURFACE_RESOURCE_SOURCES}
-        Source/SurfaceState/Solver/SurfaceStateSolver.cpp
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
         Source/SurfaceState/Types/SurfaceReactions.cpp
@@ -472,35 +463,10 @@ if(BUILD_TESTING)
         target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME MDSS_SurfaceGPUResource COMMAND MDSS_SurfaceGPUResourceTests)
-    add_test(NAME MDSS_LocalReactions COMMAND MDSS_SurfaceGPUResourceTests --reactions-only)
-    set_tests_properties(MDSS_LocalReactions PROPERTIES SKIP_RETURN_CODE 77)
     add_test(NAME MDSS_MesoPeakPacking COMMAND MDSS_SurfaceGPUResourceTests --meso-peak-only)
     set_tests_properties(MDSS_SurfaceGPUResource PROPERTIES SKIP_RETURN_CODE 77)
 
-    # Explicitly invoked headless study runner; uses the production mesh mapping and GPU solver.
-    get_target_property(MDSS_RESEARCH_SOURCES MDSS_SurfaceGPUResourceTests SOURCES)
-    list(REMOVE_ITEM MDSS_RESEARCH_SOURCES Tests/SurfaceGPUResourceTests.cpp)
-    include(Scripts/Research/MesoStudy.cmake)
-    add_executable(MDSS_CouplingStudy Scripts/Research/CouplingStudy.cpp ${MDSS_RESEARCH_SOURCES}
-        Source/AssetManager/Core/Asset.cpp
-        Source/AssetManager/Loaders/OBJLoader.cpp
-        Source/AssetManager/Loaders/MTLLoader.cpp
-        Source/AssetManager/Loaders/SRProfileLoader.cpp
-        Source/AssetManager/Assets/SRProfileAsset.cpp
-        Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
-        Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
-        ${MesoGenerated}
-        Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp
-        Source/AssetManager/Loaders/TextureLoader.cpp)
-    add_dependencies(MDSS_CouplingStudy MDSS_Shaders)
-    target_include_directories(MDSS_CouplingStudy PRIVATE Source "${CMAKE_BINARY_DIR}/generated")
-    target_include_directories(MDSS_CouplingStudy SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/delaunator")
-    target_link_libraries(MDSS_CouplingStudy PRIVATE Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
-    target_compile_definitions(MDSS_CouplingStudy PRIVATE MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}")
-    include(Scripts/Research/ModularShaders.cmake)
-
-    # Explicit read-only fixture probe, separate from the rendered application and GPU research runner.
+    # Standalone read-only probe for authoring fixtures.
     add_executable(MDSS_AuthoringProbe Scripts/Research/AuthoringProbe.cpp
         Source/AssetManager/Core/Asset.cpp
         Source/AssetManager/Assets/SRProfileAsset.cpp
@@ -513,7 +479,7 @@ if(BUILD_TESTING)
 endif()
 
 # Vendored triangulation is used only by the source-topology render mesh builder.
-foreach(Target MDSS MDSS_SceneResourceTests MDSS_SharedSurfaceGeometryTests MDSS_SurfaceGPUResourceTests)
+foreach(Target MDSS MDSS_SharedSurfaceGeometryTests MDSS_SurfaceGPUResourceTests)
     if(TARGET ${Target})
         target_include_directories(${Target} SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/delaunator")
     endif()

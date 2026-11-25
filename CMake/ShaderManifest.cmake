@@ -3,6 +3,12 @@
 # Paths are relative to Shaders/. Include-only .glsl files are dependencies,
 # never independent SPIR-V outputs.
 set(MDSS_SHADER_ENTRIES
+    Rendering/Surface/Simulation/Surface.vert
+    Rendering/Surface/Simulation/LiquidSurfaceConnections.vert
+    Rendering/Surface/Simulation/SurfaceVolumeEffects.vert
+    Rendering/Surface/Simulation/SurfaceVolumeEffects.frag
+    Rendering/Surface/Simulation/Surface.frag
+    Rendering/Surface/Simulation/Refraction.frag
     Debug/SurfaceDebug.frag
     Debug/SurfaceDebug.vert
     Rendering/Overlay/Geometry/TexelGeometry.comp
@@ -35,24 +41,10 @@ set(MDSS_SHADER_ENTRIES
     Rendering/Surface/Lighting/SurfaceLit.vert
     Rendering/Surface/Lighting/TexelSurfaceLit.frag
     Rendering/Surface/Lighting/TexelSurfaceLit.vert
-    Simulation/Geometry/SurfaceAccumulationHeight.comp
-    Simulation/Geometry/SurfaceDynamicGeometryUpdate.comp
-    Simulation/Geometry/SurfaceDynamicWeightsUpdate.comp
-    Simulation/Solver/SurfaceSolverPass1.comp
-    Simulation/Solver/SurfaceReaction.comp
-    Simulation/Solver/SurfaceSolverPass2.comp
-    Simulation/Scheduling/SurfaceSparseScheduleReset.comp
-)
-
-# Placeholder entry points have no #version and do not produce SPIR-V.
-set(MDSS_SHADER_PLACEHOLDERS
-    Simulation/Input/SurfaceInput.comp
+    Simulation/Surface/SurfaceSimulationStep.comp
 )
 
 set(MDSS_VARIANT_SHADER_NAMES
-    SurfaceSolverPass1.comp
-    SurfaceSolverPass2.comp
-    SurfaceDynamicWeightsUpdate.comp
     HeightFieldSmoothing.comp
     OverlayCoverageSmoothing.comp
     RenderStateTextureSmoothing.comp
@@ -90,22 +82,6 @@ macro(mdss_add_named_shader_variant ShaderFileName VariantName)
 endmacro()
 
 function(mdss_register_shader_variants)
-    foreach(PassName SurfaceSolverPass1 SurfaceSolverPass2)
-        mdss_add_named_shader_variant("${PassName}.comp" "runtime")
-    endforeach()
-    mdss_add_named_shader_variant("SurfaceDynamicWeightsUpdate.comp" "runtime")
-    foreach(RawMode RANGE 0 4)
-        foreach(WeightMode RANGE 0 1)
-            foreach(PassName SurfaceSolverPass1 SurfaceSolverPass2)
-                mdss_add_named_shader_variant("${PassName}.comp" "r${RawMode}w${WeightMode}"
-                    "-DMDSS_RAW_MODE=${RawMode}" "-DMDSS_HALF_WEIGHTS=${WeightMode}")
-            endforeach()
-        endforeach()
-    endforeach()
-    foreach(WeightMode RANGE 0 1)
-        mdss_add_named_shader_variant("SurfaceDynamicWeightsUpdate.comp" "w${WeightMode}"
-            "-DMDSS_HALF_WEIGHTS=${WeightMode}")
-    endforeach()
     foreach(HaloMode RANGE 0 1)
         mdss_add_named_shader_variant("HeightFieldSmoothing.comp" "h${HaloMode}"
             "-DMDSS_HEIGHT_HALO=${HaloMode}")

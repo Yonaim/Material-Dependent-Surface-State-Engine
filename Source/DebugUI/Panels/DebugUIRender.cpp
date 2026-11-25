@@ -3,7 +3,9 @@
  * @brief 렌더 진단 모드와 Surface 외형·overlay 표시 설정 패널을 그린다.
  */
 
+#include "Application/Editor/SurfaceSimulation/SurfaceSimulation.h"
 #include "DebugUI/Core/DebugUIShared.h"
+#include "DebugUI/Panels/EditorLayoutStyle.h"
 
 namespace MDSS
 {
@@ -11,58 +13,169 @@ namespace MDSS
 // 00. Render Options and Viewport Panels
 // ============================================================
 #pragma region 00_Render_Options_and_Viewport_Panels
-// viewport별 진단·외형 옵션을 현재 렌더 설정에 반영한다.
+    // viewport별 진단·외형 옵션을 현재 렌더 설정에 반영한다.
 
-    void FDebugUI::DrawRenderOptionsWindow(FScene& SceneData)
+    void FDebugUI::DrawViewportToolbar(FScene &SceneData)
     {
-        if (FrameRenderer == nullptr)
-        {
+        const auto *Node = ImGui::DockBuilderGetCentralNode(ViewportState.DockspaceID);
+        const auto *Main = ImGui::GetMainViewport();
+        const auto  Size = ImGui::GetIO().DisplaySize;
+        if (!Node || Size.x <= 0.F || Size.y <= 0.F)
             return;
-        }
 
-        ImGuiDockNode* ViewportNode =
-            ViewportState.DockspaceID != 0 ? ImGui::DockBuilderGetCentralNode(ViewportState.DockspaceID) : nullptr;
-        if (ViewportNode == nullptr)
+        ImGui::PushFont(nullptr, EditorLayout::TitleSize);
+        const float TitleHeight = ImGui::GetFontSize();
+        ImGui::PopFont();
+        const auto &Style = ImGui::GetStyle();
+        const bool  bChart = UsesSurfaceSimulation();
+        const float ContentWidth = std::max(0.F, Node->Size.x - 2.F * Style.WindowPadding.x);
+        const float ShowWidth = ImGui::CalcTextSize("Show").x + 2.F * Style.FramePadding.x;
+        const float LayoutWidth = ImGui::CalcTextSize("Layout").x + 2.F * Style.FramePadding.x;
+        const float ViewModeWidth =
+            std::max(ImGui::GetFrameHeight(),
+                     std::min(ContentWidth - ShowWidth - LayoutWidth - 2.F * Style.ItemSpacing.x, 180.F));
+        const float LayoutX = Style.WindowPadding.x + std::max(0.F, ContentWidth - LayoutWidth);
+        const float Height =
+            ImGui::GetFrameHeight() + TitleHeight + Style.ItemSpacing.y + 2.F * Style.WindowPadding.y + 2.F;
+        const float TimelineHeight = ImGui::GetFrameHeight() + 2.F * Style.WindowPadding.y;
+        ViewportState.ViewportWorkspaceRectNormalized = {(Node->Pos.x - Main->Pos.x) / Size.x,
+                                                         (Node->Pos.y + Height + TimelineHeight - Main->Pos.y) / Size.y,
+                                                         Node->Size.x / Size.x,
+                                                         std::max(1.F, Node->Size.y - Height - TimelineHeight) /
+                                                             Size.y};
+
+        ImGui::SetNextWindowPos(Node->Pos);
+        ImGui::SetNextWindowSize({Node->Size.x, Height});
+        constexpr auto Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+                               ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                               ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoMove;
+        if (ImGui::Begin("Viewport toolbar", nullptr, Flags))
         {
-            return;
-        }
-
-        constexpr float ToolbarHeight = 48.0F;
-        ImGui::SetNextWindowPos(ViewportNode->Pos, ImGuiCond_Always);
-        ImGui::SetNextWindowSize({ViewportNode->Size.x, ToolbarHeight}, ImGuiCond_Always);
-        const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-        const ImVec2         DisplaySize = ImGui::GetIO().DisplaySize;
-
-        if (DisplaySize.x > 0.0F && DisplaySize.y > 0.0F)
-        {
-            ViewportState.ViewportWorkspaceRectNormalized = {
-                (ViewportNode->Pos.x - MainViewport->Pos.x) / DisplaySize.x,
-                (ViewportNode->Pos.y + ToolbarHeight - MainViewport->Pos.y) / DisplaySize.y,
-                ViewportNode->Size.x / DisplaySize.x,
-                std::max(ViewportNode->Size.y - ToolbarHeight, 1.0F) / DisplaySize.y};
-        }
-
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
-                                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-                                           ImGuiWindowFlags_NoNavFocus;
-        const std::size_t          ActiveViewportIndex = GetActiveViewportIndex();
-        Rendering::ERenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode(ActiveViewportIndex);
-
-        if (ImGui::Begin("Render Options##ViewportToolbar", nullptr, Flags))
-        {
-            const char* CurrentName = DrawToolbarViewSelector(ActiveViewportIndex, CurrentMode);
-            DrawToolbarStateSelector(CurrentMode);
-            const bool bOpenViewSettings = DrawToolbarViewSettingsButton();
-            DrawToolbarVisibilityAndZoom(SceneData);
-
-            if (bOpenViewSettings || ImGui::IsPopupOpen("ViewSettingsPopup"))
+            const auto &Path = bChart ? EditorLab->GetScenePath() : SceneData.GetSourcePath();
+            const auto  Filename = Path.filename().u8string();
+            const auto  Comparison = bChart ? EditorLab->GetComparisonTitle() : std::string_view{};
+            const auto  Name = !Comparison.empty() ? std::string(Comparison)
+                               : Filename.empty()  ? std::string("Scene")
+                                                   : std::string(reinterpret_cast<const char *>(Filename.c_str()));
+            const auto  DrawCenteredText = [](const std::string &Text)
             {
-                ImGui::SetNextWindowSizeConstraints({360.0F, 0.0F}, {560.0F, 600.0F});
+                const float  Available = ImGui::GetContentRegionAvail().x;
+                const ImVec2 TextSize = ImGui::CalcTextSize(Text.c_str());
+                const ImVec2 RowStart = ImGui::GetCursorScreenPos();
+                const ImVec2 Start{RowStart.x + std::max(0.F, (Available - TextSize.x) * 0.5F), RowStart.y};
+                const ImVec2 End{RowStart.x + Available, RowStart.y + TextSize.y};
+                ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(),
+                                          Start,
+                                          End,
+                                          End.x,
+                                          Text.data(),
+                                          Text.data() + Text.size(),
+                                          &TextSize);
+                ImGui::Dummy({Available, TextSize.y});
+                return TextSize.x > Available;
+            };
+            ImGui::PushFont(nullptr, EditorLayout::TitleSize);
+            DrawCenteredText(Name);
+            ImGui::PopFont();
+            if (!Path.empty() && ImGui::IsItemHovered())
+            {
+                const auto FullPath = Path.u8string();
+                ImGui::SetTooltip("%s", reinterpret_cast<const char *>(FullPath.c_str()));
             }
 
-            DrawViewSettingsPopup(ActiveViewportIndex, CurrentMode, CurrentName);
-        }
+            ImGui::SetNextItemWidth(ViewModeWidth);
+            if (bChart)
+                EditorLab->DrawQuickViewControls();
+            else
+            {
+                const auto Active = GetActiveViewportIndex();
+                auto       Mode = FrameRenderer->GetRenderViewMode(Active);
+                (void)DrawViewModeCombo(Active, Mode, ResolveViewModeName(Mode));
+                ImGui::SameLine();
+                if (ImGui::Button("Show"))
+                    ImGui::OpenPopup("Mesh overlays");
+                if (ImGui::BeginPopup("Mesh overlays"))
+                {
+                    bool bGrid = FrameRenderer->IsWorldGridVisible();
+                    bool bAxes = FrameRenderer->IsWorldAxisVisible();
+                    if (ImGui::Checkbox("World Grid", &bGrid))
+                        FrameRenderer->SetWorldGridVisible(bGrid);
+                    if (ImGui::Checkbox("World Axes", &bAxes))
+                        FrameRenderer->SetWorldAxisVisible(bAxes);
+                    ImGui::EndPopup();
+                }
+            }
 
+            ImGui::SameLine(LayoutX);
+            if (ImGui::Button("Layout"))
+                ImGui::OpenPopup("Viewport layout");
+            if (ImGui::BeginPopup("Viewport layout"))
+            {
+                if (bChart)
+                    EditorLab->DrawCompareMenu();
+                else
+                    DrawMeshCompareMenu();
+                ImGui::EndPopup();
+            }
+        }
+        ImGui::End();
+
+        // 타임라인에서 클릭해도 뷰포트의 카메라와 주입 영역을 건드리지 않도록 화면 영역을 나눈다.
+        ImGui::SetNextWindowPos({Node->Pos.x, Node->Pos.y + Height});
+        ImGui::SetNextWindowSize({Node->Size.x, TimelineHeight});
+        if (ImGui::Begin("Viewport timeline", nullptr, Flags))
+        {
+            DrawWorkspaceTimeline(SceneData);
+            if (bChart)
+            {
+                ImGui::SameLine();
+                if (ImGui::Button("Scene Tracks"))
+                    ImGui::OpenPopup("Active scene tracks");
+                const float StatusStart = ImGui::GetItemRectMax().x + Style.ItemSpacing.x;
+                const auto  SourceStatus = EditorLab->GetWaterSourceStatus();
+                const auto *OutletStatus = EditorLab->GetOutletStatus();
+                if (ImGui::BeginPopup("Active scene tracks"))
+                {
+                    EditorLab->DrawPanel(SurfaceSimulation::EEditorPanel::SceneTracks);
+                    ImGui::Separator();
+                    if (!SourceStatus.empty())
+                        ImGui::TextDisabled("%s", SourceStatus.c_str());
+                    ImGui::TextDisabled("%s", OutletStatus);
+                    ImGui::EndPopup();
+                }
+                const auto Summary =
+                    SourceStatus.empty() ? std::string(OutletStatus) : SourceStatus + "  |  " + OutletStatus;
+                const float SummaryEnd = StatusStart + ImGui::CalcTextSize(Summary.c_str()).x;
+                if (SummaryEnd <= Node->Pos.x + Node->Size.x - Style.WindowPadding.x)
+                {
+                    ImGui::SameLine();
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::TextDisabled("%s", Summary.c_str());
+                }
+            }
+        }
+        ImGui::End();
+    }
+
+    void FDebugUI::DrawRenderOptionsWindow(FScene &SceneData)
+    {
+        if (!FrameRenderer || !ViewportState.bShowRenderOptions)
+            return;
+        if (ImGui::Begin("Render Options", &ViewportState.bShowRenderOptions))
+        {
+            if (UsesSurfaceSimulation())
+                EditorLab->DrawRenderOptions();
+            else
+            {
+                const auto  Active = GetActiveViewportIndex();
+                auto        Mode = FrameRenderer->GetRenderViewMode(Active);
+                const char *Name = ResolveViewModeName(Mode);
+                DrawSectionHeader(("Active view " + std::to_string(Active + 1)).c_str());
+                if (DrawToolbarViewSettingsButton() || ImGui::IsPopupOpen("ViewSettingsPopup"))
+                    ImGui::SetNextWindowSizeConstraints({360.F, 0.F}, {550.F, 630.F});
+                DrawViewSettingsPopup(Active, Mode, Name, SceneData);
+            }
+        }
         ImGui::End();
     }
 
@@ -72,281 +185,133 @@ namespace MDSS
 // 01. Toolbar Control Details
 // ============================================================
 #pragma region 01_Toolbar_Control_Details
-// view 선택, State 선택, 설정 버튼과 카메라 제어를 독립적으로 그린다.
-
-    const char* FDebugUI::DrawToolbarViewSelector(std::size_t ActiveViewportIndex,
-                                                  Rendering::ERenderViewMode& CurrentMode)
-    {
-        const char* CurrentName = ResolveViewModeName(CurrentMode);
-
-        ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted("View");
-        ImGui::SameLine(0.0F, 8.0F);
-        ImGui::SetNextItemWidth(185.0F);
-        const bool bViewComboOpen = DrawViewModeCombo(ActiveViewportIndex, CurrentMode, CurrentName);
-        const bool bViewControlHovered = ImGui::IsItemHovered();
-
-        ImGui::SameLine(0.0F, 6.0F);
-        ImGui::TextDisabled("View %zu", ActiveViewportIndex + 1U);
-        ImGui::SameLine(0.0F, 6.0F);
-        DrawViewportCollectionControls(ActiveViewportIndex);
-
-        if (!bViewComboOpen && bViewControlHovered)
-        {
-            SetDescriptionTooltip(GetViewGeometryDescription(CurrentMode));
-        }
-
-        return CurrentName;
-    }
+    // view 선택, State 선택, 설정 버튼과 카메라 제어를 독립적으로 그린다.
 
     // 01.00. View Mode Selection
     #pragma region 01_00_View_Mode_Selection
-    // 선택된 표시 모드의 이름과 메뉴 항목을 구성하고 Renderer에 선택을 전달한다.
+        // 선택된 표시 모드의 이름과 메뉴 항목을 구성하고 Renderer에 선택을 전달한다.
 
-    const char* FDebugUI::ResolveViewModeName(Rendering::ERenderViewMode CurrentMode) const
-    {
-        const int CurrentIndex = static_cast<int>(CurrentMode);
-        const char* CurrentName = "Solver Transfer Weights";
+        const char *FDebugUI::ResolveViewModeName(Rendering::ERenderViewMode CurrentMode) const
+        {
+            const int   CurrentIndex = static_cast<int>(CurrentMode);
+            const char *CurrentName = "Solver Transfer Weights";
 
-        if (CurrentIndex >= 0 && CurrentIndex < static_cast<int>(RenderViewModeNames.size()))
-        {
-            CurrentName = RenderViewModeNames[CurrentIndex];
-        }
-        else if (CurrentMode >= Rendering::ERenderViewMode::SurfaceStateHeatmap &&
-                 CurrentMode < Rendering::ERenderViewMode::SolverTransferWeight)
-        {
-            CurrentName = SurfaceDebugViewNames[CurrentIndex -
-                                                static_cast<int>(Rendering::ERenderViewMode::SurfaceStateHeatmap)];
-        }
-        else if (CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation)
-            CurrentName = "State Height Heatmap";
-        else if (CurrentMode == Rendering::ERenderViewMode::SurfaceFinalGeometry)
-            CurrentName = "Meso + State Geometry";
-        else if (CurrentMode == Rendering::ERenderViewMode::TotalSimulationHeight)
-            CurrentName = "Total Simulation Height";
-        else if (CurrentMode == Rendering::ERenderViewMode::MesoHeight ||
-                 CurrentMode == Rendering::ERenderViewMode::MesoOffset)
-        {
-            CurrentName = "Meso Geometry";
-        }
-        else if (CurrentMode == Rendering::ERenderViewMode::MacroGeometry)
-        {
-            CurrentName = "Base Geometry";
-        }
-        else if (CurrentMode == Rendering::ERenderViewMode::SurfaceTexelGrid)
-        {
-            CurrentName = "Texel Grid";
-        }
-        else if (CurrentMode == Rendering::ERenderViewMode::SurfaceTexelArea)
-        {
-            CurrentName = "Texel Area Heatmap";
-        }
-
-        return CurrentName;
-    }
-
-    bool FDebugUI::DrawViewModeCombo(std::size_t ActiveViewportIndex,
-                                    Rendering::ERenderViewMode& CurrentMode,
-                                    const char* CurrentName)
-    {
-        ImGui::PushID("ViewportViewCombo");
-        const bool bViewComboOpen = ImGui::BeginCombo("##View", CurrentName, ImGuiComboFlags_HeightLarge);
-
-        if (bViewComboOpen)
-        {
-            const auto DrawSelectionMark = [&](bool bSelected)
+            if (CurrentIndex >= 0 && CurrentIndex < static_cast<int>(RenderViewModeNames.size()))
             {
-                if (!bSelected)
-                {
-                    return;
-                }
-
-                const ImVec2 Minimum = ImGui::GetItemRectMin();
-                const ImVec2 Maximum = ImGui::GetItemRectMax();
-                const float  Size = ImGui::GetFontSize() * 0.62F;
-                const float  X = Maximum.x - ImGui::GetStyle().FramePadding.x - Size;
-                const float  Y = (Minimum.y + Maximum.y) * 0.5F;
-                const ImU32  Color = ImGui::GetColorU32({0.35F, 0.78F, 1.0F, 1.0F});
-                ImDrawList*  DrawList = ImGui::GetWindowDrawList();
-                DrawList->AddLine({X, Y}, {X + Size * 0.34F, Y + Size * 0.32F}, Color, 2.0F);
-                DrawList->AddLine({X + Size * 0.34F, Y + Size * 0.32F}, {X + Size, Y - Size * 0.42F}, Color, 2.0F);
-            };
-            DrawSectionHeader("RENDER", 0.0F, 2.0F);
-            const auto SelectDisplayView = [&](int Index, const char* Description = nullptr)
+                CurrentName = RenderViewModeNames[CurrentIndex];
+            }
+            else if (CurrentMode >= Rendering::ERenderViewMode::SurfaceStateHeatmap &&
+                     CurrentMode < Rendering::ERenderViewMode::SolverTransferWeight)
             {
-                const auto Mode = static_cast<Rendering::ERenderViewMode>(Index);
-                const bool bSelected = CurrentMode == Mode;
-                const bool bClicked = ImGui::MenuItem(RenderViewModeNames[Index]);
-                DrawSelectionMark(bSelected);
+                CurrentName =
+                    SurfaceDebugViewNames[CurrentIndex - static_cast<int>(Rendering::ERenderViewMode::SurfaceStateHeatmap)];
+            }
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation)
+                CurrentName = "State Height Heatmap";
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceFinalGeometry)
+                CurrentName = "Meso + State Geometry";
+            else if (CurrentMode == Rendering::ERenderViewMode::TotalSimulationHeight)
+                CurrentName = "Total Simulation Height";
+            else if (CurrentMode == Rendering::ERenderViewMode::MesoHeight ||
+                     CurrentMode == Rendering::ERenderViewMode::MesoOffset)
+            {
+                CurrentName = "Meso Geometry";
+            }
+            else if (CurrentMode == Rendering::ERenderViewMode::MacroGeometry)
+            {
+                CurrentName = "Base Geometry";
+            }
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceTexelGrid)
+            {
+                CurrentName = "Texel Grid";
+            }
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceTexelArea)
+            {
+                CurrentName = "Texel Area Heatmap";
+            }
 
-                if (bClicked)
+            return CurrentName;
+        }
+
+        bool FDebugUI::DrawViewModeCombo(std::size_t                 ActiveViewportIndex,
+                                         Rendering::ERenderViewMode &CurrentMode,
+                                         const char                 *CurrentName)
+        {
+            if (!ImGui::BeginCombo("##View", CurrentName, ImGuiComboFlags_HeightLarge))
+                return false;
+
+            using enum Rendering::ERenderViewMode;
+            const auto Select = [&](const char *Label, Rendering::ERenderViewMode Mode)
+            {
+                const bool bSelected = CurrentMode == Mode || (Mode == MesoHeight && CurrentMode == MesoOffset);
+                if (ImGui::MenuItem(Label, nullptr, bSelected) && !bSelected)
                 {
                     CurrentMode = Mode;
                     FrameRenderer->SetRenderViewMode(ActiveViewportIndex, Mode);
                 }
-
                 if (ImGui::IsItemHovered())
-                {
-                    SetDescriptionTooltip(Description != nullptr ? Description : GetViewGeometryDescription(Mode));
-                }
+                    SetDescriptionTooltip(GetViewGeometryDescription(Mode));
             };
-
-            for (int Index = 0; Index < 3; ++Index)
-            {
-                SelectDisplayView(Index);
-            }
-
-            if (ImGui::BeginMenu("Normal"))
-            {
-                SelectDisplayView(3, "원본 메시의 정점 노멀을 월드 공간 RGB로 표시합니다.");
-                SelectDisplayView(4, "원본 메시의 노멀 텍스처를 탄젠트 공간 RGB로 표시합니다.");
-                SelectDisplayView(5, "원본 메시의 매핑된 노멀을 월드 공간 RGB로 표시합니다.");
-                ImGui::EndMenu();
-            }
-
-            DrawSectionHeader("DEBUG", 12.0F, 2.0F);
-            const auto SelectDebugView =
-                [&](const char* Name, Rendering::ERenderViewMode Mode, const char* Description = nullptr)
-            {
-                const bool bMesoGeometry = Mode == Rendering::ERenderViewMode::MesoHeight &&
-                                           (CurrentMode == Rendering::ERenderViewMode::MesoHeight ||
-                                            CurrentMode == Rendering::ERenderViewMode::MesoOffset);
-                const bool bSelected = CurrentMode == Mode || bMesoGeometry;
-                const bool bClicked = ImGui::MenuItem(Name);
-                DrawSelectionMark(bSelected);
-
-                if (bClicked)
-                {
-                    if (!bMesoGeometry)
-                    {
-                        CurrentMode = Mode;
-                    }
-
-                    FrameRenderer->SetRenderViewMode(ActiveViewportIndex, CurrentMode);
-                }
-
-                if (ImGui::IsItemHovered())
-                {
-                    SetDescriptionTooltip(Description != nullptr ? Description : GetViewGeometryDescription(Mode));
-                }
-            };
-            SelectDebugView(
-                SurfaceDebugViewNames[0],
-                Rendering::ERenderViewMode::SurfaceStateHeatmap,
-                "원본 메시 위에 State/용량 비율을 색으로 표시합니다. Meso와 적층 변위는 적용하지 않습니다.");
-            if (ImGui::BeginMenu("Surface"))
-            {
-                SelectDebugView(SurfaceDebugViewNames[1],
-                                Rendering::ERenderViewMode::SurfaceValidity,
-                                "원본 메시 위에 텍셀의 유효성과 시뮬레이션 활성 상태를 표시합니다.");
-                SelectDebugView(SurfaceDebugViewNames[2],
-                                Rendering::ERenderViewMode::SurfaceID,
-                                "원본 메시 위에 Surface ID를 색으로 표시합니다.");
-                SelectDebugView(SurfaceDebugViewNames[3],
-                                Rendering::ERenderViewMode::NeighborCount,
-                                "원본 메시 위에 텍셀 이웃 수를 표시합니다.");
-                SelectDebugView(SurfaceDebugViewNames[4],
-                                Rendering::ERenderViewMode::SurfaceSeam,
-                                "원본 메시 위에 UV chart 사이의 텍셀 이웃 경계를 표시합니다.");
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Texel"))
-            {
-                SelectDebugView("Texel Grid",
-                                Rendering::ERenderViewMode::SurfaceTexelGrid,
-                                "원본 메시 표면에 시뮬레이션 텍셀 격자를 표시합니다.");
-                SelectDebugView("Texel Area Heatmap",
-                                Rendering::ERenderViewMode::SurfaceTexelArea,
-                                "원본 메시 표면에 텍셀별 월드 면적을 표시합니다.");
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Geometry"))
-            {
-                SelectDebugView("Base Geometry",
-                                Rendering::ERenderViewMode::MacroGeometry,
-                                "원본 메시 형상입니다. Meso 변위와 State 적층은 포함하지 않습니다.");
-                SelectDebugView("Meso Geometry",
-                                Rendering::ERenderViewMode::MesoHeight,
-                                "Meso 높이만 형상에 적용합니다. 표시 방식은 View Settings에서 선택합니다.");
-                SelectDebugView(
-                    "State Height Heatmap",
-                    Rendering::ERenderViewMode::SurfaceAccumulation,
-                    "Meso + 선택 State 전체 높이로 형상을 변위합니다. 색은 선택한 적층 성분을 표시합니다.");
-                SelectDebugView("Meso + State Geometry",
-                                Rendering::ERenderViewMode::SurfaceFinalGeometry,
-                                "Meso + 선택 State 적층을 적용한 형상입니다. 선택 State 미리보기이며 모든 State의 "
-                                "최종 합성이 아닙니다.");
-                SelectDebugView("Total Simulation Height",
-                                Rendering::ERenderViewMode::TotalSimulationHeight,
-                                "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.");
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Solver"))
-            {
-                SelectDebugView(SurfaceDebugViewNames[5],
-                                Rendering::ERenderViewMode::OutgoingFluxScale,
-                                "원본 메시 위에 State별 유출 제한값을 표시합니다.");
-                SelectDebugView("Solver Transfer Weights",
-                                Rendering::ERenderViewMode::SolverTransferWeight,
-                                "원본 메시 위에 선택한 Solver 전달 가중치를 표시합니다.");
-                ImGui::EndMenu();
-            }
-
+            ImGui::SeparatorText("Appearance");
+            Select("Lit", Lit);
+            Select("Unlit", Unlit);
+            Select("Wireframe", Wireframe);
+            ImGui::SeparatorText("Geometry");
+            Select("Base Geometry", MacroGeometry);
+            Select("Mesogeometry", MesoHeight);
+            Select("Selected State Geometry", SurfaceFinalGeometry);
+            Select("Deformed Surface", TotalSimulationHeight);
+            ImGui::SeparatorText("State");
+            Select("Heatmap", SurfaceStateHeatmap);
+            Select("Accumulation Height", SurfaceAccumulation);
+            ImGui::SeparatorText("Mapping");
+            Select("Simulation Cells", SurfaceTexelGrid);
+            Select("Validity", SurfaceValidity);
+            Select("Surface ID", SurfaceID);
+            Select("UV Seams", SurfaceSeam);
+            Select("Neighbor Count", NeighborCount);
+            Select("Texel Area", SurfaceTexelArea);
+            ImGui::SeparatorText("Normals");
+            Select("Vertex normal", VertexNormalWS);
+            Select("Texture normal", NormalTextureTS);
+            Select("Mapped normal", MappedNormalWS);
+            ImGui::SeparatorText("Solver");
+            Select("Outgoing Flux Scale", OutgoingFluxScale);
+            Select("Transfer Weights", SolverTransferWeight);
             ImGui::EndCombo();
+            return true;
         }
-
-        ImGui::PopID();
-        return bViewComboOpen;
-    }
 
     #pragma endregion
 
     // 01.01. Viewport Collection
     #pragma region 01_01_Viewport_Collection
-    // 현재 뷰포트 구성을 기준으로 화면 추가·삭제를 처리한다.
+        // 현재 뷰포트 구성을 기준으로 화면 추가·삭제를 처리한다.
 
-    void FDebugUI::DrawViewportCollectionControls(std::size_t ActiveViewportIndex)
-    {
-        if (ViewportState.ViewportPanels.size() == 1U)
+        void FDebugUI::SetWorkspaceViewCount(int Count)
         {
-            if (ImGui::SmallButton("+ View"))
+            const auto Target = static_cast<std::size_t>(std::clamp(Count, 1, 4));
+            auto      &Panels = ViewportState.ViewportPanels;
+            while (Panels.size() < Target)
             {
-                const std::size_t   NewIndex = ViewportState.ViewportPanels.size();
-                const std::uint32_t NewId = ViewportState.NextViewportId++;
-                ViewportState.ViewportPanels.push_back({NewId, glm::vec4(0.0F)});
-                FrameRenderer->SetRenderViewMode(NewIndex, Rendering::ERenderViewMode::SurfaceStateHeatmap);
+                const auto Index = Panels.size();
+                Panels.push_back({ViewportState.NextViewportId++, glm::vec4(0.F)});
+                FrameRenderer->SetRenderViewMode(Index, Rendering::ERenderViewMode::SurfaceStateHeatmap);
             }
+            Panels.resize(Target);
+            if (std::ranges::none_of(Panels, [&](const auto &Panel) { return Panel.Id == ViewportState.ActiveViewportId; }))
+                ViewportState.ActiveViewportId = Panels.front().Id;
         }
-        else if (ImGui::SmallButton("Remove View"))
-        {
-            const std::size_t RemoveIndex =
-                ActiveViewportIndex > 0U ? ActiveViewportIndex : ViewportState.ViewportPanels.size() - 1U;
-            const std::uint32_t RemoveId = ViewportState.ViewportPanels[RemoveIndex].Id;
-            FrameRenderer->SetRenderViewMode(RemoveIndex, Rendering::ERenderViewMode::SurfaceStateHeatmap);
-            ViewportState.ViewportPanels.erase(ViewportState.ViewportPanels.begin() +
-                                               static_cast<std::ptrdiff_t>(RemoveIndex));
-            if (ViewportState.ActiveViewportId == RemoveId)
-                ViewportState.ActiveViewportId = ViewportState.ViewportPanels.front().Id;
-        }
-
-    }
 
     #pragma endregion
 
     void FDebugUI::DrawToolbarStateSelector(Rendering::ERenderViewMode CurrentMode)
     {
-        ImGui::SameLine(0.0F, 10.0F);
-        ImGui::TextDisabled("|");
-
         if (CurrentMode == Rendering::ERenderViewMode::SurfaceStateHeatmap ||
             CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation ||
             CurrentMode == Rendering::ERenderViewMode::SurfaceFinalGeometry)
         {
-            ImGui::SameLine(0.0F, 8.0F);
-            const SurfaceState::FSurfaceStateRegistry* Registry =
+            const SurfaceState::FSurfaceStateRegistry *Registry =
                 AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
             const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
 
@@ -362,12 +327,12 @@ namespace MDSS
                 }
 
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("State");
+                ImGui::TextUnformatted("Source");
                 ImGui::SameLine(0.0F, 6.0F);
                 ImGui::SetNextItemWidth(145.0F);
                 const bool  bHeatmap = CurrentMode == Rendering::ERenderViewMode::SurfaceStateHeatmap;
                 const bool  bAllStates = bHeatmap && FrameRenderer->IsStateHeatmapAllStatesEnabled();
-                const char* StateComboId = bHeatmap ? "##ToolbarHeatmapState" : "##ToolbarHeightState";
+                const char *StateComboId = bHeatmap ? "##ToolbarHeatmapState" : "##ToolbarHeightState";
 
                 if (ImGui::BeginCombo(StateComboId,
                                       bAllStates ? "All states (max)"
@@ -404,7 +369,6 @@ namespace MDSS
 
             if (CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation)
             {
-                ImGui::SameLine(0.0F, 8.0F);
                 ImGui::AlignTextToFramePadding();
                 ImGui::TextUnformatted("Color");
                 ImGui::SameLine(0.0F, 6.0F);
@@ -412,10 +376,9 @@ namespace MDSS
                 int  Component = static_cast<int>(Settings.AccumulationComponent);
                 ImGui::SetNextItemWidth(185.0F);
 
-                if (ImGui::Combo(
-                        "##ToolbarHeightComponent",
-                        &Component,
-                        "Total Height\0Cavity Height\0Following Height\0Cavity Fill\0Filled Cavities Only\0"))
+                if (ImGui::Combo("##ToolbarHeightComponent",
+                                 &Component,
+                                 "Total Height\0Cavity Height\0Following Height\0Cavity Fill\0Filled Cavities Only\0"))
                 {
                     Settings.AccumulationComponent = static_cast<std::uint32_t>(Component);
                     FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
@@ -426,33 +389,7 @@ namespace MDSS
 
     bool FDebugUI::DrawToolbarViewSettingsButton()
     {
-        ImGui::SameLine(0.0F, 6.0F);
-        const float  GearButtonSize = ImGui::GetFrameHeight();
-        const bool   bOpenViewSettings = ImGui::Button("##ViewSettingsButton", {GearButtonSize, GearButtonSize});
-        const ImVec2 GearMinimum = ImGui::GetItemRectMin();
-        const ImVec2 GearMaximum = ImGui::GetItemRectMax();
-        const ImVec2 GearCenter{(GearMinimum.x + GearMaximum.x) * 0.5F, (GearMinimum.y + GearMaximum.y) * 0.5F};
-        const ImU32  GearColor = ImGui::GetColorU32(ImGuiCol_Text);
-        ImDrawList*  DrawList = ImGui::GetWindowDrawList();
-        DrawList->AddCircle(GearCenter, 4.5F, GearColor, 8, 1.4F);
-
-        for (int Tooth = 0; Tooth < 8; ++Tooth)
-        {
-            const float  Angle = glm::two_pi<float>() * static_cast<float>(Tooth) / 8.0F;
-            const ImVec2 Direction{std::cos(Angle), std::sin(Angle)};
-            DrawList->AddLine({GearCenter.x + Direction.x * 4.5F, GearCenter.y + Direction.y * 4.5F},
-                              {GearCenter.x + Direction.x * 6.3F, GearCenter.y + Direction.y * 6.3F},
-                              GearColor,
-                              1.4F);
-        }
-
-        DrawList->AddCircleFilled(GearCenter, 1.7F, ImGui::GetColorU32(ImGuiCol_Button));
-
-        if (ImGui::IsItemHovered())
-        {
-            SetDescriptionTooltip("뷰 설정");
-        }
-
+        const bool bOpenViewSettings = ImGui::Button("Settings");
         if (bOpenViewSettings)
         {
             ImGui::OpenPopup("ViewSettingsPopup");
@@ -460,75 +397,26 @@ namespace MDSS
         return bOpenViewSettings;
     }
 
-    void FDebugUI::DrawToolbarVisibilityAndZoom(FScene& SceneData)
+    void FDebugUI::DrawMeshCompareMenu()
     {
-        const ImGuiStyle& Style = ImGui::GetStyle();
-        const auto        CheckboxWidth = [&](const char* Label)
-        { return ImGui::GetFrameHeight() + Style.ItemInnerSpacing.x + ImGui::CalcTextSize(Label).x; };
-        const auto ZoomButtonWidth = [&](const char* Label)
-        { return ImGui::CalcTextSize(Label).x + Style.FramePadding.x * 2.0F; };
-        const float RightControlsWidth = CheckboxWidth("Grid") + CheckboxWidth("Axis") + CheckboxWidth("Overlays") +
-                                         ImGui::CalcTextSize("|").x + ZoomButtonWidth("-") + ZoomButtonWidth("+") +
-                                         Style.ItemSpacing.x * 3.0F + 24.0F;
-        const float RightControlsStart = ImGui::GetWindowWidth() - Style.WindowPadding.x - RightControlsWidth;
-        ImGui::SameLine(0.0F, 6.0F);
-
-        if (RightControlsStart > ImGui::GetCursorPosX() + Style.ItemSpacing.x)
+        using enum Rendering::ERenderViewMode;
+        if (ImGui::MenuItem("Exit Compare", nullptr, false, ViewportState.ViewportPanels.size() > 1))
+            SetWorkspaceViewCount(1);
+        if (ImGui::MenuItem("Geometry & State"))
         {
-            ImGui::SetCursorPosX(RightControlsStart);
+            SetWorkspaceViewCount(4);
+            FrameRenderer->SetRenderViewMode(0, Lit);
+            FrameRenderer->SetRenderViewMode(1, MacroGeometry);
+            FrameRenderer->SetRenderViewMode(2, MesoHeight);
+            FrameRenderer->SetRenderViewMode(3, SurfaceStateHeatmap);
         }
-
-        const bool bDemoPlaybackActive = SceneData.HasDemoAnimation() && SceneData.IsDemoAnimationPlaying();
-        ImGui::BeginDisabled(bDemoPlaybackActive);
-        bool bGridVisible = FrameRenderer->IsWorldGridVisible();
-
-        if (ImGui::Checkbox("Grid", &bGridVisible))
+        if (ImGui::MenuItem("Grid & Mapping"))
         {
-            FrameRenderer->SetWorldGridVisible(bGridVisible);
-        }
-
-        ImGui::SameLine();
-        bool bAxisVisible = FrameRenderer->IsWorldAxisVisible();
-
-        if (ImGui::Checkbox("Axis", &bAxisVisible))
-        {
-            FrameRenderer->SetWorldAxisVisible(bAxisVisible);
-        }
-
-        ImGui::EndDisabled();
-        ImGui::SameLine();
-        ImGui::Checkbox("Overlays", &bViewportOverlaysVisible);
-
-        if (ImGui::IsItemHovered())
-        {
-            SetDescriptionTooltip("프로파일링 및 렌더 상태 오버레이를 표시하거나 숨깁니다.");
-        }
-
-        ImGui::SameLine(0.0F, 10.0F);
-        ImGui::TextDisabled("|");
-
-        ImGui::SameLine(0.0F, 10.0F);
-
-        if (ImGui::Button("-"))
-        {
-            DollyCamera(GetViewportCamera(SceneData, GetActiveViewportIndex()), -1.0F);
-        }
-
-        if (ImGui::IsItemHovered())
-        {
-            SetDescriptionTooltip("축소합니다.");
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("+"))
-        {
-            DollyCamera(GetViewportCamera(SceneData, GetActiveViewportIndex()), 1.0F);
-        }
-
-        if (ImGui::IsItemHovered())
-        {
-            SetDescriptionTooltip("확대합니다.");
+            SetWorkspaceViewCount(4);
+            FrameRenderer->SetRenderViewMode(0, Lit);
+            FrameRenderer->SetRenderViewMode(1, SurfaceTexelGrid);
+            FrameRenderer->SetRenderViewMode(2, SurfaceValidity);
+            FrameRenderer->SetRenderViewMode(3, SurfaceSeam);
         }
     }
 

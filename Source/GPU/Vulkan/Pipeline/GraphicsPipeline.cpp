@@ -4,9 +4,7 @@
  */
 
 #include "GPU/Vulkan/Pipeline/GraphicsPipeline.h"
-
 #include "Logger/Logger.h"
-
 #include <array>
 #include <cstdint>
 #include <fstream>
@@ -18,7 +16,7 @@ namespace MDSS::GPU
 {
     namespace
     {
-        std::vector<std::uint32_t> ReadSpirvFile(const char* Path)
+        std::vector<std::uint32_t> ReadSpirvFile(const char *Path)
         {
             std::ifstream File(Path, std::ios::ate | std::ios::binary);
 
@@ -36,7 +34,7 @@ namespace MDSS::GPU
 
             std::vector<std::uint32_t> Data(static_cast<std::size_t>(Size) / sizeof(std::uint32_t));
             File.seekg(0);
-            File.read(reinterpret_cast<char*>(Data.data()), Size);
+            File.read(reinterpret_cast<char *>(Data.data()), Size);
 
             if (!File)
             {
@@ -51,11 +49,11 @@ namespace MDSS::GPU
 // 00. Pipeline Lifecycle
 // ============================================================
 #pragma region 00_Pipeline_Lifecycle
-// shader와 layout에서 pipeline을 만들고 소유 pipeline을 해제한다.
+    // shader와 layout에서 pipeline을 만들고 소유 pipeline을 해제한다.
 
     FGraphicsPipeline::FGraphicsPipeline(VkDevice                       Device,
                                          VkRenderPass                   FRenderPass,
-                                         const FGraphicsPipelineConfig& Config)
+                                         const FGraphicsPipelineConfig &Config)
         : Device(Device)
     {
         if (Config.ShaderStages.empty())
@@ -70,7 +68,7 @@ namespace MDSS::GPU
 
         try
         {
-            for (const FShaderStageConfig& StageConfig : Config.ShaderStages)
+            for (const FShaderStageConfig &StageConfig : Config.ShaderStages)
             {
                 if (StageConfig.ShaderPath.empty() || StageConfig.EntryPoint.empty())
                 {
@@ -134,8 +132,10 @@ namespace MDSS::GPU
             DepthStencil.stencilTestEnable = VK_FALSE;
 
             VkPipelineColorBlendAttachmentState ColorBlendAttachment{};
-            ColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                                  VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            ColorBlendAttachment.colorWriteMask =
+                VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
+            if (Config.bColorAlphaWriteEnabled)
+                ColorBlendAttachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
             ColorBlendAttachment.blendEnable = Config.bBlendingEnabled ? VK_TRUE : VK_FALSE;
             ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
             ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -243,7 +243,7 @@ namespace MDSS::GPU
 // 01. Pipeline Accessors
 // ============================================================
 #pragma region 01_Pipeline_Accessors
-// 기록 단계에서 사용할 pipeline·layout 식별자를 제공한다.
+    // 기록 단계에서 사용할 pipeline·layout 식별자를 제공한다.
 
     VkPipeline FGraphicsPipeline::GetHandle() const noexcept
     {
@@ -261,9 +261,9 @@ namespace MDSS::GPU
 // 02. Shader Module Creation
 // ============================================================
 #pragma region 02_Shader_Module_Creation
-// SPIR-V 파일을 읽어 Vulkan shader module을 생성한다.
+    // SPIR-V 파일을 읽어 Vulkan shader module을 생성한다.
 
-    VkShaderModule FGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
+    VkShaderModule FGraphicsPipeline::CreateShaderModule(VkDevice Device, const char *Path)
     {
         const std::vector<std::uint32_t> Code = ReadSpirvFile(Path);
 
