@@ -49,7 +49,7 @@ def digest(p):
 def prepare() -> dict[str, Any]:
     if (STUDY / 'plan.json').exists():
         return read(STUDY / 'plan.json')
-    base = read(ROOT / 'Assets/SurfaceProfiles/IceReactionLab.SRProfile')
+    base = read(ROOT / 'Scripts/Research/Fixtures/IceReactionLab.SRProfile')
     spec = read(ROOT / 'Scripts/Research/Plans/modular-baseline-v1.json')
     t2 = next(t for t in spec['tasks'] if t['id'] == 'T2')['profile_changes']
     wet = copy.deepcopy(t2['add_states']['wetness'])
@@ -85,8 +85,9 @@ def prepare() -> dict[str, Any]:
     write(STUDY / 'probe-cases.json', cases)
 
     # Clone the existing rendered scene into an isolated folder; no source assets or live settings change.
-    source = ROOT / 'Assets/Scenes/IceReactionLab.Scene'
+    source = ROOT / 'Scripts/Research/Fixtures/AuthoringScene.json'
     scene = read(source)
+    scene['version'] = 1
     scene['animation'] = str((source.parent / scene['animation']).resolve())
     tasks = []
     briefs = [
@@ -113,7 +114,7 @@ def prepare() -> dict[str, Any]:
         folder = PACK / id / 'start'
         folder.mkdir(parents=True, exist_ok=True)
         write(folder / 'Editable.SRProfile', base)
-        distribution = read(ROOT / 'Assets/SurfaceProfileMaps/IceReactionLab.SurfaceProfileMap')
+        distribution = read(ROOT / 'Scripts/Research/Fixtures/IceReactionLab.SurfaceProfileMap')
         distribution['profiles'] = ['Editable.SRProfile']
         write(folder / 'Editable.SurfaceProfileMap', distribution)
         s = copy.deepcopy(scene)

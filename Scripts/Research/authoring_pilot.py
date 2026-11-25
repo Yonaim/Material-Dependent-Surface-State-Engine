@@ -186,7 +186,7 @@ def run(kind):
             OUT / (kind + '-plan.json'),
             STUDY / 'goal-v1/plan.json',
             ROOT / 'Docs/Agent-Vault/04_Development/07_Authoring-Study-Protocol.md',
-            ROOT / 'Assets/Animations/IceReactionLab.DemoAnim',
+            ROOT / 'Scripts/Research/Fixtures/IceReactionLab.DemoAnim',
             *pathlib.Path(plan['input_folder']).iterdir(),
         ],
     )

@@ -102,7 +102,7 @@ def prepare() -> dict[str, Any]:
         hz=60,
         seconds=4,
         mesh=str(inputs / 'quad.obj'),
-        profile='Assets/SurfaceProfiles/IceReactionLab.SRProfile',
+        profile='Scripts/Research/Fixtures/IceReactionLab.SRProfile',
         scale=[1.65, 2.2, 0.22],
         rotation_x_degrees=8,
         ledger=True,
@@ -138,7 +138,7 @@ def prepare() -> dict[str, Any]:
         add(f'gpu-brick-{res}-D', 'gpu', resolution=res)
     add('gpu-brick-ls-256-D', 'gpu', resolution=256, reference='cpu-brick-256')
     # One controlled cavity setting; original profile values otherwise unchanged, no tuning after results.
-    profile = read(ROOT / 'Assets/SurfaceProfiles/IceReactionLab.SRProfile')
+    profile = read(ROOT / 'Scripts/Research/Fixtures/IceReactionLab.SRProfile')
     cavity = json.loads(json.dumps(profile))
     cavity['states']['ice']['cavityFillFactor'] = 1
     write(inputs / 'cavity-profile.SRProfile', cavity)
@@ -220,7 +220,7 @@ def archive():
         files.extend(
             p for p in (ROOT / base).rglob(pattern) if p.is_file() and '__pycache__' not in p.parts
         )
-    files.extend((ROOT / 'Assets/SurfaceProfiles').glob('*.SRProfile'))
+    files.extend((ROOT / 'Scripts/Research/Fixtures').glob('*.SRProfile'))
     files.extend((RAW / 'fixtures').rglob('*'))
     files += [
         ROOT / 'Assets/Meshes/BrickCube/BrickCube_512Normal.png',

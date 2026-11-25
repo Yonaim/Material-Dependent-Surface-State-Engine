@@ -22,8 +22,8 @@ files.extend(
 files.extend(
     ROOT / p
     for p in [
-        "Assets/SurfaceProfiles/IceReactionLab.SRProfile",
-        "Assets/SurfaceProfiles/DemoMud.SRProfile",
+        "Scripts/Research/Fixtures/IceReactionLab.SRProfile",
+        "Scripts/Research/Fixtures/DemoMud.SRProfile",
         "Assets/Meshes/MarbleCube/MarbleCube.obj",
         "Assets/Meshes/MarbleCube/MarbleCube.mtl",
         "Assets/Meshes/StanfordBunny/StanfordBunny.obj",

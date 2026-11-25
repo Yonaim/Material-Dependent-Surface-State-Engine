@@ -91,7 +91,7 @@ def prepare() -> dict[str, Any]:
                 resolution=res,
                 hz=hz,
                 seconds=seconds,
-                profile="Assets/SurfaceProfiles/IceReactionLab.SRProfile",
+                profile="Scripts/Research/Fixtures/IceReactionLab.SRProfile",
                 mesh=(
                     "Assets/Meshes/StanfordBunny/StanfordBunny.obj"
                     if bunny
@@ -202,6 +202,8 @@ def run(stage, selected, sparse=False, repeat=False):
         output = RAW / f"{condition['id']}-attempt{attempt}"
         output.mkdir(parents=True, exist_ok=False)
         config = dict(condition, output=str(output), sparse_solver=sparse)
+        if config["profile"] == "Assets/SurfaceProfiles/IceReactionLab.SRProfile":
+            config["profile"] = "Scripts/Research/Fixtures/IceReactionLab.SRProfile"
         config_path = output / "request.json"
         write(config_path, config)
         run_record: dict[str, Any] = dict(
@@ -216,8 +218,8 @@ def run(stage, selected, sparse=False, repeat=False):
                 p: digest(ROOT / p)
                 for p in [
                     condition["mesh"],
-                    condition["profile"],
-                    "Assets/SurfaceProfiles/DemoMud.SRProfile",
+                    config["profile"],
+                    "Scripts/Research/Fixtures/DemoMud.SRProfile",
                 ]
             },
             sources={str(p.relative_to(ROOT)): digest(p) for p in sources},
