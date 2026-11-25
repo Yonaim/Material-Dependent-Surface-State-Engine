@@ -1,0 +1,50 @@
+{
+  "baseline": "mesh",
+  "shape_grid": [
+    64,
+    40
+  ],
+  "solver_grid": [
+    2,
+    1
+  ],
+  "alignment": "mean height offset",
+  "sources": {
+    "mesh": {
+      "bed_rms_mm": 0.0,
+      "bed_peak_error_mm": 0.0,
+      "sill_depth_mm": 4.644876811653376,
+      "capacity_at_sill_mL": 1.999239215738997,
+      "capacity_delta_percent": 0.0,
+      "spill_time_s": 1.1750000612810254,
+      "spill_delta_ms": 0.0
+    },
+    "normal": {
+      "bed_rms_mm": 0.023577471980369122,
+      "bed_peak_error_mm": 0.21179250416785145,
+      "sill_depth_mm": 4.6059186570346355,
+      "capacity_at_sill_mL": 1.9639541060971288,
+      "capacity_delta_percent": -1.764926846376691,
+      "spill_time_s": 1.1625000606290996,
+      "spill_delta_ms": -12.500000651925802
+    },
+    "height": {
+      "bed_rms_mm": 0.008170212909406858,
+      "bed_peak_error_mm": 0.034678557770848606,
+      "sill_depth_mm": 4.627450834959745,
+      "capacity_at_sill_mL": 1.9921118732645056,
+      "capacity_delta_percent": -0.35650273455930526,
+      "spill_time_s": 1.1708333943970501,
+      "spill_delta_ms": -4.166666883975267
+    },
+    "displacement": {
+      "bed_rms_mm": 0.010918256102796486,
+      "bed_peak_error_mm": 0.04852523324484537,
+      "sill_depth_mm": 4.611765034496784,
+      "capacity_at_sill_mL": 1.9844461642631568,
+      "capacity_delta_percent": -0.7399340388774989,
+      "spill_time_s": 1.1666667275130749,
+      "spill_delta_ms": -8.333333767950535
+    }
+  }
+}

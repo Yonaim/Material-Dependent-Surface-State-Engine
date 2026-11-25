@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Heated Water Channel · Open vs Closed Outlet",
+  "koreanTitle": "가열 수로 · 열린 출구와 닫힌 출구",
+  "description": "같은 급수에서 배수가 수로의 냉각과 물의 잔류에 미치는 영향을 비교한다.",
+  "cases": [
+    {
+      "scene": "../HeatedWaterChannel.Scene",
+      "label": "Open outlet"
+    },
+    {
+      "scene": "../HeatedWaterChannel_ClosedOutlet.Scene",
+      "label": "Closed outlet"
+    }
+  ]
+}

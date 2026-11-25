@@ -6,15 +6,18 @@
 
 | 데이터 | 현재 역할 |
 |---|---|
-| `.Scene` | Static Mesh object, 선택적 `.SurfaceProfileMap`·`.DemoAnim`, 해상도, 시작 Camera·Transform, `initialContacts` |
+| `.Scene` | 현재 에디터의 `SurfaceScene` v1은 프로파일·차트·초기 상태와 장면 필드를 지정한다. 연구 입력인 `TScene` v2는 `surfaceProfile`과 선택적 `surfaceProfileOverrides`로 메시 프로파일을 할당한다. |
 | OBJ·MTL·Texture | Macro mesh, Simulation UV, 렌더 재질과 Meso 복원용 Normal Map |
-| `.SurfaceProfileMap` | Surface/Material별 `.SRProfile` 배치. 현재 한 Surface의 valid texel에는 같은 Profile을 확장 |
-| `.SRProfile` | State별 반응 계수와 Transition 선언. 권장 schema version 5; version 3/4도 읽음 |
+| `.SurfaceProfileMap`, `.SRProfile` | 보관된 `TScene` v1과 연구·테스트 입력용 호환 형식 |
+| `.SurfaceProfile` | 현재의 `SurfaceProfile` v1로 물리 상태·수송·규칙·필드를 연결한다. 연구용 메시 로더는 `SurfaceResponseProfile` v4/v5도 읽을 수 있다. |
 | `.Surface` | 정적 CPU texel Geometry·이웃·Profile index의 해상도별 생성 캐시. 직접 편집하지 않음 |
+| `Assets/Simulation/` | YAML 본문의 `.PhysicalMaterial`, `.Interaction`, `.SurfaceProfile`. 표면층과 바탕 상태는 `.SurfaceProfile`에서 정의한다. [Surface Simulation 계약](08_Surface-Simulation.md#00-경계와-단위) |
 
-`surfaceProfileMap`이 없는 Scene object는 렌더링 전용이다. 같은 Mesh·Map·해상도 조합의 instance는 Runtime Surface Data를 공유하지만 State는 별도로 가진다. `simulationResolution`은 Scene 전체에 128·256·512 중 하나를 적용하며 생략하면 256이다. [[02_Architecture/01_Contracts/03_Geometry|Geometry]], [[02_Architecture/01_Contracts/05_GPU-Layout|GPU 데이터]]
+`TScene` v2의 프로파일 참조는 공용 에셋 ID 또는 씬에 상대적인 `.SurfaceProfile` 경로다. 기본 할당은 메시의 모든 표면에 적용된다. 오버라이드는 표면 ID별로 기본값을 덮어쓰며 `null`은 해당 표면을 시뮬레이션에서 제외한다. 캐시는 프로파일 계수 대신 정규화한 할당과 메시·격자 입력을 식별한다.
 
-`.DemoAnim`은 선택적 버전형 JSON이다. Transform·Camera keyframe 외에 `contactEvents`와 시각화용 weather cue를 담을 수 있다. 이벤트가 있는 clip은 loop하지 않으며, Application이 이벤트 시점에 내부 Contact를 제출한다. Animation과 Solver의 재생 제어는 독립적이다. 이 기능의 상세 JSON은 `Source/Scene/DemoAnimation.cpp`와 `Assets/Animations`의 현재 예제를 기준으로 한다.
+프로파일 할당이 없는 표면은 렌더링 전용이다. 같은 Mesh·Map·해상도 조합의 instance는 Runtime Surface Data를 공유하지만 State는 별도로 가진다. `simulationResolution`은 Scene 전체에 128·256·512 중 하나를 적용하며 생략하면 256이다. [[02_Architecture/01_Contracts/03_Geometry|Geometry]], [[02_Architecture/01_Contracts/05_GPU-Layout|GPU 데이터]]
+
+연구용 `.DemoAnim`은 선택적 버전형 JSON이다. Transform·Camera keyframe 외에 `contactEvents`와 시각화용 weather cue를 담을 수 있다. 이벤트가 있는 clip은 loop하지 않으며, Application이 이벤트 시점에 내부 Contact를 제출한다. 연구 재현 입력은 `Scripts/Research/Fixtures`에 있다. 현재 데모의 재생·카메라·물질 주입은 `Source/Application/Editor/SurfaceSimulation/SurfaceSceneBuilder.cpp`가 스텝 시간으로 계산한다.
 
 ## Profile과 Registry
 

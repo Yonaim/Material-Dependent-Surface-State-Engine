@@ -1,0 +1,55 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "WaxPhaseVolume",
+  "geometry": "CavityChart",
+  "geometrySamples": [
+    40,
+    30
+  ],
+  "simulationCells": [
+    5,
+    5
+  ],
+  "sizeM": [
+    0.06666666666666667,
+    0.05
+  ],
+  "smoothDisplay": false,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "bodyThicknessM": 0.006,
+  "sectionWindow": {
+    "frontV": 0.23,
+    "heightM": 0.016,
+    "graduationM": 0.0005,
+    "glassVessel": {
+      "interiorUV": [0.2, 0.2, 0.8, 0.8],
+      "thicknessM": 0.00125
+    }
+  },
+  "heightMap": {
+    "texture": "../Geometry/phase-volume-tray.height.png",
+    "heightRangeM": 0.016
+  },
+  "surfaceTexture": "../Textures/SurfaceSimulation/AmbientCG/Concrete030.png",
+  "surfaceProfile": "WaxMeltAndSet",
+  "substrateTemperatureField": {
+    "u0K": 356,
+    "u1K": 356,
+    "rampSeconds": 1.2
+  },
+  "initialFilm": [
+    {
+      "state": "layer.SolidWax",
+      "boundsUV": [
+        0.2,
+        0.2,
+        0.8,
+        0.8
+      ],
+      "thicknessM": 0.011363636363636364
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Deposition & Flow Feedback",
+  "koreanTitle": "퇴적과 수송",
+  "description": "같은 급수에서 진흙의 퇴적 높이를 수송에 반영하는 조건을 비교한다.",
+  "cases": [
+    {
+      "scene": "../SoilCoveredStonePath.Scene",
+      "label": "Evolving Bed"
+    },
+    {
+      "scene": "../SoilCoveredStonePath_FixedBed.Scene",
+      "label": "Fixed Initial Bed"
+    },
+    {
+      "scene": "../SoilCoveredStonePath_NoMudSupport.Scene",
+      "label": "Mud Height Excluded"
+    }
+  ]
+}

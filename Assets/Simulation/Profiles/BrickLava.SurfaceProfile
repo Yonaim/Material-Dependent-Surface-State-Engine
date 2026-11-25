@@ -1,0 +1,28 @@
+# 표면의 상태, 입력 필드 및 계산 규칙을 연결한다.
+version: 1
+id: BrickLava
+# 표면을 받치는 재질의 ID. Materials에서 물성과 바탕 외관을 읽는다.
+substrate: Brick
+# 렌더링에서 사용하는 외관 값과 표시할 상태의 연결이다.
+appearance:
+  liquidCoverageDepthMeters: 0.0009
+# 표면의 저장 칸을 정의한다. material과 phase는 Materials의 물성을 참조한다.
+states:
+  # 표면 위에 놓인 상태. 질량은 kg으로 저장하고 표시 범위는 kg/m² 또는 mm로 지정한다.
+  layer:
+    - id: SurfaceLava
+      quantity: mass
+      unit: kg
+      material: Lava
+      phase: liquid
+      displayName: Surface lava
+      displayMax: 8.0
+      thicknessDisplayMaxMm: 6.0
+  substrate: []
+# 층 순서는 아래에서 위다. state는 급수와 기본 수심 표시가 사용하는 액체다.
+transport:
+  state: SurfaceLava
+# 규칙이 읽을 입력과 단위. SceneField의 source는 .Scene의 fields 키다.
+fields: {}
+# use에 공유 규칙 ID를 쓰고 from, to, inputs 등으로 이 프로파일의 상태와 필드에 연결한다.
+interactions: []

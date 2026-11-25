@@ -27,7 +27,6 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MATRIX = ROOT / "Config/Performance/solver-resolution-matrix.json"
 DEFAULT_RESULTS = ROOT / "Performance-Data"
 
 
@@ -168,7 +167,7 @@ def preserve_inputs(raw_dir: Path, binary: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--matrix", type=Path, default=DEFAULT_MATRIX, help="Matrix JSON path.")
+    parser.add_argument("--matrix", type=Path, required=True, help="Matrix JSON path.")
     parser.add_argument(
         "--binary", type=Path, default=ROOT / "Build/bin/MDSS", help="MDSS executable."
     )

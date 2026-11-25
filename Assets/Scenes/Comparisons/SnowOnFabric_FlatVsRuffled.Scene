@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Snow on Fabric · Flat vs Ruffled",
+  "koreanTitle": "천 위의 눈 · 평평한 천과 주름진 천",
+  "description": "같은 양의 눈이 녹을 때 주름이 물길과 젖은 자국을 어떻게 바꾸는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../SnowOnFabric.Scene",
+      "label": "Flat fabric"
+    },
+    {
+      "scene": "../SnowOnFabric_Ruffled.Scene",
+      "label": "Ruffled fabric"
+    }
+  ]
+}

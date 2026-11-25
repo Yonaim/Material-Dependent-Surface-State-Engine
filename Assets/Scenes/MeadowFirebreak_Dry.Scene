@@ -1,0 +1,31 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "MeadowFirebreak_Dry",
+  "geometry": "MeadowBed",
+  "geometrySamplesPerCell": 2,
+  "simulationCells": [
+    28,
+    24
+  ],
+  "sizeM": [
+    0.25,
+    0.21
+  ],
+  "smoothDisplay": true,
+  "openOutlet": true,
+  "pourKg": 0.0,
+  "pourSeconds": 2.6,
+  "maxTiltRadians": 0.0,
+  "surfaceProfile": "MeadowSurface",
+  "scheduledInlet": {
+    "centerM": [
+      -0.105,
+      0.012
+    ],
+    "sizeM": [
+      0.021,
+      0.03
+    ]
+  }
+}

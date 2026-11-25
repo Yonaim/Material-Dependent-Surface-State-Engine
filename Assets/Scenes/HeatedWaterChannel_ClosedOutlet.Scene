@@ -1,0 +1,51 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "HeatedWaterChannel_ClosedOutlet",
+  "surfaceTexture": "../Textures/SurfaceSimulation/AmbientCG/Metal010.png",
+  "surfaceNormal": "../Textures/SurfaceSimulation/AmbientCG/Metal010Normal.png",
+  "environment": {
+    "texture": "../Textures/SurfaceSimulation/AmbientCG/IndoorEnvironmentHDRI014.hdr",
+    "exposure": 5.0,
+    "yawDegrees": -120
+  },
+  "geometry": "Spillway",
+  "geometrySamplesPerCell": 4,
+  "simulationCells": [
+    14,
+    10
+  ],
+  "sizeM": [
+    0.14,
+    0.1
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0.019,
+  "maxTiltRadians": 0.0,
+  "surfaceProfile": "WaterSurface",
+  "pourSeconds": 3.0,
+  "scheduledInlet": {
+    "centerM": [
+      -0.054,
+      0.014
+    ],
+    "sizeM": [
+      0.012,
+      0.021
+    ]
+  },
+  "substrateQuench": {
+    "centerUV": [
+      0.73,
+      0.43
+    ],
+    "radiusUV": [
+      0.37,
+      0.39
+    ],
+    "peakTemperatureK": 1460,
+    "arealHeatCapacityJm2K": 5100,
+    "contactConductanceWm2K": 12000
+  }
+}

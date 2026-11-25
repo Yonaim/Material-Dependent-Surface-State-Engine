@@ -1,0 +1,41 @@
+# 같은 파라핀의 고체층과 이동 가능한 액체층을 연결한다.
+version: 1
+id: WaxMeltAndSet
+substrate: Stone
+states:
+  layer:
+    - id: SolidWax
+      quantity: mass
+      unit: kg
+      material: ParaffinWax
+      phase: solid
+      color: [0.94, 0.64, 0.26]
+      displayName: Solid wax
+      thicknessDisplayMaxMm: 9
+    - id: MoltenWax
+      quantity: mass
+      unit: kg
+      material: ParaffinWax
+      phase: liquid
+      color: [0.8, 0.52, 0.16]
+      displayName: Molten wax
+      thicknessDisplayMaxMm: 9
+  substrate:
+    - id: SubstrateTemperature
+      quantity: temperature
+      unit: K
+      source: temperature
+      displayName: Substrate temperature
+      displayMax: 360
+transport:
+  state: MoltenWax
+appearance:
+  liquidCoverageDepthMeters: 0.00018
+  liquidTint: [0.95, 0.57, 0.11]
+interactions:
+  - use: WaxMelt
+    from: SolidWax
+    to: MoltenWax
+  - use: WaxSet
+    from: MoltenWax
+    to: SolidWax

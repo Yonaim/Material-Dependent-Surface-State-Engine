@@ -1,0 +1,18 @@
+# 흡수를 계산하지 않는 바닥 위의 물막과 박막 수송을 연결한다.
+version: 1
+id: NonporousWaterFilm
+substrate: Stone
+states:
+  layer:
+    - id: SurfaceWater
+      quantity: mass
+      unit: kg
+      material: Water
+      phase: liquid
+      color: [0.08, 0.55, 0.8]
+      displayName: Surface water
+      thicknessDisplayMaxMm: 24
+  substrate: []
+transport:
+  state: SurfaceWater
+interactions: []

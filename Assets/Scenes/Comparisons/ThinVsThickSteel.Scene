@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Areal Heat Capacity",
+  "koreanTitle": "면적당 열용량",
+  "description": "같은 강철과 평평한 상면을 가진 두 시편에 같은 면적당 에너지를 가해 유효 두께에 따른 온도 상승을 비교한다.",
+  "cases": [
+    {
+      "scene": "../HeatedWaterChannel_ThermalSteelThin.Scene",
+      "label": "0.5 mm Effective Thickness"
+    },
+    {
+      "scene": "../HeatedWaterChannel_ThermalSteelThick.Scene",
+      "label": "1 mm Effective Thickness"
+    }
+  ]
+}

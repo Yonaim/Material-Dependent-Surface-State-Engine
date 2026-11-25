@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Glacier Cut · Standard vs Melt Pocket",
+  "koreanTitle": "빙하 수로 · 기본 수로와 융해 웅덩이",
+  "description": "같은 강철 바닥과 접촉열에서 얕은 홈이 눈의 융해수를 어디에 모으는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../GlacierCut.Scene",
+      "label": "Standard channel"
+    },
+    {
+      "scene": "../GlacierCut_MeltPocket.Scene",
+      "label": "Melt pocket"
+    }
+  ]
+}

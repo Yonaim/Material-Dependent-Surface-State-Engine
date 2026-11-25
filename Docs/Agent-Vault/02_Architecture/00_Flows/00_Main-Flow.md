@@ -43,3 +43,18 @@ flowchart TD
 
 
 > 주요 구성 관계는 [[02_Architecture/04_System-Map|System Map]]을 참고한다.
+
+## 기존 에디터의 Surface Simulation
+
+기본 실행은 Heated Water Channel을 연다. 좌측 `Scenes`에서 데모를 선택하거나 `File → Open Scene…`으로 `SurfaceScene` 타입의 `.Scene`을 연다. 뷰포트 상단에서 표시 모드·레이아웃·재생을 조작한다. 우측 `Simulation`은 주입과 솔버를, `Scene Setup`은 형상과 에셋을 맡는다. 실험은 좌측에서 실행하고 로그는 하단에서 확인한다. 에디터와 `--capture-surface` 및 `--check-surface`는 같은 `FSurfaceSimulationGpu` 구현를 사용한다.
+
+```mermaid
+flowchart LR
+    UI["ImGui · 씬 선택 / 시뮬레이션 설정 / 재생"] --> S["고정 스텝 입력"]
+    S --> R["에디터 command buffer · offscreen 뷰"]
+    R --> I["같은 프레임의 main pass · ImGui Image"]
+```
+
+## 독립 실행 및 재현
+
+`--capture-surface`은 장면 선택, 고정 서브스텝, 두 표시 슬롯, 비교 렌더링으로 진행한다. CPU·GPU 검증 플래그는 화면 대신 실험을 실행한다. [Surface Simulation 프레임과 수송 순서](../01_Contracts/08_Surface-Simulation.md#01-수송과-연산-순서)

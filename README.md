@@ -16,23 +16,28 @@ The project focuses on representing surface state changes in UV-space and updati
 - Raycast-based state injection
 - ImGui-based debug and simulation controls
 
-## Ice reaction demo
+## Editor and demos
 
-Build with `./Scripts/build.ps1 -Configuration Debug`, then run:
+Run `./run.ps1` on Windows. The editor opens Heated Water Channel and lists the demos in **Scene & Camera**. Use **Simulation → Assets** to select a scene asset and edit its settings. **Apply & Restart** runs the simulation with the new settings, and **Restore Defaults** resets them for the current scene.
 
-For CMake Tools or direct CMake use with Visual Studio 2026, select the
-`windows-msvc-x64` configure preset and the matching Debug or Release build
-preset. This preset requires CMake 4.2 or newer.
+For Visual Studio 2026 builds through CMake Tools, select the `windows-msvc-x64` configure preset and its matching Debug or Release build preset. The preset requires CMake 4.2 or newer. `./Scripts/run.sh` launches an existing POSIX build.
+
+Under **Layout**, **Layer & Substrate** pairs PBR with substrate states on the top row, and layer states with layer thickness below. **Elevation & Grids** pairs PBR with elevation contours on the top row, and simulation cells with geometry samples below. The heatmap legends use the names from the state assets. The world grid and axes are off by default.
+
+Choose **Layer Thickness [mm]** or **Areal Mass [kg/m²]**, then pick a compatible **Source** in **Render Options**. Each viewport has its own source. The legend shows its name and color range.
+
+**Snow on Fabric** has a flat bed. **Snow on Fabric_Ruffled** appears next to it in **Demos** and uses the same inputs and surface profile with a more pronounced relief. To capture or check either scene from the command line, pass its `.Scene` file with `--scene PATH`.
+
+Bundled `Base_Variant.Scene` files appear next to their base scene and share its category. An unfiltered `--check-surface --surface-output DIRECTORY` also runs the bundled variants. The [variant comparisons](Docs/Agent-Vault/05_Experiments/04_Surface-Simulation-Validation.md#기본-씬과-변형-8쌍) record the inputs and observed differences.
+
+Under **Simulation → Input**, enable **Inject water with Space** and aim at the surface. The cursor outlines the receiving region. Each press adds the configured volume once. Disable **Run scheduled inlet** to observe a manual dose on its own.
 
 ```powershell
-& ./Build/bin/Debug/MDSS.exe --scene Assets/Scenes/IceReactionLab.Scene
+& ./run.ps1 -AppArgs @('--scene', 'Assets/Scenes/SnowOnFabric.Scene')
+& ./Scripts/Validation/verify_reactions.ps1
 ```
 
-The Lit scene compares finite heating, sustained heating, and water cooling with `ice`, `waterfilm`, and `heat` States. The 14-second animation starts automatically. F10 opens the presentation view. Profile v5 rules live in `Assets/SurfaceProfiles/IceReactionLab.SRProfile`; thresholds and condition scales are amounts per fixed reference area.
-
-`Scripts/Validation/verify_reactions.ps1` captures the Lit scene at 3 and 14 seconds and checks finite, nonnegative States and Reaction diagnostics. Detailed contracts are in `Docs/Agent-Vault/02_Architecture/01_Contracts/06_Reactions.md`.
-
-On POSIX systems, `./Scripts/build.sh -DCMAKE_BUILD_TYPE=Release -- --scene Assets/Scenes/IceReactionLab.Scene` builds and launches the app. Arguments before `--` configure CMake; arguments after it go to the app. `./Scripts/run.sh` launches an existing build.
+The reaction check compares the CPU and Vulkan implementations for the current textile demo and exports JSON results.
 
 ## Project Status
 

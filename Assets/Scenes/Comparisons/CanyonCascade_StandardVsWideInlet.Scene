@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Canyon Cascade · Standard vs Wide Inlet",
+  "koreanTitle": "협곡의 연쇄 폭포 · 기본 급수와 넓은 급수",
+  "description": "같은 물을 좁거나 넓게 공급했을 때 웅덩이에 이르는 물길을 비교한다.",
+  "cases": [
+    {
+      "scene": "../CanyonCascade.Scene",
+      "label": "Standard inlet"
+    },
+    {
+      "scene": "../CanyonCascade_WideInlet.Scene",
+      "label": "Wide inlet"
+    }
+  ]
+}

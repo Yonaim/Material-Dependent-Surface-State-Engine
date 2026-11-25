@@ -1,0 +1,35 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "SteppedWaterLeveling",
+  "geometry": "CavityChart",
+  "geometrySamples": [72, 40],
+  "simulationCells": [6, 5],
+  "sizeM": [0.24, 0.12],
+  "smoothDisplay": false,
+  "openOutlet": false,
+  "startPaused": true,
+  "transportSubsteps": 4,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "bodyThicknessM": 0.008,
+  "sectionWindow": {
+    "frontV": 0.23,
+    "heightM": 0.036,
+    "graduationM": 0.002,
+    "solidBedRangeU": [0.5, 0.8333333333333334]
+  },
+  "heightMap": {
+    "texture": "../Geometry/stepped-water-tray.height.png",
+    "heightRangeM": 0.051
+  },
+  "surfaceTexture": "../Textures/SurfaceSimulation/AmbientCG/Concrete030.png",
+  "surfaceProfile": "NonporousWaterFilm",
+  "initialFilm": [
+    {
+      "state": "layer.SurfaceWater",
+      "boundsUV": [0.16666666666666666, 0.2, 0.8333333333333334, 0.8],
+      "thicknessM": 0.016
+    }
+  ]
+}

@@ -1,0 +1,5888 @@
+{
+  "contact_flat": {
+    "summary": {
+      "bed_ice_ior": 0.0,
+      "bed_relief_mm": 0.0,
+      "cpu_gpu_mass_error_kg": 7.275957614183426e-12,
+      "donor_limited_regions": 0,
+      "downstream_mass_kg": 4.937874043202957e-06,
+      "final_absorbed_kg": 0.0011901253575632368,
+      "final_char": 0.0,
+      "final_ice_kg": 0.0,
+      "final_outlet_kg": 0.0,
+      "final_sink_kg": 0.0,
+      "final_surface_kg": 9.875748085184673e-06,
+      "first_absorbed_kg": 2.9962534018653647e-06,
+      "first_contact_area_mm2": 9333.33385984103,
+      "gpu_checked": true,
+      "head_limited_faces": 82,
+      "initial_ice_kg": 0.0,
+      "mass_ledger_error_kg": 1.0522894586945108e-09,
+      "peak_absorbed_kg": 0.0011901253575632368,
+      "peak_flame": 0.0,
+      "peak_steam_kg_s": 0.0,
+      "receiver_kg": 3.585660968331216e-19,
+      "reconstructed_mass_error_kg": 2.3272554928934816e-11,
+      "scenario_checks": false,
+      "source_mass_kg": 0.0,
+      "transport_substeps": 1
+    },
+    "series": [
+      {
+        "absorbed_g": 0.13569549608454454,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.20000000298023224,
+        "steam_g_s": 0.0,
+        "surface_g": 1.064304580623991
+      },
+      {
+        "absorbed_g": 0.25604657896943533,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.4000000059604645,
+        "steam_g_s": 0.0,
+        "surface_g": 0.9439532661671964
+      },
+      {
+        "absorbed_g": 0.36278841599431527,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.6000000238418579,
+        "steam_g_s": 0.0,
+        "surface_g": 0.837211597466869
+      },
+      {
+        "absorbed_g": 0.4574600052451223,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.800000011920929,
+        "steam_g_s": 0.0,
+        "surface_g": 0.7425400714186258
+      },
+      {
+        "absorbed_g": 0.5414260494580586,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.0000001192092896,
+        "steam_g_s": 0.0,
+        "surface_g": 0.658573951690283
+      },
+      {
+        "absorbed_g": 0.6158972364971623,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.2000001668930054,
+        "steam_g_s": 0.0,
+        "surface_g": 0.5841027835578779
+      },
+      {
+        "absorbed_g": 0.6819472473080396,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.5180527453370873
+      },
+      {
+        "absorbed_g": 0.7405285370695549,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 0.4594716165468893
+      },
+      {
+        "absorbed_g": 0.7924853733157372,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 0.40751475832376716
+      },
+      {
+        "absorbed_g": 0.8385670357015469,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.0,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3614332665326824
+      },
+      {
+        "absorbed_g": 0.8794377333841303,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 0.32056254754350705
+      },
+      {
+        "absorbed_g": 0.9156868109363121,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.28431354564941896
+      },
+      {
+        "absorbed_g": 0.9478368863528053,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 0.25216350446021507
+      },
+      {
+        "absorbed_g": 0.9763515690164379,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 0.22364894476739744
+      },
+      {
+        "absorbed_g": 1.0016416868670166,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.0,
+        "steam_g_s": 0.0,
+        "surface_g": 0.19835882431842566
+      },
+      {
+        "absorbed_g": 1.0240721605958725,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 0.1759285378780742
+      },
+      {
+        "absorbed_g": 1.043966276642902,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.15603460789781792
+      },
+      {
+        "absorbed_g": 1.0616104148858059,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 0.13839031188739284
+      },
+      {
+        "absorbed_g": 1.0772595581288997,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 0.12274119223134831
+      },
+      {
+        "absorbed_g": 1.0911391505065438,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 0.10886168881641642
+      },
+      {
+        "absorbed_g": 1.1034491946964355,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.09655165603729282
+      },
+      {
+        "absorbed_g": 1.114367167786934,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.08563364765217993
+      },
+      {
+        "absorbed_g": 1.124050530021439,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.07595024969863644
+      },
+      {
+        "absorbed_g": 1.1326388196353605,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.0673618441311971
+      },
+      {
+        "absorbed_g": 1.140256029170822,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.0,
+        "steam_g_s": 0.0,
+        "surface_g": 0.059744590296775375
+      },
+      {
+        "absorbed_g": 1.1470118592873793,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.05298868775072506
+      },
+      {
+        "absorbed_g": 1.1530037732995626,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.046996767255664866
+      },
+      {
+        "absorbed_g": 1.1583181272119416,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.04168246023345126
+      },
+      {
+        "absorbed_g": 1.1630317920042088,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.03696905343633008
+      },
+      {
+        "absorbed_g": 1.1672122300589336,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 0.03278862507329377
+      },
+      {
+        "absorbed_g": 1.1709199403399546,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.029080911018041965
+      },
+      {
+        "absorbed_g": 1.1742085481786695,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.025792453895714593
+      },
+      {
+        "absorbed_g": 1.1771251307739945,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.0228758612843422
+      },
+      {
+        "absorbed_g": 1.1797118585488622,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.02028906943539875
+      },
+      {
+        "absorbed_g": 1.1820060482988142,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 0.017994789405938696
+      },
+      {
+        "absorbed_g": 1.1840408511395928,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.015959946571533868
+      },
+      {
+        "absorbed_g": 1.1858455547195041,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.014155204646637633
+      },
+      {
+        "absorbed_g": 1.1874465260213671,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.012554538655487892
+      },
+      {
+        "absorbed_g": 1.1888661999223602,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.011134875538088175
+      },
+      {
+        "absorbed_g": 1.190125357563237,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 8.000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.009875748085184672
+      }
+    ]
+  },
+  "contact_ruffled": {
+    "summary": {
+      "bed_ice_ior": 0.0,
+      "bed_relief_mm": 6.9317545890808105,
+      "cpu_gpu_mass_error_kg": 5.820766091346741e-11,
+      "donor_limited_regions": 0,
+      "downstream_mass_kg": 0.00014602234014660098,
+      "final_absorbed_kg": 0.0009079562063369906,
+      "final_char": 0.0,
+      "final_ice_kg": 0.0,
+      "final_outlet_kg": 0.0,
+      "final_sink_kg": 0.0,
+      "final_surface_kg": 0.000292044680776371,
+      "first_absorbed_kg": 1.2875595839824394e-06,
+      "first_contact_area_mm2": 1649.7396763976826,
+      "gpu_checked": true,
+      "head_limited_faces": 4244,
+      "initial_ice_kg": 0.0,
+      "mass_ledger_error_kg": 1.3329284342944447e-09,
+      "peak_absorbed_kg": 0.0009079562063369906,
+      "peak_flame": 0.0,
+      "peak_steam_kg_s": 0.0,
+      "receiver_kg": 0.0,
+      "reconstructed_mass_error_kg": 6.73623500387163e-11,
+      "scenario_checks": false,
+      "source_mass_kg": 0.0,
+      "transport_substeps": 1
+    },
+    "series": [
+      {
+        "absorbed_g": 0.05799321824802653,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.20000000298023224,
+        "steam_g_s": 0.0,
+        "surface_g": 1.1420069321346205
+      },
+      {
+        "absorbed_g": 0.11370563012338963,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.4000000059604645,
+        "steam_g_s": 0.0,
+        "surface_g": 1.0862946809027108
+      },
+      {
+        "absorbed_g": 0.1656931174336962,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.6000000238418579,
+        "steam_g_s": 0.0,
+        "surface_g": 1.034307700066961
+      },
+      {
+        "absorbed_g": 0.21321494424503262,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.800000011920929,
+        "steam_g_s": 0.0,
+        "surface_g": 0.9867860397463346
+      },
+      {
+        "absorbed_g": 0.2571878462241384,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.0000001192092896,
+        "steam_g_s": 0.0,
+        "surface_g": 0.9428130692725745
+      },
+      {
+        "absorbed_g": 0.29826478755967667,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.2000001668930054,
+        "steam_g_s": 0.0,
+        "surface_g": 0.9017359394789537
+      },
+      {
+        "absorbed_g": 0.3357512835463483,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.8642495464386002
+      },
+      {
+        "absorbed_g": 0.37079921736471455,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 0.8292016760975685
+      },
+      {
+        "absorbed_g": 0.4036603601640376,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 0.7963404129753826
+      },
+      {
+        "absorbed_g": 0.4352472883868419,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.0,
+        "steam_g_s": 0.0,
+        "surface_g": 0.7647535540371564
+      },
+      {
+        "absorbed_g": 0.4652988636433264,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 0.7347019607664151
+      },
+      {
+        "absorbed_g": 0.49344281251073596,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.7065580662697357
+      },
+      {
+        "absorbed_g": 0.5205011971249895,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 0.6794995249492786
+      },
+      {
+        "absorbed_g": 0.5464708817579655,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 0.6535299928032146
+      },
+      {
+        "absorbed_g": 0.5708338767891341,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.0,
+        "steam_g_s": 0.0,
+        "surface_g": 0.6291669249662846
+      },
+      {
+        "absorbed_g": 0.5939995542214582,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 0.606001327184913
+      },
+      {
+        "absorbed_g": 0.6157438440825835,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.5842570479899223
+      },
+      {
+        "absorbed_g": 0.6362481012600618,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 0.5637528066699815
+      },
+      {
+        "absorbed_g": 0.6549291960298298,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 0.5450720016710875
+      },
+      {
+        "absorbed_g": 0.672610203056756,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 0.5273909168295177
+      },
+      {
+        "absorbed_g": 0.6897019179747943,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.5102992706440546
+      },
+      {
+        "absorbed_g": 0.7062254729195416,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.4937754879676959
+      },
+      {
+        "absorbed_g": 0.7222055101934188,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.4777958724559994
+      },
+      {
+        "absorbed_g": 0.7376119372217715,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.46238934729103676
+      },
+      {
+        "absorbed_g": 0.7521048116903017,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.0,
+        "steam_g_s": 0.0,
+        "surface_g": 0.4478962980272172
+      },
+      {
+        "absorbed_g": 0.7661382352637247,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.4338629833284813
+      },
+      {
+        "absorbed_g": 0.779485755908027,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.42051531826814426
+      },
+      {
+        "absorbed_g": 0.7922362551546769,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.40776484038929084
+      },
+      {
+        "absorbed_g": 0.8045947403676479,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3954064558513437
+      },
+      {
+        "absorbed_g": 0.8162650650458403,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3837360000886747
+      },
+      {
+        "absorbed_g": 0.8275070654466532,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3724941732059506
+      },
+      {
+        "absorbed_g": 0.8381705131572659,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3618305696875268
+      },
+      {
+        "absorbed_g": 0.8484044775940447,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3515965500184848
+      },
+      {
+        "absorbed_g": 0.8583155924668517,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.34168530092415494
+      },
+      {
+        "absorbed_g": 0.8672628785362235,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 0.33273801508926226
+      },
+      {
+        "absorbed_g": 0.8758417447900513,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3241589540436962
+      },
+      {
+        "absorbed_g": 0.8841947089237578,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3158060106045468
+      },
+      {
+        "absorbed_g": 0.892327757991751,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 0.3076730747864076
+      },
+      {
+        "absorbed_g": 0.9002463005742811,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 0.29975462408060594
+      },
+      {
+        "absorbed_g": 0.9079562063369906,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 8.000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 0.292044680776371
+      }
+    ]
+  },
+  "rewetting_on": {
+    "summary": {
+      "bed_coupling": true,
+      "dried_kg": 0.016130165052345546,
+      "first_outlets_0_1g_s": [
+        1.195833444595337,
+        1.4166667461395264
+      ],
+      "gpu_checked": true,
+      "gpu_level_error_m": 5.327165126800537e-06,
+      "gpu_mass_error_kg": 3.8628786569461226e-07,
+      "gpu_mixed_water_error_kg": 7.669768820051104e-08,
+      "initial_kg": 0.03790079628379317,
+      "injected_kg": 0.05199960466416087,
+      "ledger_error_kg": 8.012688290648384e-09,
+      "mud_solids_moved_after_second_pour_kg": 0.01288450764292777,
+      "omitted_support": -1,
+      "outlets_water_kg": [
+        0.01961952006978784,
+        0.008249115152779004
+      ],
+      "rewet_kg": 0.015787916857804295,
+      "second_outlets_water_kg": [
+        0.007363239366844064,
+        0.0020364768494279943
+      ],
+      "water_ledger_error_kg": 9.115903573664319e-09
+    },
+    "series": [
+      {
+        "dried_kg": 6.34972100218411e-05,
+        "layer_kg": [
+          0.03589584027940873,
+          0.002733674560519539,
+          0.002450809378679742
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0007356949853624672,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.25
+      },
+      {
+        "dried_kg": 0.00026801597277971944,
+        "layer_kg": [
+          0.03401777746398693,
+          0.00514922135145901,
+          0.00495222019672324
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0012797666788945394,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.5
+      },
+      {
+        "dried_kg": 0.0005829518460108698,
+        "layer_kg": [
+          0.03156105816560739,
+          0.008264947366264153,
+          0.007222031901065322
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0019450198595016843,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.7500000596046448
+      },
+      {
+        "dried_kg": 0.0010531838853338013,
+        "layer_kg": [
+          0.02836477794073744,
+          0.012261189304328277,
+          0.00919589700609924
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0027509227501200245,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          8.763570651844952e-29,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.0
+      },
+      {
+        "dried_kg": 0.0016728761223940257,
+        "layer_kg": [
+          0.02515831040085459,
+          0.01612193586783897,
+          0.010904059692506962
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0034113640768294678,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0002614960973814181,
+          2.5493044087267708e-17
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.2500001192092896
+      },
+      {
+        "dried_kg": 0.002374459354334779,
+        "layer_kg": [
+          0.023127612437292555,
+          0.01824217358771918,
+          0.011848182932226337
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0035163271953999597,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0014153241101566112,
+          0.0003415819109074496
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.5000001192092896
+      },
+      {
+        "dried_kg": 0.0030395643133254158,
+        "layer_kg": [
+          0.02246541780186817,
+          0.01848176723122208,
+          0.012328033735684585
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.003110131760985624,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.002864282568397279,
+          0.0013993392295839717
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.7500001192092896
+      },
+      {
+        "dried_kg": 0.003616544588556536,
+        "layer_kg": [
+          0.02216554512779112,
+          0.018316527665220406,
+          0.012525715187281988
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.002650996242131498,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.004600322601790062,
+          0.002596682869698895
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.0
+      },
+      {
+        "dried_kg": 0.00409941916450407,
+        "layer_kg": [
+          0.022106510426965542,
+          0.017912600969708592,
+          0.009422641108263241
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0021906995139993057,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.00644706392285017,
+          0.003830377822515117
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.25
+      },
+      {
+        "dried_kg": 0.004497709235188552,
+        "layer_kg": [
+          0.022077986834119656,
+          0.01755095506078419,
+          0.006532891207771877
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0018028792771218605,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.008280353252474847,
+          0.004876369213780605
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.500000238418579
+      },
+      {
+        "dried_kg": 0.00482463899654384,
+        "layer_kg": [
+          0.022072449701227015,
+          0.017228601890380446,
+          0.004458047832236466
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00147725713540936,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.009804017914747342,
+          0.005426240298339223
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.750000238418579
+      },
+      {
+        "dried_kg": 0.005092531293673375,
+        "layer_kg": [
+          0.02206730189755035,
+          0.01696484701832901,
+          0.00325513327513871
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.001210547096915704,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.010720998149680704,
+          0.005710992545408032
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.000000238418579
+      },
+      {
+        "dried_kg": 0.005312067578621793,
+        "layer_kg": [
+          0.022062470023229253,
+          0.016749101646482245,
+          0.002607436588937694
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.000992093989561127,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.01120910243679547,
+          0.005869501619008076
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.250000238418579
+      },
+      {
+        "dried_kg": 0.005491990125690904,
+        "layer_kg": [
+          0.0220581841749663,
+          0.016572294135073662,
+          0.002207448162017122
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0008130612310468521,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011517508510054463,
+          0.005960193846439153
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.500000238418579
+      },
+      {
+        "dried_kg": 0.005639444945337857,
+        "layer_kg": [
+          0.02205425759711943,
+          0.016427533242421077,
+          0.0019327674867559701
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0006663759609137898,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011727279797641054,
+          0.006024333449664197
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.750000238418579
+      },
+      {
+        "dried_kg": 0.005760305026317525,
+        "layer_kg": [
+          0.022050522735298728,
+          0.016309173817148803,
+          0.0017394603906160093
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0005462302084584536,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011871893110993747,
+          0.006072312806329648
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.0
+      },
+      {
+        "dried_kg": 0.00585938178740264,
+        "layer_kg": [
+          0.022046957466955064,
+          0.016212428878617402,
+          0.00159189331001297
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0004478196836945614,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011981011354465786,
+          0.006110095208922871
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.25
+      },
+      {
+        "dried_kg": 0.005940615941803173,
+        "layer_kg": [
+          0.02204354465720826,
+          0.01613337933225978,
+          0.0014735234708558303
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0003672097303795141,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012067709434178519,
+          0.0061411428633329585
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.5
+      },
+      {
+        "dried_kg": 0.006007234459779909,
+        "layer_kg": [
+          0.022040268408090924,
+          0.016068814781689866,
+          0.0013760591337534927
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0003011779905843781,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012138407635235503,
+          0.006167322313677402
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.750000476837158
+      },
+      {
+        "dried_kg": 0.006061880291991173,
+        "layer_kg": [
+          0.022037115595594514,
+          0.016016105820256143,
+          0.001294170675186556
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0002470855541987227,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012197270482162858,
+          0.006189794633312771
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.000000476837158
+      },
+      {
+        "dried_kg": 0.00610671796461304,
+        "layer_kg": [
+          0.022034075407646014,
+          0.015973099654445377,
+          0.001224397794415743
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0002027712626160305,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012247183234323566,
+          0.0062091312226202995
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.250000476837158
+      },
+      {
+        "dried_kg": 0.006371125906035502,
+        "layer_kg": [
+          0.022032121459062637,
+          0.017715881493657548,
+          0.0018029039922843526
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.001945295913104772,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.00019910639528822536,
+        "outlets_water_kg": [
+          0.012257667670804214,
+          0.006213168400461017
+        ],
+        "rewet_kg": 0.00200682959620609,
+        "second_outlets_water_kg": [
+          1.3869678604386008e-06,
+          5.300971100028699e-07
+        ],
+        "seconds": 5.500000476837158
+      },
+      {
+        "dried_kg": 0.006803055196925811,
+        "layer_kg": [
+          0.022028213253349804,
+          0.01821249815458259,
+          0.004126553095601627
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0024396673595321605,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.000606979430009962,
+        "outlets_water_kg": [
+          0.012257667670804214,
+          0.006213168400461017
+        ],
+        "rewet_kg": 0.0029322323373723387,
+        "second_outlets_water_kg": [
+          1.3869678604386008e-06,
+          5.300971100028699e-07
+        ],
+        "seconds": 5.750000476837158
+      },
+      {
+        "dried_kg": 0.007366708977222913,
+        "layer_kg": [
+          0.02201994049210043,
+          0.019107071659391295,
+          0.0059249180692746385
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0033275976387585615,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0011355869637108863,
+        "outlets_water_kg": [
+          0.012257667670804214,
+          0.006213168400461017
+        ],
+        "rewet_kg": 0.004381160168673355,
+        "second_outlets_water_kg": [
+          1.3869678604386008e-06,
+          5.300971100028699e-07
+        ],
+        "seconds": 6.000000476837158
+      },
+      {
+        "dried_kg": 0.00812516094390503,
+        "layer_kg": [
+          0.0219988587541593,
+          0.020035933490362368,
+          0.007507033707428827
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.004236979384700135,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.002807567337027948,
+        "outlets_water_kg": [
+          0.012257667670804214,
+          0.006213168400461017
+        ],
+        "rewet_kg": 0.006041202754161467,
+        "second_outlets_water_kg": [
+          1.3869678604386008e-06,
+          5.300971100028699e-07
+        ],
+        "seconds": 6.250000476837158
+      },
+      {
+        "dried_kg": 0.009066730836138959,
+        "layer_kg": [
+          0.02198780604339845,
+          0.021021143730649783,
+          0.008839675450392612
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00521271367870213,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.004652290621284099,
+        "outlets_water_kg": [
+          0.012257670210079726,
+          0.006213168400461017
+        ],
+        "rewet_kg": 0.007954716204011274,
+        "second_outlets_water_kg": [
+          1.3895071359512694e-06,
+          5.300971100028699e-07
+        ],
+        "seconds": 6.500000476837158
+      },
+      {
+        "dried_kg": 0.010175142263847192,
+        "layer_kg": [
+          0.021980244209771627,
+          0.021594259045741637,
+          0.009833544179308887
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005809462442016411,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.006812469114766008,
+        "outlets_water_kg": [
+          0.012796758416576567,
+          0.006213168400461017
+        ],
+        "rewet_kg": 0.009669303814438753,
+        "second_outlets_water_kg": [
+          0.0005404777136327906,
+          5.300971100028699e-07
+        ],
+        "seconds": 6.750000476837158
+      },
+      {
+        "dried_kg": 0.011363014369862867,
+        "layer_kg": [
+          0.02197025699013011,
+          0.02180273138856137,
+          0.01021453515797371
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0060487320520223875,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.008501328466859788,
+        "outlets_water_kg": [
+          0.014148871538842585,
+          0.006287188318582401
+        ],
+        "rewet_kg": 0.0111087440891336,
+        "second_outlets_water_kg": [
+          0.0018925908358988094,
+          7.455001523139076e-05
+        ],
+        "seconds": 7.000000476837158
+      },
+      {
+        "dried_kg": 0.012570047998451628,
+        "layer_kg": [
+          0.021967032495012973,
+          0.021719975862652063,
+          0.01016780098922128
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.006028176836025523,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.009836206385204816,
+        "outlets_water_kg": [
+          0.015668267370407492,
+          0.006852471469329621
+        ],
+        "rewet_kg": 0.012320059980198427,
+        "second_outlets_water_kg": [
+          0.0034119866674637163,
+          0.0006398331659786108
+        ],
+        "seconds": 7.250000476837158
+      },
+      {
+        "dried_kg": 0.013770309213668952,
+        "layer_kg": [
+          0.021964930128888227,
+          0.02164177910071885,
+          0.007503201000700859
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005996000059894868,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.010980988071127335,
+        "outlets_water_kg": [
+          0.01718029559230338,
+          0.007468291586320638
+        ],
+        "rewet_kg": 0.01350655186945544,
+        "second_outlets_water_kg": [
+          0.004924014889359606,
+          0.001255653282969628
+        ],
+        "seconds": 7.500000476837158
+      },
+      {
+        "dried_kg": 0.014964805855925079,
+        "layer_kg": [
+          0.021962870994684636,
+          0.021577951984909305,
+          0.004307178623092672
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005967180639800063,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.011998176326479773,
+        "outlets_water_kg": [
+          0.018661766492974793,
+          0.008002922898441475
+        ],
+        "rewet_kg": 0.014686231546350247,
+        "second_outlets_water_kg": [
+          0.006405485790031017,
+          0.0017902845950904648
+        ],
+        "seconds": 7.750000476837158
+      },
+      {
+        "dried_kg": 0.016130165052345546,
+        "layer_kg": [
+          0.021960886355373077,
+          0.02147414481987653,
+          0.002001319147039898
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005892040916478436,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.01288450764292777,
+        "outlets_water_kg": [
+          0.01961952006978784,
+          0.008249115152779004
+        ],
+        "rewet_kg": 0.015787916857804295,
+        "second_outlets_water_kg": [
+          0.007363239366844064,
+          0.0020364768494279943
+        ],
+        "seconds": 7.995833873748779
+      }
+    ]
+  },
+  "rewetting_off": {
+    "summary": {
+      "bed_coupling": true,
+      "dried_kg": 0.006336897411870268,
+      "first_outlets_0_1g_s": [
+        1.195833444595337,
+        1.4166667461395264
+      ],
+      "gpu_checked": true,
+      "gpu_level_error_m": 5.327165126800537e-06,
+      "gpu_mass_error_kg": 3.8628786569461226e-07,
+      "gpu_mixed_water_error_kg": 7.669768820051104e-08,
+      "initial_kg": 0.03790079628379317,
+      "injected_kg": 0.05199960466416087,
+      "ledger_error_kg": 1.2460830742244688e-08,
+      "mud_solids_moved_after_second_pour_kg": 0.0,
+      "omitted_support": -1,
+      "outlets_water_kg": [
+        0.027674161560285748,
+        0.01364437415837989
+      ],
+      "rewet_kg": 0.0,
+      "second_outlets_water_kg": [
+        0.01541788085734197,
+        0.007431735855028876
+      ],
+      "water_ledger_error_kg": 3.873841913915044e-09
+    },
+    "series": [
+      {
+        "dried_kg": 6.34972100218411e-05,
+        "layer_kg": [
+          0.03589584027940873,
+          0.002733674560519539,
+          0.002450809378679742
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0007356949853624672,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.25
+      },
+      {
+        "dried_kg": 0.00026801597277971944,
+        "layer_kg": [
+          0.03401777746398693,
+          0.00514922135145901,
+          0.00495222019672324
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0012797666788945394,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.5
+      },
+      {
+        "dried_kg": 0.0005829518460108698,
+        "layer_kg": [
+          0.03156105816560739,
+          0.008264947366264153,
+          0.007222031901065322
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0019450198595016843,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.7500000596046448
+      },
+      {
+        "dried_kg": 0.0010531838853338013,
+        "layer_kg": [
+          0.02836477794073744,
+          0.012261189304328277,
+          0.00919589700609924
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0027509227501200245,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          8.763570651844952e-29,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.0
+      },
+      {
+        "dried_kg": 0.0016728761223940257,
+        "layer_kg": [
+          0.02515831040085459,
+          0.01612193586783897,
+          0.010904059692506962
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0034113640768294678,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0002614960973814181,
+          2.5493044087267708e-17
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.2500001192092896
+      },
+      {
+        "dried_kg": 0.002374459354334779,
+        "layer_kg": [
+          0.023127612437292555,
+          0.01824217358771918,
+          0.011848182932226337
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0035163271953999597,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0014153241101566112,
+          0.0003415819109074496
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.5000001192092896
+      },
+      {
+        "dried_kg": 0.0030395643133254158,
+        "layer_kg": [
+          0.02246541780186817,
+          0.01848176723122208,
+          0.012328033735684585
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.003110131760985624,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.002864282568397279,
+          0.0013993392295839717
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.7500001192092896
+      },
+      {
+        "dried_kg": 0.003616544588556536,
+        "layer_kg": [
+          0.02216554512779112,
+          0.018316527665220406,
+          0.012525715187281988
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.002650996242131498,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.004600322601790062,
+          0.002596682869698895
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.0
+      },
+      {
+        "dried_kg": 0.00409941916450407,
+        "layer_kg": [
+          0.022106510426965542,
+          0.017912600969708592,
+          0.009422641108263241
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0021906995139993057,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.00644706392285017,
+          0.003830377822515117
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.25
+      },
+      {
+        "dried_kg": 0.004497709235188552,
+        "layer_kg": [
+          0.022077986834119656,
+          0.01755095506078419,
+          0.006532891207771877
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0018028792771218605,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.008280353252474847,
+          0.004876369213780605
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.500000238418579
+      },
+      {
+        "dried_kg": 0.00482463899654384,
+        "layer_kg": [
+          0.022072449701227015,
+          0.017228601890380446,
+          0.004458047832236466
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00147725713540936,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.009804017914747342,
+          0.005426240298339223
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.750000238418579
+      },
+      {
+        "dried_kg": 0.005092531293673375,
+        "layer_kg": [
+          0.02206730189755035,
+          0.01696484701832901,
+          0.00325513327513871
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.001210547096915704,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.010720998149680704,
+          0.005710992545408032
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.000000238418579
+      },
+      {
+        "dried_kg": 0.005312067578621793,
+        "layer_kg": [
+          0.022062470023229253,
+          0.016749101646482245,
+          0.002607436588937694
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.000992093989561127,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.01120910243679547,
+          0.005869501619008076
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.250000238418579
+      },
+      {
+        "dried_kg": 0.005491990125690904,
+        "layer_kg": [
+          0.0220581841749663,
+          0.016572294135073662,
+          0.002207448162017122
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0008130612310468521,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011517508510054463,
+          0.005960193846439153
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.500000238418579
+      },
+      {
+        "dried_kg": 0.005639444945337857,
+        "layer_kg": [
+          0.02205425759711943,
+          0.016427533242421077,
+          0.0019327674867559701
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0006663759609137898,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011727279797641054,
+          0.006024333449664197
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.750000238418579
+      },
+      {
+        "dried_kg": 0.005760305026317525,
+        "layer_kg": [
+          0.022050522735298728,
+          0.016309173817148803,
+          0.0017394603906160093
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0005462302084584536,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011871893110993747,
+          0.006072312806329648
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.0
+      },
+      {
+        "dried_kg": 0.00585938178740264,
+        "layer_kg": [
+          0.022046957466955064,
+          0.016212428878617402,
+          0.00159189331001297
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0004478196836945614,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.011981011354465786,
+          0.006110095208922871
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.25
+      },
+      {
+        "dried_kg": 0.005940615941803173,
+        "layer_kg": [
+          0.02204354465720826,
+          0.01613337933225978,
+          0.0014735234708558303
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0003672097303795141,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012067709434178519,
+          0.0061411428633329585
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.5
+      },
+      {
+        "dried_kg": 0.006007234459779909,
+        "layer_kg": [
+          0.022040268408090924,
+          0.016068814781689866,
+          0.0013760591337534927
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0003011779905843781,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012138407635235503,
+          0.006167322313677402
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.750000476837158
+      },
+      {
+        "dried_kg": 0.006061880291991173,
+        "layer_kg": [
+          0.022037115595594514,
+          0.016016105820256143,
+          0.001294170675186556
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0002470855541987227,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012197270482162858,
+          0.006189794633312771
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.000000476837158
+      },
+      {
+        "dried_kg": 0.00610671796461304,
+        "layer_kg": [
+          0.022034075407646014,
+          0.015973099654445377,
+          0.001224397794415743
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0002027712626160305,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012247183234323566,
+          0.0062091312226202995
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.250000476837158
+      },
+      {
+        "dried_kg": 0.006143518184863694,
+        "layer_kg": [
+          0.02203126887154383,
+          0.015937853534140345,
+          0.00376437184738787
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00016641492449487316,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012290165105882388,
+          0.006225691646173657
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          3.388440293861095e-05,
+          1.3053342822644254e-05
+        ],
+        "seconds": 5.500000476837158
+      },
+      {
+        "dried_kg": 0.006173732030603674,
+        "layer_kg": [
+          0.022028026596672134,
+          0.01590985136482459,
+          0.006961788425766024
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00013683286837129494,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.012327666481185284,
+          0.0062400921308503705
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          7.138577824150616e-05,
+          2.745382749935743e-05
+        ],
+        "seconds": 5.750000476837158
+      },
+      {
+        "dried_kg": 0.006198811252655645,
+        "layer_kg": [
+          0.022016128150426084,
+          0.01589914598713449,
+          0.009556300162898167
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00011586015898257251,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.01296668429721266,
+          0.006252404692966905
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0007104035942688824,
+          3.976638961589174e-05
+        ],
+        "seconds": 6.000000476837158
+      },
+      {
+        "dried_kg": 0.006220694061486398,
+        "layer_kg": [
+          0.021988975024214596,
+          0.01591303345414019,
+          0.010753907109123032
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00010419740182143755,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.014624129350055037,
+          0.006637083552382193
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.002367848647111259,
+          0.0004244452490311801
+        ],
+        "seconds": 6.250000476837158
+      },
+      {
+        "dried_kg": 0.006240644104174464,
+        "layer_kg": [
+          0.02195858021150343,
+          0.01593342968357092,
+          0.011231281356454386
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          9.57750196286522e-05,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.01643645829925462,
+          0.007585804264967975
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.004180177596310841,
+          0.0013731659616169622
+        ],
+        "seconds": 6.500000476837158
+      },
+      {
+        "dried_kg": 0.00625907681647675,
+        "layer_kg": [
+          0.02192774211653159,
+          0.015956001294981093,
+          0.011530644930299244
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          8.905791453517331e-05,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.01832547371894706,
+          0.008635661018493068
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0060691930160032825,
+          0.0024230227151420536
+        ],
+        "seconds": 6.750000476837158
+      },
+      {
+        "dried_kg": 0.006276365883977064,
+        "layer_kg": [
+          0.021894714889640454,
+          0.01598281383644462,
+          0.011730508476941733
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          8.436933858391171e-05,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.020259062278897354,
+          0.009739559109098139
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.008002781575953577,
+          0.0035269208057471246
+        ],
+        "seconds": 7.000000476837158
+      },
+      {
+        "dried_kg": 0.006292874426691242,
+        "layer_kg": [
+          0.021860123952137656,
+          0.016012629754868613,
+          0.011867139165697576
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          8.109634655539821e-05,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.022220485816875035,
+          0.010878220003965055
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.009964205113931257,
+          0.004665581700614041
+        ],
+        "seconds": 7.250000476837158
+      },
+      {
+        "dried_kg": 0.006308806019195146,
+        "layer_kg": [
+          0.021825437841471285,
+          0.016043188654833784,
+          0.009363293249591662
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          7.844776395238284e-05,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.02420029516677986,
+          0.01203896379967324
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.011944014463836083,
+          0.005826325496322227
+        ],
+        "seconds": 7.500000476837158
+      },
+      {
+        "dried_kg": 0.006324039942949611,
+        "layer_kg": [
+          0.021802392293466255,
+          0.016058177097264092,
+          0.006388801779345407
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          7.184886132716173e-05,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.026125390951606996,
+          0.013079724384729218
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.013869110248663219,
+          0.006867086081378204
+        ],
+        "seconds": 7.750000476837158
+      },
+      {
+        "dried_kg": 0.006336897411870268,
+        "layer_kg": [
+          0.02180017388127453,
+          0.016046445725606873,
+          0.004275059698571076
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          5.9313138833338996e-05,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.027674161560285748,
+          0.01364437415837989
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.01541788085734197,
+          0.007431735855028876
+        ],
+        "seconds": 7.995833873748779
+      }
+    ]
+  },
+  "steel_thin": {
+    "summary": {
+      "bed_ice_ior": 0.0,
+      "bed_relief_mm": 19.808813095092773,
+      "cpu_gpu_mass_error_kg": 3.119930624961853e-08,
+      "cpu_gpu_steam_error_kg_s": 2.837623469531536e-10,
+      "cpu_gpu_temperature_error_K": 0.001220703125,
+      "donor_limited_regions": 0,
+      "downstream_mass_kg": 0.016874921051095632,
+      "final_absorbed_kg": 0.0,
+      "final_char": 0.0,
+      "final_ice_kg": 0.0,
+      "final_outlet_kg": 0.016345163345249603,
+      "final_sink_kg": 0.0014873795091032704,
+      "final_surface_kg": 0.0011674741712656858,
+      "first_absorbed_kg": 0.0,
+      "first_contact_area_mm2": 143.74999357387432,
+      "first_outlet_10mg_s": 1.3875001668930054,
+      "gpu_checked": true,
+      "head_limited_faces": 187548,
+      "initial_ice_kg": 0.0,
+      "mass_ledger_error_kg": 2.4591544214164207e-08,
+      "peak_absorbed_kg": 0.0,
+      "peak_flame": 0.0,
+      "peak_steam_kg_s": 0.0008772228295015339,
+      "quench": {
+        "areal_heat_capacity_J_m2_K": 3846.500244140625,
+        "energy_residual_J": 0.02796851212724505,
+        "first_steam_seconds": 0.18750000977888703,
+        "initial_hottest_temperature_K": 980.0,
+        "max_temperature_drop_K": 606.8255615234375,
+        "substrate_heat_loss_J": 3853.7723395744465,
+        "vaporization_energy_J": 3853.8003080865738
+      },
+      "receiver_kg": 0.0,
+      "reconstructed_mass_error_kg": 5.549483099764148e-10,
+      "scenario_checks": false,
+      "source_mass_kg": 0.01899999948000186,
+      "transport_substeps": 1
+    },
+    "series": [
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 2.2193547699481467e-08,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.20000000298023224,
+        "steam_g_s": 4.252720481323635e-06,
+        "surface_g": 1.266666706746012
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0019669987328745065,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.4000000059604645,
+        "steam_g_s": 0.02204826320668929,
+        "surface_g": 2.531366597028434
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.024151804952465827,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.6000000238418579,
+        "steam_g_s": 0.2647304387082272,
+        "surface_g": 3.77584907050485
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.1137030560464671,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.800000011920929,
+        "steam_g_s": 0.6326128209546145,
+        "surface_g": 4.952965323358886
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.2581615429232409,
+        "flame": 0.0,
+        "hottest_temperature_K": 978.57470703125,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.0000001192092896,
+        "steam_g_s": 0.8167308485349523,
+        "surface_g": 6.07517476360551
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.43086044342466323,
+        "flame": 0.0,
+        "hottest_temperature_K": 958.4089965820312,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.2000001668930054,
+        "steam_g_s": 0.8772228295015339,
+        "surface_g": 7.169144451574922
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.6019996332438278,
+        "flame": 0.0,
+        "hottest_temperature_K": 923.4790649414062,
+        "ice_g": 0.0,
+        "outlet_g": 0.013262999999597014,
+        "seconds": 1.4000000953674316,
+        "steam_g_s": 0.8271232575363108,
+        "surface_g": 8.251409888476447
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.7573955106241717,
+        "flame": 0.0,
+        "hottest_temperature_K": 895.7610473632812,
+        "ice_g": 0.0,
+        "outlet_g": 0.11943874416542322,
+        "seconds": 1.6000001430511475,
+        "steam_g_s": 0.714109064848957,
+        "surface_g": 9.256507063941235
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.8907641575757186,
+        "flame": 0.0,
+        "hottest_temperature_K": 885.9745483398438,
+        "ice_g": 0.0,
+        "outlet_g": 0.3781293276006181,
+        "seconds": 1.8000001907348633,
+        "steam_g_s": 0.6237420387344983,
+        "surface_g": 10.13111630930591
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.0035491316453538,
+        "flame": 0.0,
+        "hottest_temperature_K": 866.3533325195312,
+        "ice_g": 0.0,
+        "outlet_g": 0.7396447035716847,
+        "seconds": 2.0,
+        "steam_g_s": 0.5122423040404556,
+        "surface_g": 10.923484155509513
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.0962251015936963,
+        "flame": 0.0,
+        "hottest_temperature_K": 847.4827880859375,
+        "ice_g": 0.0,
+        "outlet_g": 1.1879893281729892,
+        "seconds": 2.200000047683716,
+        "steam_g_s": 0.417477253722004,
+        "surface_g": 11.649131998554719
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.171378515021415,
+        "flame": 0.0,
+        "hottest_temperature_K": 829.333984375,
+        "ice_g": 0.0,
+        "outlet_g": 1.7268934534513392,
+        "seconds": 2.4000000953674316,
+        "steam_g_s": 0.34018732759877324,
+        "surface_g": 12.301742428469908
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.2327912839520394,
+        "flame": 0.0,
+        "hottest_temperature_K": 811.8798828125,
+        "ice_g": 0.0,
+        "outlet_g": 2.341671335480161,
+        "seconds": 2.6000001430511475,
+        "steam_g_s": 0.275088883466168,
+        "surface_g": 12.892220558309399
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.282371233116919,
+        "flame": 0.0,
+        "hottest_temperature_K": 794.3482055664062,
+        "ice_g": 0.0,
+        "outlet_g": 3.0224452367306753,
+        "seconds": 2.8000001907348633,
+        "steam_g_s": 0.22502539225044416,
+        "surface_g": 13.428534958151346
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.323734417905634,
+        "flame": 0.0,
+        "hottest_temperature_K": 774.5728149414062,
+        "ice_g": 0.0,
+        "outlet_g": 3.7626615713293177,
+        "seconds": 3.0,
+        "steam_g_s": 0.1905387867667729,
+        "surface_g": 13.913622926687982
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.3587603000560582,
+        "flame": 0.0,
+        "hottest_temperature_K": 752.2221069335938,
+        "ice_g": 0.0,
+        "outlet_g": 4.555023019861437,
+        "seconds": 3.200000047683716,
+        "steam_g_s": 0.1609797235400806,
+        "surface_g": 13.086235607034535
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.3880801898210615,
+        "flame": 0.0,
+        "hottest_temperature_K": 728.6653442382812,
+        "ice_g": 0.0,
+        "outlet_g": 5.389152968291455,
+        "seconds": 3.4000000953674316,
+        "steam_g_s": 0.13282035365835831,
+        "surface_g": 12.222784283291825
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4118970486753923,
+        "flame": 0.0,
+        "hottest_temperature_K": 706.20556640625,
+        "ice_g": 0.0,
+        "outlet_g": 6.25684641454427,
+        "seconds": 3.6000001430511475,
+        "steam_g_s": 0.10644044323449009,
+        "surface_g": 11.331275910704736
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4308019188957743,
+        "flame": 0.0,
+        "hottest_temperature_K": 686.385009765625,
+        "ice_g": 0.0,
+        "outlet_g": 7.1427220427722204,
+        "seconds": 3.8000001907348633,
+        "steam_g_s": 0.08345243478546926,
+        "surface_g": 10.426496795536679
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4452945083203161,
+        "flame": 0.0,
+        "hottest_temperature_K": 671.0517578125,
+        "ice_g": 0.0,
+        "outlet_g": 8.028180982364574,
+        "seconds": 4.000000476837158,
+        "steam_g_s": 0.06222687594636955,
+        "surface_g": 9.526545169280789
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4560215561196799,
+        "flame": 0.0,
+        "hottest_temperature_K": 659.5966186523438,
+        "ice_g": 0.0,
+        "outlet_g": 8.892993104382185,
+        "seconds": 4.200000286102295,
+        "steam_g_s": 0.04631621715511791,
+        "surface_g": 8.651005749945464
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4642132674804742,
+        "flame": 0.0,
+        "hottest_temperature_K": 648.6367797851562,
+        "ice_g": 0.0,
+        "outlet_g": 9.719514164316934,
+        "seconds": 4.400000095367432,
+        "steam_g_s": 0.03659484998319584,
+        "surface_g": 7.816293777500281
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4704373513652058,
+        "flame": 0.0,
+        "hottest_temperature_K": 640.3419189453125,
+        "ice_g": 0.0,
+        "outlet_g": 10.495673614059342,
+        "seconds": 4.600000381469727,
+        "steam_g_s": 0.025755504366564708,
+        "surface_g": 7.033910495411674
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4747195241007205,
+        "flame": 0.0,
+        "hottest_temperature_K": 636.1015625,
+        "ice_g": 0.0,
+        "outlet_g": 11.217850522371009,
+        "seconds": 4.800000190734863,
+        "steam_g_s": 0.01810877845573322,
+        "surface_g": 6.307452331473831
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4778351606157258,
+        "flame": 0.0,
+        "hottest_temperature_K": 634.0921630859375,
+        "ice_g": 0.0,
+        "outlet_g": 11.882483689987566,
+        "seconds": 5.0,
+        "steam_g_s": 0.013382571742451277,
+        "surface_g": 5.639702804679681
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4801020252033226,
+        "flame": 0.0,
+        "hottest_temperature_K": 633.20458984375,
+        "ice_g": 0.0,
+        "outlet_g": 12.49006897342042,
+        "seconds": 5.200000286102295,
+        "steam_g_s": 0.009597607678308792,
+        "surface_g": 5.029851429009856
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4817078877920054,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.8407592773438,
+        "ice_g": 0.0,
+        "outlet_g": 13.037588800216326,
+        "seconds": 5.400000095367432,
+        "steam_g_s": 0.006735838604798785,
+        "surface_g": 4.4807249309262485
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4828601552947518,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6979370117188,
+        "ice_g": 0.0,
+        "outlet_g": 13.530351923691342,
+        "seconds": 5.600000381469727,
+        "steam_g_s": 0.00493282215718871,
+        "surface_g": 3.986810153849934
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4837171954580342,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.642822265625,
+        "ice_g": 0.0,
+        "outlet_g": 13.975643090816448,
+        "seconds": 5.800000190734863,
+        "steam_g_s": 0.0037315066887810833,
+        "surface_g": 3.540660750684818
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4843747434154508,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.621826171875,
+        "ice_g": 0.0,
+        "outlet_g": 14.379353266122052,
+        "seconds": 6.000000476837158,
+        "steam_g_s": 0.002985120219012316,
+        "surface_g": 3.1362935863116195
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.48492537538214,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.61376953125,
+        "ice_g": 0.0,
+        "outlet_g": 14.740559043275425,
+        "seconds": 6.200000286102295,
+        "steam_g_s": 0.002552017950435692,
+        "surface_g": 2.7745384777402817
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.485399668228915,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6106567382812,
+        "ice_g": 0.0,
+        "outlet_g": 15.057240267196903,
+        "seconds": 6.400000095367432,
+        "steam_g_s": 0.0021984212155573557,
+        "surface_g": 2.457384136120258
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4857950405255949,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 15.329791120166192,
+        "seconds": 6.600000381469727,
+        "steam_g_s": 0.0017948076962981396,
+        "surface_g": 2.184433334232846
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.486122489938957,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 15.558279937977204,
+        "seconds": 6.800000190734863,
+        "steam_g_s": 0.0015070181932502758,
+        "surface_g": 1.955617188033526
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4864007756498765,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 15.748698966490338,
+        "seconds": 7.000000476837158,
+        "steam_g_s": 0.001296744940419703,
+        "surface_g": 1.7649167256595848
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4866428313551339,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 15.909869925962994,
+        "seconds": 7.200000286102295,
+        "steam_g_s": 0.0011370919836949794,
+        "surface_g": 1.603505557247311
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4868566759558277,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 16.044200285250554,
+        "seconds": 7.400000095367432,
+        "steam_g_s": 0.0010135478948304286,
+        "surface_g": 1.468957579918235
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4870483999969153,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 16.158101036126027,
+        "seconds": 7.600000381469727,
+        "steam_g_s": 0.000913473721005087,
+        "surface_g": 1.3548662838278858
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4872215642069975,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 16.257026120001683,
+        "seconds": 7.800000190734863,
+        "steam_g_s": 0.0008301566332830079,
+        "surface_g": 1.2557693605339608
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.4873795091032704,
+        "flame": 0.0,
+        "hottest_temperature_K": 632.6100463867188,
+        "ice_g": 0.0,
+        "outlet_g": 16.345163345249603,
+        "seconds": 8.000000953674316,
+        "steam_g_s": 0.0007594974725452786,
+        "surface_g": 1.1674741712656858
+      }
+    ]
+  },
+  "steel_thick": {
+    "summary": {
+      "bed_ice_ior": 0.0,
+      "bed_relief_mm": 19.808813095092773,
+      "cpu_gpu_mass_error_kg": 2.3748725652694702e-08,
+      "cpu_gpu_steam_error_kg_s": 4.2928149923682213e-10,
+      "cpu_gpu_temperature_error_K": 0.00115966796875,
+      "donor_limited_regions": 0,
+      "downstream_mass_kg": 0.011849716792878334,
+      "final_absorbed_kg": 0.0,
+      "final_char": 0.0,
+      "final_ice_kg": 0.0,
+      "final_outlet_kg": 0.011404480966029418,
+      "final_sink_kg": 0.006521947829784325,
+      "final_surface_kg": 0.001073591141409653,
+      "first_absorbed_kg": 0.0,
+      "first_contact_area_mm2": 143.74999357387432,
+      "first_outlet_10mg_s": 1.4625000953674316,
+      "gpu_checked": true,
+      "head_limited_faces": 177922,
+      "initial_ice_kg": 0.0,
+      "mass_ledger_error_kg": 2.51136587879619e-08,
+      "peak_absorbed_kg": 0.0,
+      "peak_flame": 0.0,
+      "peak_steam_kg_s": 0.0018730223477518848,
+      "quench": {
+        "areal_heat_capacity_J_m2_K": 23079.0,
+        "energy_residual_J": 0.030091760727373185,
+        "first_steam_seconds": 0.18750000977888703,
+        "initial_hottest_temperature_K": 980.0,
+        "max_temperature_drop_K": 569.9158935546875,
+        "substrate_heat_loss_J": 16898.336735210458,
+        "vaporization_energy_J": 16898.366826971185
+      },
+      "receiver_kg": 0.0,
+      "reconstructed_mass_error_kg": 5.85887255723559e-10,
+      "scenario_checks": false,
+      "source_mass_kg": 0.01899999948000186,
+      "transport_substeps": 1
+    },
+    "series": [
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 2.2193552903651895e-08,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.20000000298023224,
+        "steam_g_s": 4.252721813591265e-06,
+        "surface_g": 1.266666706746012
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0020795766319657463,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.4000000059604645,
+        "steam_g_s": 0.024624977917248048,
+        "surface_g": 2.5312541795218872
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.026267790885325937,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.6000000238418579,
+        "steam_g_s": 0.2871106231978615,
+        "surface_g": 3.773733402066273
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.12788962627041467,
+        "flame": 0.0,
+        "hottest_temperature_K": 980.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.800000011920929,
+        "steam_g_s": 0.7506562780951951,
+        "surface_g": 4.938779882335629
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.3145884744943477,
+        "flame": 0.0,
+        "hottest_temperature_K": 979.927001953125,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.0000001192092896,
+        "steam_g_s": 1.1113257110557662,
+        "surface_g": 6.018749694704537
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.5730958866774216,
+        "flame": 0.0,
+        "hottest_temperature_K": 977.3616333007812,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.2000001668930054,
+        "steam_g_s": 1.4391263398749743,
+        "surface_g": 7.026910514737898
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.8874527051598718,
+        "flame": 0.0,
+        "hottest_temperature_K": 973.0364379882812,
+        "ice_g": 0.0,
+        "outlet_g": 0.0018294564144705205,
+        "seconds": 1.4000000953674316,
+        "steam_g_s": 1.6704289918625936,
+        "surface_g": 7.977392897830581
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.2350423134252473,
+        "flame": 0.0,
+        "hottest_temperature_K": 965.9867553710938,
+        "ice_g": 0.0,
+        "outlet_g": 0.0456027011068727,
+        "seconds": 1.6000001430511475,
+        "steam_g_s": 1.8139881197201495,
+        "surface_g": 8.85269759052987
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.6065772432625192,
+        "flame": 0.0,
+        "hottest_temperature_K": 955.7720947265625,
+        "ice_g": 0.0,
+        "outlet_g": 0.1593690032571926,
+        "seconds": 1.8000001907348633,
+        "steam_g_s": 1.872268769748331,
+        "surface_g": 9.634065019551834
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 1.9804232740083805,
+        "flame": 0.0,
+        "hottest_temperature_K": 942.8994750976562,
+        "ice_g": 0.0,
+        "outlet_g": 0.36668896314040467,
+        "seconds": 2.0,
+        "steam_g_s": 1.8730223477518848,
+        "surface_g": 10.319567662941816
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 2.3536988860826114,
+        "flame": 0.0,
+        "hottest_temperature_K": 923.98828125,
+        "ice_g": 0.0,
+        "outlet_g": 0.6541186940012267,
+        "seconds": 2.200000047683716,
+        "steam_g_s": 1.8549669017602355,
+        "surface_g": 10.92553144552788
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 2.719577723546641,
+        "flame": 0.0,
+        "hottest_temperature_K": 902.2145385742188,
+        "ice_g": 0.0,
+        "outlet_g": 1.000550526441657,
+        "seconds": 2.4000000953674316,
+        "steam_g_s": 1.8066732324411305,
+        "surface_g": 11.47988874734615
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 3.07597774897371,
+        "flame": 0.0,
+        "hottest_temperature_K": 882.0464477539062,
+        "ice_g": 0.0,
+        "outlet_g": 1.3991524574521463,
+        "seconds": 2.6000001430511475,
+        "steam_g_s": 1.7521125168467044,
+        "surface_g": 11.991555592880134
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 3.419101533586477,
+        "flame": 0.0,
+        "hottest_temperature_K": 878.7493896484375,
+        "ice_g": 0.0,
+        "outlet_g": 1.8488304995116778,
+        "seconds": 2.8000001907348633,
+        "steam_g_s": 1.6796544735144576,
+        "surface_g": 12.465422404175932
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 3.747658359350259,
+        "flame": 0.0,
+        "hottest_temperature_K": 875.4736328125,
+        "ice_g": 0.0,
+        "outlet_g": 2.3492570835514925,
+        "seconds": 3.0,
+        "steam_g_s": 1.608184623109743,
+        "surface_g": 12.90310591805149
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 4.062299361808084,
+        "flame": 0.0,
+        "hottest_temperature_K": 872.21923828125,
+        "ice_g": 0.0,
+        "outlet_g": 2.8967125108465552,
+        "seconds": 3.200000047683716,
+        "steam_g_s": 1.5378402248797802,
+        "surface_g": 12.0410099463267
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 4.361007677878143,
+        "flame": 0.0,
+        "hottest_temperature_K": 868.9859008789062,
+        "ice_g": 0.0,
+        "outlet_g": 3.486145448451942,
+        "seconds": 3.4000000953674316,
+        "steam_g_s": 1.4463367519805814,
+        "surface_g": 11.152868854479554
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 4.6391743714857,
+        "flame": 0.0,
+        "hottest_temperature_K": 865.7734985351562,
+        "ice_g": 0.0,
+        "outlet_g": 4.10958126866745,
+        "seconds": 3.6000001430511475,
+        "steam_g_s": 1.3343640874211582,
+        "surface_g": 10.251266905383389
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 4.893191889602355,
+        "flame": 0.0,
+        "hottest_temperature_K": 862.5818481445312,
+        "ice_g": 0.0,
+        "outlet_g": 4.753624282011426,
+        "seconds": 3.8000001907348633,
+        "steam_g_s": 1.2088024370857653,
+        "surface_g": 9.353206614684112
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 5.121569368734702,
+        "flame": 0.0,
+        "hottest_temperature_K": 859.4109497070312,
+        "ice_g": 0.0,
+        "outlet_g": 5.398900904074466,
+        "seconds": 4.000000476837158,
+        "steam_g_s": 1.0799434997845747,
+        "surface_g": 8.479552798572165
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 5.325052206906822,
+        "flame": 0.0,
+        "hottest_temperature_K": 856.7645263671875,
+        "ice_g": 0.0,
+        "outlet_g": 6.027029009984197,
+        "seconds": 4.200000286102295,
+        "steam_g_s": 0.9551749260880358,
+        "surface_g": 7.647940776471327
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 5.502522000107534,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.7426147460938,
+        "ice_g": 0.0,
+        "outlet_g": 6.627343805029717,
+        "seconds": 4.400000095367432,
+        "steam_g_s": 0.8252901901081127,
+        "surface_g": 6.870156415788865
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 5.655856345368471,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.5180053710938,
+        "ice_g": 0.0,
+        "outlet_g": 7.189517817914215,
+        "seconds": 4.600000381469727,
+        "steam_g_s": 0.7108067599123549,
+        "surface_g": 6.154647572688733
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 5.788193658105678,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4794311523438,
+        "ice_g": 0.0,
+        "outlet_g": 7.709239557606828,
+        "seconds": 4.800000190734863,
+        "steam_g_s": 0.615472961942139,
+        "surface_g": 5.502588272614762
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 5.901896674319063,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.47314453125,
+        "ice_g": 0.0,
+        "outlet_g": 8.187239151902226,
+        "seconds": 5.0,
+        "steam_g_s": 0.5262088995010572,
+        "surface_g": 4.910887677970889
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 5.998801363463202,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 8.626731468120319,
+        "seconds": 5.200000286102295,
+        "steam_g_s": 0.44492031412579625,
+        "surface_g": 4.374491506070365
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.0802427116494195,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 9.03133926376487,
+        "seconds": 5.400000095367432,
+        "steam_g_s": 0.3744405955744823,
+        "surface_g": 3.8884426182463603
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.1499690753828995,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 9.401050693576884,
+        "seconds": 5.600000381469727,
+        "steam_g_s": 0.32454409714348376,
+        "surface_g": 3.4490040794241077
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.210325540595307,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 9.732576442638141,
+        "seconds": 5.800000190734863,
+        "steam_g_s": 0.2784594539701757,
+        "surface_g": 3.057121276692804
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.261647000743609,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 10.022324632608992,
+        "seconds": 6.000000476837158,
+        "steam_g_s": 0.23712130163895673,
+        "surface_g": 2.716051564730001
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.305305189160948,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 10.272091551905227,
+        "seconds": 6.200000286102295,
+        "steam_g_s": 0.20126273101477368,
+        "surface_g": 2.4226262844198105
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.342576160508373,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 10.483929660858315,
+        "seconds": 6.400000095367432,
+        "steam_g_s": 0.1736296311142249,
+        "surface_g": 2.173516598347918
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.375101486443158,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 10.663883883261782,
+        "seconds": 6.600000381469727,
+        "steam_g_s": 0.15263088955172477,
+        "surface_g": 1.9610368284011157
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.403958496749795,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 10.818309797195447,
+        "seconds": 6.800000190734863,
+        "steam_g_s": 0.13683813621535867,
+        "surface_g": 1.7777528650925376
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.429891656383746,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 10.95045277079354,
+        "seconds": 7.000000476837158,
+        "steam_g_s": 0.12309831366215385,
+        "surface_g": 1.6196782142348458
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.453229343750366,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 11.065073783265156,
+        "seconds": 7.200000286102295,
+        "steam_g_s": 0.11064332113761705,
+        "surface_g": 1.4817178118511922
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.473961452999277,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 11.165141076070917,
+        "seconds": 7.400000095367432,
+        "steam_g_s": 0.09714166852745933,
+        "surface_g": 1.3609193525343743
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.492139656162466,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 11.253787094482881,
+        "seconds": 7.600000381469727,
+        "steam_g_s": 0.08504575998000227,
+        "surface_g": 1.2540939157125852
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.508018473229016,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 11.33344165909822,
+        "seconds": 7.800000190734863,
+        "steam_g_s": 0.07423798591562432,
+        "surface_g": 1.1585592980031014
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 6.521947829784325,
+        "flame": 0.0,
+        "hottest_temperature_K": 855.4724731445312,
+        "ice_g": 0.0,
+        "outlet_g": 11.404480966029418,
+        "seconds": 8.000000953674316,
+        "steam_g_s": 0.06564820543869922,
+        "surface_g": 1.0735911414096528
+      }
+    ]
+  },
+  "twin_pockets": {
+    "summary": {
+      "bed_ice_ior": 0.0,
+      "bed_relief_mm": 8.261659622192383,
+      "cpu_gpu_mass_error_kg": 2.8870999813079834e-08,
+      "donor_limited_regions": 0,
+      "downstream_mass_kg": 0.004262995077496613,
+      "final_absorbed_kg": 0.0,
+      "final_char": 0.0,
+      "final_ice_kg": 0.0,
+      "final_outlet_kg": 0.004055324659134385,
+      "final_sink_kg": 0.0,
+      "final_surface_kg": 0.0049446762597110325,
+      "first_absorbed_kg": 0.0,
+      "first_contact_area_mm2": 0.0,
+      "first_outlet_10mg_s": 2.2875001430511475,
+      "gpu_checked": true,
+      "head_limited_faces": 187761,
+      "initial_ice_kg": 0.0,
+      "mass_ledger_error_kg": 2.174531702273108e-09,
+      "peak_absorbed_kg": 0.0,
+      "peak_flame": 0.0,
+      "peak_steam_kg_s": 0.0,
+      "receiver_kg": 9.762932222656673e-07,
+      "reconstructed_mass_error_kg": 7.527145866424941e-10,
+      "scenario_checks": false,
+      "source_mass_kg": 0.008999999747175025,
+      "transport_substeps": 1
+    },
+    "series": [
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.20000000298023224,
+        "steam_g_s": 0.0,
+        "surface_g": 0.4500000241023372
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.4000000059604645,
+        "steam_g_s": 0.0,
+        "surface_g": 0.8999999955321414
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.6000000238418579,
+        "steam_g_s": 0.0,
+        "surface_g": 1.3500000055890842
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.800000011920929,
+        "steam_g_s": 0.0,
+        "surface_g": 1.8000000856304155
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.0000001192092896,
+        "steam_g_s": 0.0,
+        "surface_g": 2.249999992159246
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.2000001668930054,
+        "steam_g_s": 0.0,
+        "surface_g": 2.7000000286534487
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 3.150000256105684
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 3.599999972116189
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 4.049999679911511
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.0,
+        "steam_g_s": 0.0,
+        "surface_g": 4.499999400081056
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0003042575547185366,
+        "seconds": 2.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 4.949694639595319
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.050700752353805,
+        "seconds": 2.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 5.34929785792948
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.14509642846860515,
+        "seconds": 2.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 5.704902770560418
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.25078523003685405,
+        "seconds": 2.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 6.0492137926531075
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.3660005231722607,
+        "seconds": 3.0,
+        "steam_g_s": 0.0,
+        "surface_g": 6.383997735320487
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.48990821505867643,
+        "seconds": 3.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 6.710090468552987
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.6219705637704465,
+        "seconds": 3.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 7.0280277833781275
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.763538227539422,
+        "seconds": 3.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 7.336459982658231
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.9152828734207974,
+        "seconds": 3.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 7.63471581706552
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 1.0776279748965223,
+        "seconds": 4.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 7.922370100057384
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 1.2516339561372547,
+        "seconds": 4.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 7.748364868591261
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 1.4368759479737037,
+        "seconds": 4.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 7.563122449477877
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 1.6297078940112897,
+        "seconds": 4.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 7.370290803894201
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 1.8248876634743283,
+        "seconds": 4.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 7.17511061118978
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 2.01845389852906,
+        "seconds": 5.0,
+        "steam_g_s": 0.0,
+        "surface_g": 6.981544368110158
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 2.2077493813981164,
+        "seconds": 5.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 6.792248305188828
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 2.391157188071702,
+        "seconds": 5.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 6.608840627313788
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 2.567762174919608,
+        "seconds": 5.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 6.432236162727692
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 2.7369042228997387,
+        "seconds": 5.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 6.263094425690292
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 2.8987694350348647,
+        "seconds": 6.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 6.1012290738747135
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.0537159813661674,
+        "seconds": 6.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 5.946282888476949
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.20106666998754,
+        "seconds": 6.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 5.798932968368149
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.3394904177157514,
+        "seconds": 6.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 5.660510171057169
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.4693505305085637,
+        "seconds": 6.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 5.530650262001717
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.5908426954165407,
+        "seconds": 7.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 5.409159105127285
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.703473369682797,
+        "seconds": 7.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 5.296527831882031
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.8062721370124564,
+        "seconds": 7.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 5.193728939770457
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.898391879488372,
+        "seconds": 7.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 5.10160931797074
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 3.979901034767863,
+        "seconds": 7.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 5.0200994920979385
+      },
+      {
+        "absorbed_g": 0.0,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 4.055324659134385,
+        "seconds": 8.000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 4.9446762597110325
+      }
+    ]
+  },
+  "absorption_capacity": {
+    "summary": {
+      "bed_ice_ior": 0.0,
+      "bed_relief_mm": 2.773099422454834,
+      "cpu_gpu_mass_error_kg": 1.7316779121756554e-09,
+      "donor_limited_regions": 0,
+      "downstream_mass_kg": 0.021061985027017727,
+      "final_absorbed_kg": 0.024376020541239996,
+      "final_char": 0.0,
+      "final_ice_kg": 0.0,
+      "final_outlet_kg": 0.0,
+      "final_sink_kg": 0.0,
+      "final_surface_kg": 0.03562393835125022,
+      "first_absorbed_kg": 9.987510060227578e-05,
+      "first_contact_area_mm2": 30000.000894069555,
+      "gpu_checked": true,
+      "head_limited_faces": 716568,
+      "initial_ice_kg": 0.0,
+      "mass_ledger_error_kg": 4.7028152039274573e-08,
+      "peak_absorbed_kg": 0.024376020541239996,
+      "peak_flame": 0.0,
+      "peak_steam_kg_s": 0.0,
+      "receiver_kg": 0.00025985672255046666,
+      "reconstructed_mass_error_kg": 1.6786873366716687e-09,
+      "scenario_checks": true,
+      "source_mass_kg": 0.0,
+      "substrate_comparison": {
+        "Fabric": {
+          "absorbed_g": 6.500000134110451,
+          "capacity_g": 6.499999955296503,
+          "initial_g": 19.99999873805791,
+          "surface_g": 13.499963439244311
+        },
+        "Sponge": {
+          "absorbed_g": 17.876020407129545,
+          "capacity_g": 25.000000745058085,
+          "initial_g": 19.999998941784725,
+          "surface_g": 2.1239796664076493
+        },
+        "Steel": {
+          "absorbed_g": 0.0,
+          "capacity_g": 0.0,
+          "initial_g": 20.000000746222213,
+          "surface_g": 19.999995245598257
+        }
+      },
+      "transport_substeps": 1
+    },
+    "series": [
+      {
+        "absorbed_g": 4.523182396951597,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.20000000298023224,
+        "steam_g_s": 0.0,
+        "surface_g": 55.47681558527984
+      },
+      {
+        "absorbed_g": 8.53488543361891,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.4000000059604645,
+        "steam_g_s": 0.0,
+        "surface_g": 51.4651163975941
+      },
+      {
+        "absorbed_g": 11.657396025839262,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.6000000238418579,
+        "steam_g_s": 0.0,
+        "surface_g": 48.34260559437098
+      },
+      {
+        "absorbed_g": 13.758131171925925,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 0.800000011920929,
+        "steam_g_s": 0.0,
+        "surface_g": 46.24187270383118
+      },
+      {
+        "absorbed_g": 15.263409950421192,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.0000001192092896,
+        "steam_g_s": 0.0,
+        "surface_g": 44.736596839356935
+      },
+      {
+        "absorbed_g": 16.54026415781118,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.2000001668930054,
+        "steam_g_s": 0.0,
+        "surface_g": 43.459744952997426
+      },
+      {
+        "absorbed_g": 17.675270537438337,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 42.324740257754456
+      },
+      {
+        "absorbed_g": 18.624446987814736,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 41.375561497261515
+      },
+      {
+        "absorbed_g": 19.433819652476814,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 1.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 40.566184565250296
+      },
+      {
+        "absorbed_g": 20.12633408594411,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.0,
+        "steam_g_s": 0.0,
+        "surface_g": 39.873662408353994
+      },
+      {
+        "absorbed_g": 20.73285574442707,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 39.267142878088634
+      },
+      {
+        "absorbed_g": 21.186494872381445,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 38.813507556369586
+      },
+      {
+        "absorbed_g": 21.517032575502526,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 38.48296198339085
+      },
+      {
+        "absorbed_g": 21.815374107973184,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 2.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 38.184621393156704
+      },
+      {
+        "absorbed_g": 22.0904736124794,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.0,
+        "steam_g_s": 0.0,
+        "surface_g": 37.909524181031884
+      },
+      {
+        "absorbed_g": 22.33539858571021,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.200000047683716,
+        "steam_g_s": 0.0,
+        "surface_g": 37.66459775170006
+      },
+      {
+        "absorbed_g": 22.56029098498402,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.4000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 37.43970497907867
+      },
+      {
+        "absorbed_g": 22.766314628825057,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.6000001430511475,
+        "steam_g_s": 0.0,
+        "surface_g": 37.23367370093911
+      },
+      {
+        "absorbed_g": 22.955219079449307,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 3.8000001907348633,
+        "steam_g_s": 0.0,
+        "surface_g": 37.044759418222384
+      },
+      {
+        "absorbed_g": 23.127770582505036,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 36.8721971449304
+      },
+      {
+        "absorbed_g": 23.282493457372766,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 36.71746604754844
+      },
+      {
+        "absorbed_g": 23.42097456130432,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 36.57897948755817
+      },
+      {
+        "absorbed_g": 23.537419918284286,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 36.46253293027257
+      },
+      {
+        "absorbed_g": 23.64254813437583,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 4.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 36.35740700269707
+      },
+      {
+        "absorbed_g": 23.739475080219563,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.0,
+        "steam_g_s": 0.0,
+        "surface_g": 36.2604796814594
+      },
+      {
+        "absorbed_g": 23.827846809581388,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 36.172110716734096
+      },
+      {
+        "absorbed_g": 23.90863389155129,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 36.09132026804218
+      },
+      {
+        "absorbed_g": 23.98312804143643,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 36.016825984688694
+      },
+      {
+        "absorbed_g": 24.05296912911581,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 5.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 35.946987960414845
+      },
+      {
+        "absorbed_g": 24.11279045190895,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 35.887167486407634
+      },
+      {
+        "absorbed_g": 24.159230983059388,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 35.84072189528342
+      },
+      {
+        "absorbed_g": 24.19096315134084,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 35.80898833456558
+      },
+      {
+        "absorbed_g": 24.21739020064706,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 35.78256119726575
+      },
+      {
+        "absorbed_g": 24.243008701887447,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 6.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 35.75694401467899
+      },
+      {
+        "absorbed_g": 24.26786468276987,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.000000476837158,
+        "steam_g_s": 0.0,
+        "surface_g": 35.73209067099015
+      },
+      {
+        "absorbed_g": 24.291996080137324,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.200000286102295,
+        "steam_g_s": 0.0,
+        "surface_g": 35.707963794720854
+      },
+      {
+        "absorbed_g": 24.31543739658082,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.400000095367432,
+        "steam_g_s": 0.0,
+        "surface_g": 35.68452777369657
+      },
+      {
+        "absorbed_g": 24.336217167729046,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.600000381469727,
+        "steam_g_s": 0.0,
+        "surface_g": 35.66375234390762
+      },
+      {
+        "absorbed_g": 24.35632480046479,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 7.800000190734863,
+        "steam_g_s": 0.0,
+        "surface_g": 35.64364108876816
+      },
+      {
+        "absorbed_g": 24.376020541239996,
+        "char": 0.0,
+        "evaporated_g": 0.0,
+        "flame": 0.0,
+        "ice_g": 0.0,
+        "outlet_g": 0.0,
+        "seconds": 8.000000953674316,
+        "steam_g_s": 0.0,
+        "surface_g": 35.62393835125022
+      }
+    ]
+  },
+  "soil_updated": {
+    "summary": {
+      "bed_coupling": true,
+      "dried_kg": 0.0,
+      "first_outlets_0_1g_s": [
+        1.9333335161209106,
+        1.8375000953674316
+      ],
+      "gpu_checked": true,
+      "gpu_level_error_m": 2.3175962269306183e-06,
+      "gpu_mass_error_kg": 2.89728632196784e-07,
+      "gpu_mixed_water_error_kg": 8.277856977656484e-08,
+      "initial_kg": 0.03790079628379317,
+      "injected_kg": 0.037999708412826294,
+      "ledger_error_kg": 1.6821559256641194e-08,
+      "mud_solids_moved_after_second_pour_kg": 0.006943207055069161,
+      "omitted_support": -1,
+      "outlets_water_kg": [
+        0.014730144530923986,
+        0.009646608413991184
+      ],
+      "rewet_kg": 0.0,
+      "second_outlets_water_kg": [
+        0.0074291568703870325,
+        0.005043641499543838
+      ],
+      "water_ledger_error_kg": 6.229215275543876e-09
+    },
+    "series": [
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.03623996099122451,
+          0.0023152212462883848,
+          0.0017135088608597505
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0006614919438001719,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.25
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.03470708987401849,
+          0.00445185437837381,
+          0.003478042183701291
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0012719586886973389,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.5
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.03346175811748253,
+          0.006186424217008157,
+          0.005357450364137151
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0017675501813305267,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.7500000596046448
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.031628287614921646,
+          0.008744826063160682,
+          0.007001479818965376
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0024985219105640513,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.0
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.029325450150508914,
+          0.01196072899285916,
+          0.008457652188086959
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0034173509632025034,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.2500001192092896
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.027005996518596476,
+          0.015200248227736024,
+          0.009907077715259895
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.004342926803258984,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.5000001192092896
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.02456240391074971,
+          0.018613881418161782,
+          0.01129532409073164
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00531824918510182,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          1.8428134352730788e-07,
+          1.1246570802823441e-05
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.7500001192092896
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.02297498689222266,
+          0.020784354849638476,
+          0.012341053806568296
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0059383840002738,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0002129840778068573,
+          0.0004947349921877268
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.0
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022702463533278205,
+          0.021041240946942708,
+          0.010633004433958475
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.006011779324808231,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0010085194403061796,
+          0.0012994716935991837
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.25
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022694221543133608,
+          0.02096817827623454,
+          0.008790557816138758
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0059909044307460135,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0019951298890689834,
+          0.002152994943187945
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.500000238418579
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022687556949676946,
+          0.0209162578712494,
+          0.006988681825743491
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005976069801135964,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.003027039270777812,
+          0.0029212440093288696
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.750000238418579
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022681259875753312,
+          0.020875674328635796,
+          0.005378433827078432
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005964474694337696,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0040615924080655424,
+          0.0034953358070452614
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.000000238418579
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022674583155094297,
+          0.020842733183599194,
+          0.003984368897451084
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005955063038982189,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0050733811626330755,
+          0.003875827509162331
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.250000238418579
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022667572264253977,
+          0.02081490746604686,
+          0.002821188589993206
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005947112683998057,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0059991767956987935,
+          0.004111266549060086
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.500000238418579
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022660302218355355,
+          0.0207903588152476,
+          0.002039228223881317
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005940098875953481,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.006629118532900782,
+          0.004261211148516917
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.750000238418579
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022652846319033415,
+          0.02076748080799007,
+          0.0016762148255534228
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0059335623036531615,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.006890778324889005,
+          0.004360393463443255
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.0
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.02264527113220538,
+          0.0207447285138187,
+          0.0014592624749834684
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005927061665943256,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.007034190024613543,
+          0.004431694045578591
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.25
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022637635021965252,
+          0.02072048551599437,
+          0.0013040952189580892
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005920134775124097,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.007131640946143228,
+          0.00448712612107722
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.5
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022629985469393432,
+          0.02069317042878538,
+          0.0011887323913438266
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005912330664841647,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0072003046551231825,
+          0.0045315172745005825
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.750000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022622361953835934,
+          0.020661811753598158,
+          0.0010982361430674316
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.00590337083031045,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.0072520826536981026,
+          0.004567920811446366
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.000000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022615957648667973,
+          0.020624311970095732,
+          0.0010250034376636066
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005892657033655269,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0,
+        "outlets_water_kg": [
+          0.007293604183429017,
+          0.004597789033176933
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.250000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022612591354118194,
+          0.020578037322593445,
+          0.0028661672457442437
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0058794356300495565,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0005373726261467161,
+        "outlets_water_kg": [
+          0.007328036090558945,
+          0.0046215220094047525
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          2.7048430021991976e-05,
+          1.855509495740648e-05
+        ],
+        "seconds": 5.500000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022605438249229337,
+          0.02053272944249329,
+          0.0051900875673471375
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005866490399057511,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0011920856295062905,
+        "outlets_water_kg": [
+          0.0073571667942748525,
+          0.004641262257532428
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          5.617913373789918e-05,
+          3.829534308508187e-05
+        ],
+        "seconds": 5.750000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.0225443766121316,
+          0.02055891772488394,
+          0.007358713709867362
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005873972584822695,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0018416886249170976,
+        "outlets_water_kg": [
+          0.007522660435073283,
+          0.004658356511304926
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.00022167277453633005,
+          5.538959685758016e-05
+        ],
+        "seconds": 6.000000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022452505327237304,
+          0.020624739794584457,
+          0.009161986359214794
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005892778887073291,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0025040566530610936,
+        "outlets_water_kg": [
+          0.007965510198226958,
+          0.004751113828806506
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0006645225376900044,
+          0.0001481469143591596
+        ],
+        "seconds": 6.250000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.02244819734733028,
+          0.02056497993726225,
+          0.010433384343270305
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005875704541494997,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.0031187443940431147,
+        "outlets_water_kg": [
+          0.008627115333931193,
+          0.005192004962768901
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0013261276733942395,
+          0.0005890380483215552
+        ],
+        "seconds": 6.500000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022426445364544634,
+          0.020527120878796268,
+          0.011283804879921668
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005864887703637578,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.003705025601835241,
+        "outlets_water_kg": [
+          0.009514472083148554,
+          0.005821133110916985
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0022134844226116,
+          0.0012181661964696389
+        ],
+        "seconds": 6.750000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022382139575711335,
+          0.020518715180514846,
+          0.011976837054272126
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0058624859132123674,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.004276279920407094,
+        "outlets_water_kg": [
+          0.010485682135433286,
+          0.006514765429333333
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0031846944748963324,
+          0.0019117985148859873
+        ],
+        "seconds": 7.000000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022294090094874264,
+          0.020569789374349057,
+          0.012551365486854546
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005877078562207316,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.004848844409929337,
+        "outlets_water_kg": [
+          0.011502768050897408,
+          0.007263517474516543
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0042017803903604545,
+          0.002660550560069197
+        ],
+        "seconds": 7.250000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.022144796608699835,
+          0.020705254329186573,
+          0.011121170813567005
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005915782761121591,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.005457054435641122,
+        "outlets_water_kg": [
+          0.012552846170885437,
+          0.008059522321250465
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.005251858510348484,
+          0.003456555406803119
+        ],
+        "seconds": 7.500000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.02191680606938462,
+          0.02095001310135558,
+          0.009121525994032709
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.005985713700283668,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.006144782016337964,
+        "outlets_water_kg": [
+          0.013634368109771436,
+          0.00888705270861929
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0063333804492344825,
+          0.0042840857941719435
+        ],
+        "seconds": 7.750000476837158
+      },
+      {
+        "dried_kg": 0.0,
+        "layer_kg": [
+          0.021624214045914414,
+          0.021286058218720427,
+          0.0071497427165923
+        ],
+        "layer_mixed_water_kg": [
+          0.0,
+          0.0060817263058652316,
+          0.0
+        ],
+        "mud_solids_moved_after_second_pour_kg": 0.006943207055069161,
+        "outlets_water_kg": [
+          0.014730144530923986,
+          0.009646608413991184
+        ],
+        "rewet_kg": 0.0,
+        "second_outlets_water_kg": [
+          0.0074291568703870325,
+          0.005043641499543838
+        ],
+        "seconds": 7.995833873748779
+      }
+    ]
+  },
+  "soil_baseline": {
+    "summary": {
+      "bed_coupling": true,
+      "first_outlets_0_1g_s": [
+        2.0375001430511475,
+        1.8750001192092896
+      ],
+      "gpu_checked": true,
+      "gpu_level_error_m": 4.824250936508179e-07,
+      "gpu_mass_error_kg": 2.4290784494951367e-08,
+      "initial_kg": 0.03790079628379317,
+      "injected_kg": 0.037999708412826294,
+      "ledger_error_kg": 2.0136440070928074e-08,
+      "omitted_support": -1,
+      "outlets_water_kg": [
+        0.014721591541524918,
+        0.009702920644270675
+      ],
+      "second_outlets_water_kg": [
+        0.007439426296969032,
+        0.0050597897149682325
+      ]
+    },
+    "series": [
+      {
+        "layer_kg": [
+          0.03573590837095253,
+          0.003020896879105339,
+          0.0015118872684070084
+        ],
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.25
+      },
+      {
+        "layer_kg": [
+          0.034501961959449545,
+          0.0047390350580061025,
+          0.0033959904041012123
+        ],
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.5
+      },
+      {
+        "layer_kg": [
+          0.033236846946238074,
+          0.006501301803470156,
+          0.0052674852477707645
+        ],
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 0.7500000596046448
+      },
+      {
+        "layer_kg": [
+          0.031266473553841934,
+          0.00925136972099417,
+          0.006856753030433538
+        ],
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.0
+      },
+      {
+        "layer_kg": [
+          0.029089178601907406,
+          0.01229151427533305,
+          0.008363143016111962
+        ],
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.2500001192092896
+      },
+      {
+        "layer_kg": [
+          0.026713916267908644,
+          0.015609164768721102,
+          0.009790244425433414
+        ],
+        "outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.5000001192092896
+      },
+      {
+        "layer_kg": [
+          0.02424464175464891,
+          0.019058747782151733,
+          0.011179649671532843
+        ],
+        "outlets_water_kg": [
+          0.0,
+          1.0248216508929492e-09
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 1.7500001192092896
+      },
+      {
+        "layer_kg": [
+          0.022929033702666857,
+          0.020834605776371973,
+          0.012537768001039673
+        ],
+        "outlets_water_kg": [
+          5.215845838261142e-05,
+          0.0004403882720606999
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.0
+      },
+      {
+        "layer_kg": [
+          0.022764643477785285,
+          0.020946823413396487,
+          0.0109011964432284
+        ],
+        "outlets_water_kg": [
+          0.0007880232498803127,
+          0.0012762905033622883
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.25
+      },
+      {
+        "layer_kg": [
+          0.022754630428607925,
+          0.02087917715016374,
+          0.008991843105377484
+        ],
+        "outlets_water_kg": [
+          0.0018338548477015468,
+          0.002136791587069565
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.500000238418579
+      },
+      {
+        "layer_kg": [
+          0.022746644188373466,
+          0.020829952736676205,
+          0.0071508456119318
+        ],
+        "outlets_water_kg": [
+          0.002893659188613343,
+          0.002915739591905476
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 2.750000238418579
+      },
+      {
+        "layer_kg": [
+          0.02273898200110125,
+          0.02079147169843054,
+          0.005504241466951498
+        ],
+        "outlets_water_kg": [
+          0.0039466551686029895,
+          0.0035071995126753973
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.000000238418579
+      },
+      {
+        "layer_kg": [
+          0.022730963639332913,
+          0.020760225135745713,
+          0.004085325609821666
+        ],
+        "outlets_water_kg": [
+          0.004971270061288339,
+          0.0038991800167804467
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.250000238418579
+      },
+      {
+        "layer_kg": [
+          0.022722669358699932,
+          0.020733718814881286,
+          0.002893476501526493
+        ],
+        "outlets_water_kg": [
+          0.005918830663814548,
+          0.004141010379320888
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.500000238418579
+      },
+      {
+        "layer_kg": [
+          0.022714191778504755,
+          0.020709986068141006,
+          0.0020643859743358917
+        ],
+        "outlets_water_kg": [
+          0.006591951737801752,
+          0.004294423251330427
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 3.750000238418579
+      },
+      {
+        "layer_kg": [
+          0.02270561364457535,
+          0.020687329188149306,
+          0.0016830370295792818
+        ],
+        "outlets_water_kg": [
+          0.006868898874371313,
+          0.004396205323466275
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.0
+      },
+      {
+        "layer_kg": [
+          0.02269700384022144,
+          0.020664086114265956,
+          0.0014608614010285237
+        ],
+        "outlets_water_kg": [
+          0.007015638227114766,
+          0.0044689879009707015
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.25
+      },
+      {
+        "layer_kg": [
+          0.022688418233883567,
+          0.020638591641727544,
+          0.0013038101394613477
+        ],
+        "outlets_water_kg": [
+          0.007113594520417325,
+          0.004525419301195412
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.5
+      },
+      {
+        "layer_kg": [
+          0.02267990085783822,
+          0.020609558350770385,
+          0.0011875683408106852
+        ],
+        "outlets_water_kg": [
+          0.007182042516189983,
+          0.0045705584430419735
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 4.750000476837158
+      },
+      {
+        "layer_kg": [
+          0.02267148526152596,
+          0.020576342811182258,
+          0.001096406556285956
+        ],
+        "outlets_water_kg": [
+          0.0072335972291509044,
+          0.004607534370862011
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.000000476837158
+      },
+      {
+        "layer_kg": [
+          0.0226672530752694,
+          0.020532936247946054,
+          0.0010238570945380054
+        ],
+        "outlets_water_kg": [
+          0.007274839200016873,
+          0.0046378680990170965
+        ],
+        "second_outlets_water_kg": [
+          0.0,
+          0.0
+        ],
+        "seconds": 5.250000476837158
+      },
+      {
+        "layer_kg": [
+          0.02266382997186156,
+          0.02048411109535664,
+          0.0028649146180441676
+        ],
+        "outlets_water_kg": [
+          0.007308985162279017,
+          0.00466197093387042
+        ],
+        "second_outlets_water_kg": [
+          2.681991772313097e-05,
+          1.8840004567977076e-05
+        ],
+        "seconds": 5.500000476837158
+      },
+      {
+        "layer_kg": [
+          0.0226568051148206,
+          0.02043628481533233,
+          0.005188873370343572
+        ],
+        "outlets_water_kg": [
+          0.00733783900033386,
+          0.004682001360620559
+        ],
+        "second_outlets_water_kg": [
+          5.5673755777974065e-05,
+          3.8870431318116516e-05
+        ],
+        "seconds": 5.750000476837158
+      },
+      {
+        "layer_kg": [
+          0.02254388445908262,
+          0.020533066277494072,
+          0.007336727762776718
+        ],
+        "outlets_water_kg": [
+          0.007503106089204851,
+          0.004699350554542049
+        ],
+        "second_outlets_water_kg": [
+          0.00022094084464896468,
+          5.621962523960633e-05
+        ],
+        "seconds": 6.000000476837158
+      },
+      {
+        "layer_kg": [
+          0.022499623491967213,
+          0.02053054989028169,
+          0.009153039562988852
+        ],
+        "outlets_water_kg": [
+          0.007944009579114623,
+          0.004800059240933165
+        ],
+        "second_outlets_water_kg": [
+          0.0006618443345587366,
+          0.00015692831163072185
+        ],
+        "seconds": 6.250000476837158
+      },
+      {
+        "layer_kg": [
+          0.022496018616948277,
+          0.020468416405492462,
+          0.010420640116990398
+        ],
+        "outlets_water_kg": [
+          0.008599280786052491,
+          0.005251362802040062
+        ],
+        "second_outlets_water_kg": [
+          0.0013171155414966051,
+          0.000608231872737619
+        ],
+        "seconds": 6.500000476837158
+      },
+      {
+        "layer_kg": [
+          0.02247828485269565,
+          0.02042379961039842,
+          0.011266564934885981
+        ],
+        "outlets_water_kg": [
+          0.009493565256685047,
+          0.005879666699468912
+        ],
+        "second_outlets_water_kg": [
+          0.002211400012129161,
+          0.0012365357701664692
+        ],
+        "seconds": 6.750000476837158
+      },
+      {
+        "layer_kg": [
+          0.022428802385547897,
+          0.02042173272548098,
+          0.011957557949273223
+        ],
+        "outlets_water_kg": [
+          0.010465305210596357,
+          0.00657273733464845
+        ],
+        "second_outlets_water_kg": [
+          0.0031831399660404713,
+          0.0019296064053460071
+        ],
+        "seconds": 7.000000476837158
+      },
+      {
+        "layer_kg": [
+          0.02233687526313588,
+          0.020477559691244096,
+          0.012530688340063989
+        ],
+        "outlets_water_kg": [
+          0.011482505183517292,
+          0.007321222436770226
+        ],
+        "second_outlets_water_kg": [
+          0.004200339938961406,
+          0.0026780915074677836
+        ],
+        "seconds": 7.250000476837158
+      },
+      {
+        "layer_kg": [
+          0.022147657198729576,
+          0.020668497704718902,
+          0.011084307956480188
+        ],
+        "outlets_water_kg": [
+          0.012533722302373877,
+          0.008116304006319665
+        ],
+        "second_outlets_water_kg": [
+          0.00525155705781799,
+          0.003473173077017222
+        ],
+        "seconds": 7.500000476837158
+      },
+      {
+        "layer_kg": [
+          0.021892485346143076,
+          0.020951149209395226,
+          0.009069098291547562
+        ],
+        "outlets_water_kg": [
+          0.013621132994808664,
+          0.00894263863780307
+        ],
+        "second_outlets_water_kg": [
+          0.0063389677502527775,
+          0.004299507708500627
+        ],
+        "seconds": 7.750000476837158
+      },
+      {
+        "layer_kg": [
+          0.02157839061874256,
+          0.021317376559636614,
+          0.007083305926471439
+        ],
+        "outlets_water_kg": [
+          0.014721591541524918,
+          0.009702920644270675
+        ],
+        "second_outlets_water_kg": [
+          0.007439426296969032,
+          0.0050597897149682325
+        ],
+        "seconds": 7.995833873748779
+      }
+    ]
+  }
+}

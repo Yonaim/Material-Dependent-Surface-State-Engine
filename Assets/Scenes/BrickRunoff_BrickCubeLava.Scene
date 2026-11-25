@@ -1,0 +1,28 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "BrickRunoff_BrickCubeLava",
+  "geometry": "GroovedPlate",
+  "surfaceProfile": "BrickLava",
+  "heightMap": {
+    "texture": "../Geometry/brick-cube.height.png",
+    "heightRangeM": 0.006570749683,
+    "heightOffsetM": -0.00429061614
+  },
+  "chartAlbedo": "../Meshes/BrickCube/BrickCubeAlbedo.png",
+  "chartNormal": "../Meshes/BrickCube/BrickCubeNormal.png",
+  "bodyThicknessM": 0.10,
+  "geometrySamplesPerCell": 4,
+  "simulationCells": [64, 64],
+  "sizeM": [0.10, 0.10],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0.004,
+  "pourSeconds": 4.0,
+  "scheduledInlet": {
+    "centerM": [-0.02734375, 0.01015625],
+    "sizeM": [0.00625, 0.0018]
+  },
+  "maxTiltRadians": 0.383972435,
+  "fields": {}
+}

@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Moisture Suppression of Ignition",
+  "koreanTitle": "초기 물막에 의한 발화 억제",
+  "description": "같은 가열 조건에서 초기 물막이 불꽃과 탄화에 미치는 영향을 비교한다.",
+  "cases": [
+    {
+      "scene": "../CharringWood.Scene",
+      "label": "Dry Surface"
+    },
+    {
+      "scene": "../CharringWood_PreWetted.Scene",
+      "label": "Pre-wetted Surface"
+    }
+  ]
+}

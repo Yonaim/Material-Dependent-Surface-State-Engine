@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Rewetting Delta · On vs Off",
+  "koreanTitle": "다시 젖는 퇴적물",
+  "description": "같은 두 번의 급수로 퇴적된 진흙이 다시 움직일 수 있을 때 갈림길 유량이 어떻게 달라지는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../SoilCoveredStonePath_RewettingDelta.Scene",
+      "label": "Rewetting enabled"
+    },
+    {
+      "scene": "../SoilCoveredStonePath_RewettingDelta_Disabled.Scene",
+      "label": "Rewetting disabled"
+    }
+  ]
+}

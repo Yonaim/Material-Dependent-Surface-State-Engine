@@ -1,0 +1,33 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "CharringWood_PreWetted",
+  "surfaceTexture": "../Textures/SurfaceSimulation/AmbientCG/Wood049.png",
+  "surfaceNormal": "../Textures/SurfaceSimulation/AmbientCG/Wood049Normal.png",
+  "geometry": "WoodPatch",
+  "geometrySamplesPerCell": 4,
+  "simulationCells": [
+    14,
+    10
+  ],
+  "sizeM": [
+    0.14,
+    0.1
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "surfaceProfile": "CharringSurface",
+  "scheduledInlet": {
+    "centerM": [
+      -0.0014,
+      0.006
+    ],
+    "sizeM": [
+      0.044,
+      0.042
+    ]
+  },
+  "initialLiquidKg": 0.0024
+}

@@ -1,0 +1,43 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "SnowOnFabric_Ruffled",
+  "geometry": "WovenPatch",
+  "surfaceProfile": "SnowyCoat",
+  "defaultSubstrateViewState": "AbsorbedWater",
+  "geometrySamplesPerCell": 4,
+  "simulationCells": [
+    14,
+    10
+  ],
+  "sizeM": [
+    0.14,
+    0.1
+  ],
+  "smoothDisplay": true,
+  "openOutlet": false,
+  "pourKg": 0,
+  "maxTiltRadians": 0,
+  "surfaceRelief": {
+    "amplitudeM": 0.0018,
+    "cycles": [2.85, 2.25]
+  },
+  "substrateTemperatureK": 297.15,
+  "fields": {
+    "dryingRateMultiplier": {
+      "belowV": 0.5,
+      "low": 2,
+      "high": 2,
+      "unit": "1"
+    }
+  },
+  "initialLayer": {
+    "state": "SnowIce",
+    "peakKgM2": 0.85,
+    "centerUV": [
+      0.5,
+      0.5
+    ],
+    "inverseRadius": 2.2
+  }
+}

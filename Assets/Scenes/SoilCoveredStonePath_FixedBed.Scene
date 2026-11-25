@@ -1,0 +1,62 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "SoilCoveredStonePath_FixedBed",
+  "geometry": "SoilPathFork",
+  "geometrySamples": [
+    72,
+    48
+  ],
+  "simulationCells": [
+    24,
+    16
+  ],
+  "sizeM": [
+    0.24,
+    0.16
+  ],
+  "smoothDisplay": true,
+  "openOutlet": true,
+  "pourKg": 0.019,
+  "pourSeconds": 2,
+  "maxTiltRadians": 0,
+  "surfaceProfile": "SoilCoveredStonePath",
+  "scheduledInlet": {
+    "centerM": [
+      -0.095,
+      0
+    ],
+    "sizeM": [
+      0.015,
+      0.026
+    ]
+  },
+  "initialFilm": [
+    {
+      "state": "layer.soil",
+      "boundsUV": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "thicknessM": 0.00055
+    },
+    {
+      "state": "layer.soil",
+      "boundsUV": [
+        0.44,
+        0.18,
+        0.59,
+        0.42
+      ],
+      "thicknessM": 0.003
+    }
+  ],
+  "secondPourStartS": 5.3,
+  "filmBedCoupling": false,
+  "branchRiseM": 0.002,
+  "depositionBasinDepthM": 0.001,
+  "chartAlbedo": "../Textures/SurfaceSimulation/GreyStonePathDiffuse.png",
+  "chartNormal": "../Textures/SurfaceSimulation/GreyStonePathNormal.png"
+}

@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Absorption Storage Depth",
+  "koreanTitle": "흡수 저장 깊이",
+  "description": "재생 2초 뒤 물 20 g씩을 부어 5 mm와 25 mm 스펀지의 흡수 용량을 비교한다.",
+  "cases": [
+    {
+      "scene": "../FeatureCases/ShallowSponge.Scene",
+      "label": "Shallow Sponge"
+    },
+    {
+      "scene": "../FeatureCases/AbsorptionSponge.Scene",
+      "label": "Deep Sponge"
+    }
+  ]
+}

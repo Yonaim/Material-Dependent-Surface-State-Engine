@@ -1,0 +1,6 @@
+# 재사용할 국소 규칙의 모델과 계수. 적용 상태와 입력은 SurfaceProfile에서 연결한다.
+version: 1
+id: SteelWaterQuench
+model: SubstrateQuench
+# 물과 바탕의 접촉 열전달 계수 [W/(m²·K)].
+contactConductanceWm2K: 12000

@@ -21,3 +21,19 @@
 `날짜 / Git Commit(또는 작업 트리) / 환경 / 재현 명령 / 입력과 Fixture / 기대 조건 / 실행 결과 / 원자료 / 미검증 범위`
 
 원본 저장소에 접근 가능한 경우 경로와 현행 동작을 다시 대조해야 한다.
+
+## Surface Simulation 표면 시뮬레이션
+
+[Surface Simulation 검증](04_Surface-Simulation-Validation.md)에 실행 명령, CPU/GPU 결과, 형상 소스 실험, 렌더링 캡처와 타이밍을 기록한다.
+
+## Python 정적 검사
+
+저장소 루트에서 Python 3.12로 로컬 검사 의존성을 설치한 후 Pyright를 실행한다.
+
+```powershell
+python -m pip install --target Build/ResearchPython -r Research/B1_Material_State_Identifiability/requirements.txt Pillow==13.0.0
+python -m pip install --target Build/ConnectedSurfacePython -r Research/G_Connected_Surface_Validation/requirements.txt
+npx --yes pyright --project pyrightconfig.json
+```
+
+연결 표면 연구는 별도로 고정한 NumPy·SciPy를 사용한다. `pyrightconfig.json`은 해당 연구 소스와 라이브러리의 검사 환경에 각각 경계를 두어 두 NumPy 버전의 타입이 섞이지 않게 한다.

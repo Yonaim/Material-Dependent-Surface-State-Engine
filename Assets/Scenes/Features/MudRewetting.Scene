@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Mud Rewetting",
+  "koreanTitle": "진흙 재습윤",
+  "description": "두 번째 급수가 퇴적된 진흙을 다시 적시는지 비교한다.",
+  "cases": [
+    {
+      "scene": "../SoilCoveredStonePath_RewettingDelta.Scene",
+      "label": "Rewetting On"
+    },
+    {
+      "scene": "../SoilCoveredStonePath_RewettingDelta_Disabled.Scene",
+      "label": "Rewetting Off"
+    }
+  ]
+}
