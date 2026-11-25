@@ -1,0 +1,25 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Geometry Source Comparison",
+  "koreanTitle": "형상 입력 비교",
+  "description": "같은 홈을 원본 메시, 높이맵, 변위맵, 노멀맵에서 복원한다. 원본 메시를 기준으로 고임과 월류를 비교한다.",
+  "cases": [
+    {
+      "scene": "../FeatureCases/ReferenceMesh.Scene",
+      "label": "Reference Mesh"
+    },
+    {
+      "scene": "../CavityFillAndSpill.Scene",
+      "label": "Height Map"
+    },
+    {
+      "scene": "../FeatureCases/DisplacementMap.Scene",
+      "label": "Displacement Map"
+    },
+    {
+      "scene": "../FeatureCases/NormalMap.Scene",
+      "label": "Normal Map"
+    }
+  ]
+}

@@ -189,7 +189,26 @@ namespace MDSS::SurfaceSimulation
             void ReadSceneResolution(FSurfaceSceneSettings &Settings, const FJson &Scene)
             {
                 const auto Cells = Grid(Scene, "simulationCells", 1, Liquid::MaxCellsPerAxis);
-                const auto Samples = Grid(Scene, "geometrySamples", 2, Liquid::MaxSamplesPerAxis);
+                const auto Preset = Scene.find("geometrySamplesPerCell");
+                auto       Samples = std::array<int, 2>{};
+
+                if (Preset == Scene.end())
+                    Samples = Grid(Scene, "geometrySamples", 2, Liquid::MaxSamplesPerAxis);
+                else
+                {
+                    if (Scene.contains("geometrySamples"))
+                        throw std::runtime_error("Choose either geometrySamplesPerCell or geometrySamples.");
+                    const auto MatchesPreset = [&](int Value) { return *Preset == Value; };
+                    const auto Choice = std::ranges::find_if(GeometrySamplesPerCellPresets, MatchesPreset);
+                    if (!Preset->is_number_integer() || Choice == GeometrySamplesPerCellPresets.end())
+                        throw std::runtime_error("geometrySamplesPerCell must be 1, 2, 4, or 8.");
+                    Settings.GeometrySamplesPerCell = *Choice;
+                    Samples = {Cells[0] * *Choice, Cells[1] * *Choice};
+                    if (std::ranges::any_of(Samples,
+                                            [](int Value) { return Value < 2 || Value > Liquid::MaxSamplesPerAxis; }))
+                        throw std::runtime_error(
+                            "geometrySamplesPerCell produces a geometry grid outside the supported range.");
+                }
                 if (Cells[0] > Samples[0] || Cells[1] > Samples[1])
                     throw std::runtime_error("Each simulation cell needs at least one geometry sample.");
 

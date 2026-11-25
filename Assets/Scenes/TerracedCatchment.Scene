@@ -10,7 +10,7 @@
     "yawDegrees": 68
   },
   "geometry": "TerracedBed",
-  "geometrySamples": [56, 40],
+  "geometrySamplesPerCell": 4,
   "simulationCells": [
     14,
     10

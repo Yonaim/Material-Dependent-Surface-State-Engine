@@ -4,6 +4,8 @@
 /.idea/
 .DS_Store
 Config/EditorLayout.ini
+Config/EditorWorkspace.ini
+Config/EditorWorkspace-v3.ini
 *.user
 *.suo
 
@@ -97,6 +99,9 @@ Performance-Data/**/raw/
 !/Assets/Meshes/MarbleCube/MarbleCube.obj
 !/Assets/Meshes/MarbleCube/ReactionTransitionPlateTop.obj
 !/Assets/Meshes/MarbleCube/ReactionTransitionPlateSides.obj
+!/Assets/Geometry/*.obj
 
 # Local upstream Agent Vault checkout (independent repository)
 /Universal-Agent-Vault/
+# Local surface captures from the editor
+/Captures/Surface/

@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Height Map Cavities",
+  "koreanTitle": "높이맵으로 만든 홈",
+  "description": "판 끝에서 같은 양의 물을 공급해 평면에서 퍼지는 흐름과 홈으로 모이는 흐름을 비교한다.",
+  "cases": [
+    {
+      "scene": "../FeatureCases/BaseMesh.Scene",
+      "label": "Base Mesh"
+    },
+    {
+      "scene": "../FeatureCases/CavityHeightMapEdgeInlet.Scene",
+      "label": "Base Mesh + Height Map"
+    }
+  ]
+}

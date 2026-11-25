@@ -3,7 +3,7 @@
   "version": 1,
   "id": "MeadowFirebreak",
   "geometry": "MeadowBed",
-  "geometrySamples": [56, 48],
+  "geometrySamplesPerCell": 2,
   "simulationCells": [
     28,
     24

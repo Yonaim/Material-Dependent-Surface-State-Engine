@@ -10,7 +10,7 @@
   "geometry": "GlacialBed",
   "snowMassScale": 1.75,
   "contactHeatFadeSeconds": 4.4,
-  "geometrySamples": [64, 48],
+  "geometrySamplesPerCell": 4,
   "simulationCells": [
     16,
     12

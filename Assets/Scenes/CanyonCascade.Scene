@@ -3,7 +3,7 @@
   "version": 1,
   "id": "CanyonCascade",
   "geometry": "CanyonBed",
-  "geometrySamples": [64, 48],
+  "geometrySamplesPerCell": 4,
   "simulationCells": [
     16,
     12

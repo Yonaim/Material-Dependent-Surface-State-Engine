@@ -1,0 +1,29 @@
+{
+  "type": "SurfaceScene",
+  "version": 1,
+  "id": "NormalMap",
+  "geometry": "CavityChart",
+  "geometrySamples": [
+    64,
+    40
+  ],
+  "simulationCells": [
+    16,
+    8
+  ],
+  "sizeM": [
+    0.1,
+    0.062
+  ],
+  "smoothDisplay": true,
+  "openOutlet": true,
+  "pourKg": 0.009,
+  "maxTiltRadians": 0,
+  "pourSeconds": 4,
+  "surfaceProfile": "WaterRunoff",
+  "geometryInput": {
+    "type": "NormalMap",
+    "path": "../../Geometry/pocket.normal.png",
+    "scale": 1
+  }
+}
