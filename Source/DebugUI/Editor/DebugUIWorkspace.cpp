@@ -55,11 +55,37 @@ namespace MDSS
         // 실제 배포 씬과 선택 조건은 에셋이 소유한다. 목록은 합의한 데모만 순서대로 노출한다.
         using enum ESceneGroup;
         constexpr FDemoDefinition DemoDefinitions[]{
+            {GeometryInputs, "Features/HeightMapCavities.Scene"},
+            {GeometryInputs, "Features/GeometrySourceComparison.Scene"},
             {TransportBoundaries,
                 "BrickRunoff.Scene",
                 "Tilt-Driven Drainage",
                 "Animated Tilt",
-                u8"기울기가 바뀌면 물이 홈을 따라 이동한다."}};
+                u8"기울기가 바뀌면 물이 홈을 따라 이동한다."},
+            {TransportBoundaries, "Features/SillOverflow.Scene"},
+            {TransportBoundaries, "Features/BasinSplitting.Scene"},
+            {Interactions,
+                "SnowOnFabric.Scene",
+                "Melting, Absorption & Drying",
+                "Flat Fabric",
+                u8"눈이 녹아 물막이 되고, 천에 스며든 물이 시간에 따라 마른다."},
+            {Showcase, "IceGate.Scene", "Ice Gate Fork", nullptr, u8"얼음 마개가 녹으면 낮은 갈림길이 열린다."},
+            {Showcase, "MeadowFirebreak.Scene", "Meadow Firebreak", nullptr, u8"물이 스며든 띠에서 불길이 느려진다."},
+            {Showcase,
+                "HeatedWaterChannel.Scene",
+                "Heated Water Channel",
+                nullptr,
+                u8"물이 달궈진 수로를 식히고 수증기가 오른다."},
+            {Showcase,
+                "GlacierCut.Scene",
+                "Glacier Cut",
+                nullptr,
+                u8"강철 수로 위의 눈이 용암에 녹고, 융해수가 하류에 고인다."},
+            {Showcase,
+                "CanyonCascade.Scene",
+                "Canyon Cascade",
+                nullptr,
+                u8"물이 암반의 웅덩이를 차례로 채우고 넘는다."}};
 
         struct FSceneEntry
         {
