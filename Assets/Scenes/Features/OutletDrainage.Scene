@@ -1,0 +1,17 @@
+{
+  "type": "SurfaceComparison",
+  "version": 1,
+  "title": "Outlet Drainage",
+  "koreanTitle": "출구 배수",
+  "description": "같은 급수와 기울기에서 열린 출구와 닫힌 출구를 비교한다.",
+  "cases": [
+    {
+      "scene": "../BrickRunoff.Scene",
+      "label": "Open Outlet"
+    },
+    {
+      "scene": "../BrickRunoff_ClosedOutlet.Scene",
+      "label": "Closed Outlet"
+    }
+  ]
+}

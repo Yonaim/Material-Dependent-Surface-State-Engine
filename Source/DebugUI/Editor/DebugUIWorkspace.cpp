@@ -64,6 +64,7 @@ namespace MDSS
                 u8"기울기가 바뀌면 물이 홈을 따라 이동한다."},
             {TransportBoundaries, "Features/SillOverflow.Scene"},
             {TransportBoundaries, "Features/BasinSplitting.Scene"},
+            {TransportBoundaries, "Features/OutletDrainage.Scene"},
             {Interactions,
                 "SnowOnFabric.Scene",
                 "Melting, Absorption & Drying",

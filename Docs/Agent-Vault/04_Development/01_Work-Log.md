@@ -6,10 +6,25 @@
 - 뷰포트 Show에 Viewport Guides와 Simulation Overlays 제목·구분선을 넣었다. 예약 주입 위치 토글의 표시 이름을 State Injection으로 바꿨다.
 - Debug 빌드 후 Heated Water Channel과 Deposition & Flow Feedback의 한국어 설명, 후자의 복수 상태 불릿과 Condition 배치, Show 팝업을 에디터 화면에서 확인했다.
 
+## 2026-11-26 — 배수 수로의 계단형과 연속 표면 비교
+
+- `Transport & Boundaries`에 `Drainage Geometry Comparison`을 등록했다. 같은 무유약 테라코타와 급수·기울기에서 기존 계단형 수로와 단차·벽을 곡선으로 연결한 형상을 비교한다. 곡선형 대조군은 새 16비트 높이장으로 작성했다.
+- 변경 C++의 clang-format·Region 검사와 별도 MSVC Debug 빌드를 통과했다. CPU/Vulkan에서 두 조건의 배수를 확인하고 6초 PBR·수심을 캡처했다. [검증 기록](../05_Experiments/04_Surface-Simulation-Validation.md#배수-수로의-계단형과-연속-표면-비교)
+
 ## 2026-11-26 — Glacier Cut 얼음과 금속 받침
 
 - Glacier Cut의 두 조건에 표층 얼음 배율 1.75, 접촉 열 감쇠 4.4초와 브러시드 스틸 받침을 적용했다. 얼음 아래의 직접 표시와 굴절은 공용 강철 음영을 사용한다.
 - 상태·표시 계약과 소스 맵을 동기화했다. MSVC Debug, SPIR-V 두 개, 두 조건의 CPU·Vulkan 대조 및 PBR 캡처를 확인했다. [수치 비교](../05_Experiments/04_Surface-Simulation-Validation.md#얼음-보충과-금속-받침)
+
+## 2026-11-26 — 배수 데모의 무유약 점토와 흡수 자국
+
+- Tilt-Driven Drainage와 Outlet Drainage의 같은 홈 벽돌에 무광 테라코타 재질과 제한된 흡수를 연결했다. 젖은 자국은 바닥 흡수수로 표시한다.
+- 기존 Debug 실행 파일의 CPU/Vulkan 대조에서 열린 출구 유출과 닫힌 출구의 0 g 유출을 확인했다. 6초 전후 GPU 캡처를 비교했다. [검증과 캡처](../05_Experiments/04_Surface-Simulation-Validation.md#기울기와-출구-배수의-테라코타-재질)
+
+## 2026-11-26 — Height Map Cavities의 가장자리 급수
+
+- 평면과 높이맵 조건의 6×8 mm 급수 영역을 차트 중심 기준 (−44, +22) mm로 맞췄다. 각 조건의 급수량은 4초 동안 9 g이다. 높이맵은 같은 홈 형상을 공유하는 별도 비교 케이스로 연결했다.
+- 두 조건의 CPU/Vulkan 대조에서 9 g 주입과 질량 수지를 확인했다. 높이맵 조건에서 8초 후 바닥 높이 2.5 mm 미만의 홈 영역에 물 2.98 g이 남았다. 에디터 로드 및 가장자리 급수·홈 집수 구간의 PBR 캡처도 확인했다.
 
 ## 2026-11-26 — 흡수 비교의 예약 급수 지연
 
